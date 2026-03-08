@@ -6,9 +6,12 @@ import com.felixkroemer.smort.common.util.TransactionUtil;
 import com.felixkroemer.smort.infrastructure.postgres.anki.AnkiAnalysisEntity;
 import com.felixkroemer.smort.infrastructure.postgres.anki.AnkiAnalysisRepository;
 import com.felixkroemer.smort.infrastructure.postgres.anki.AnkiAnalysisStatus;
+import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteEntity;
+import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AnkiAnalysisService {
 
   private final AnkiAnalysisRepository ankiAnalysisRepository;
+  private final AnkiNoteRepository ankiNoteRepository;
 
   private final SmortProperties smortProperties;
 
@@ -84,5 +88,9 @@ public class AnkiAnalysisService {
                 "Upload complete for Anki analysis. id={}, size={}KB",
                 analysisId,
                 bytes.length / 1024.0));
+  }
+
+  public List<AnkiNoteEntity> getNotes(UUID analysisId, String deckName) {
+    return ankiNoteRepository.findNotesByDeckName(analysisId, deckName);
   }
 }

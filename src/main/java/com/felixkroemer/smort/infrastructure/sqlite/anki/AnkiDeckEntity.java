@@ -20,16 +20,4 @@ public class AnkiDeckEntity {
 
   @Column(name = "name")
   private String name;
-
-  @Column(name = "mtime_secs", columnDefinition = "integer")
-  private Long mtimeSecs;
-
-  @Column(name = "usn", columnDefinition = "integer")
-  private Long usn;
-
-  @Column(name = "common")
-  private byte[] common;
-
-  @Column(name = "kind")
-  private byte[] kind;
 }

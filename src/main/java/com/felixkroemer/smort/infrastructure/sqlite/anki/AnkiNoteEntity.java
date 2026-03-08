@@ -20,33 +20,7 @@ public class AnkiNoteEntity {
   @OneToMany(mappedBy = "note")
   private List<AnkiCardEntity> cards;
 
-  @Column(name = "guid")
-  private String guid;
-
-  @Column(name = "mid", columnDefinition = "integer")
-  private Long mid;
-
-  @Column(name = "mod", columnDefinition = "integer")
-  private Long mod;
-
-  @Column(name = "usn", columnDefinition = "integer")
-  private Long usn;
-
-  @Column(name = "tags")
-  private String tags;
-
+  @Convert(converter = FldsConverter.class)
   @Column(name = "flds")
-  private String flds;
-
-  @Column(name = "sfld", columnDefinition = "integer")
-  private Long sfld;
-
-  @Column(name = "csum", columnDefinition = "integer")
-  private Long csum;
-
-  @Column(name = "flags", columnDefinition = "integer")
-  private Long flags;
-
-  @Column(name = "data")
-  private String data;
+  private List<String> flds;
 }
