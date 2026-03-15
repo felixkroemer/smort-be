@@ -1,7 +1,6 @@
 package com.felixkroemer.smort.application.anki;
 
-import com.felixkroemer.smort.application.anki.dto.AnkiNoteResponse;
-import com.felixkroemer.smort.application.anki.dto.StartAnalysisResponse;
+import com.felixkroemer.smort.application.anki.dto.*;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.AnkiAnalysisService;
 import java.io.IOException;
@@ -20,7 +19,7 @@ public class AnkiAnalysisController {
   private final AnkiNoteMapper ankiNoteMapper;
 
   @PostMapping()
-  StartAnalysisResponse startAnalysis() {
+  public StartAnalysisResponse startAnalysis() {
     return new StartAnalysisResponse(ankiAnalysisService.createAnalysis());
   }
 
@@ -36,10 +35,37 @@ public class AnkiAnalysisController {
     ankiAnalysisService.uploadDB(analysisId, bytes);
   }
 
-  @GetMapping("/notes")
+  @GetMapping("/{analysisId}/notes")
   public List<AnkiNoteResponse> getNotes(
-      @RequestParam("analysisId") UUID analysisId, @RequestParam("deckName") String deckName) {
+      @PathVariable("analysisId") UUID analysisId, @RequestParam("deckName") String deckName) {
     var notes = ankiAnalysisService.getNotes(analysisId, deckName);
     return ankiNoteMapper.toDto(notes);
+  }
+
+  // format the note, creating a new note (see /{analysisId}/notes/{noteId}/newNotes)
+  @PatchMapping("/{analysisId}/notes/{noteId}/format")
+  public DerivedNoteResponse formatNote(
+      @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
+    return null;
+  }
+
+  @PostMapping("/{analysisId}/notes/{noteId}/chat")
+  public ChatMessageResponse postChatMessage(
+      @PathVariable("analysisId") UUID analysisId,
+      @PathVariable("noteId") Long noteId,
+      @RequestBody ChatMessageRequest chatMessageRequest) {
+    return null;
+  }
+
+  @GetMapping("/{analysisId}/notes/{noteId}/chat")
+  public List<ChatMessageResponse> getChat(
+      @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
+    return null;
+  }
+
+  @GetMapping("/{analysisId}/notes/{noteId}/derivedNotes")
+  public List<DerivedNoteResponse> getDerivedNotes(
+      @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
+    return List.of();
   }
 }

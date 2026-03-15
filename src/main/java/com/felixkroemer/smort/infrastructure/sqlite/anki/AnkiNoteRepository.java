@@ -15,7 +15,12 @@ public class AnkiNoteRepository {
     var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
     return entityManager
         .createQuery(
-            "SELECT n FROM AnkiNoteEntity n JOIN n.cards c JOIN c.deck d WHERE d.name = :deckName",
+            """
+                    SELECT n FROM AnkiNoteEntity n
+                        JOIN n.cards c
+                        JOIN c.deck d
+                    WHERE d.name = :deckName
+                    """,
             AnkiNoteEntity.class)
         .setParameter("deckName", deckName)
         .getResultList();

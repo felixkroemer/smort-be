@@ -7,3 +7,9 @@ services:
       POSTGRES_DB: postgres
     ports:
       - "5432:5432"
+  dynamodb-local:
+    image: amazon/dynamodb-local
+    container_name: dynamodb-local
+    command: "-jar DynamoDBLocal.jar -sharedDb"
+    ports:
+      - "8000:8000"
