@@ -1,9 +1,10 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.analysis;
 
-import java.time.Instant;
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
@@ -14,29 +15,29 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 @NoArgsConstructor
 public class DerivedNoteEntity {
 
-  private String sfld;
+  private String pk;
+  private String sk;
   private UUID analysisId;
+  private Long deckId;
   private Long sourceNoteId;
-  private Map<String, String> fields;
-  private Instant createdAt;
+  private List<String> flds;
 
-  public DerivedNoteEntity(
-          UUID analysisId,
-          Long sourceNoteId,
-          String sfld,
-          Map<String, String> fields,
-          Instant createdAt) {
+  public DerivedNoteEntity(UUID analysisId, Long deckId, Long sourceNoteId, List<String> flds) {
     this.analysisId = analysisId;
-    this.sfld = sfld;
+    this.deckId = deckId;
     this.sourceNoteId = sourceNoteId;
-    this.fields = fields;
-    this.createdAt = createdAt;
+    this.flds = flds;
+    this.pk = "ANALYSIS#" + analysisId;
+    this.sk = "DECK#" + deckId + "#NOTE#" + sourceNoteId;
   }
 
   @DynamoDbPartitionKey
-  public String getPk() { return "ANALYSIS#" + analysisId; }
+  public String getPk() {
+    return pk;
+  }
 
   @DynamoDbSortKey
-  public String getSk() { return "NOTE#" + sourceNoteId + "#DERIVED#" + sfld; }
-  
+  public String getSk() {
+    return sk;
+  }
 }

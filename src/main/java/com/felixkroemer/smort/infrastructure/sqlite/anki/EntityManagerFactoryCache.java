@@ -1,7 +1,7 @@
 package com.felixkroemer.smort.infrastructure.sqlite.anki;
 
 import com.felixkroemer.smort.common.exception.SmortException;
-import com.felixkroemer.smort.infrastructure.postgres.anki.AnkiAnalysisRepository;
+import com.felixkroemer.smort.infrastructure.postgres.anki.AnalysisRepository;
 import com.felixkroemer.smort.infrastructure.postgres.anki.AnkiAnalysisStatus;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -28,7 +28,7 @@ import org.sqlite.SQLiteDataSource;
 @Slf4j
 public class EntityManagerFactoryCache {
 
-  private final AnkiAnalysisRepository ankiAnalysisRepository;
+  private final AnalysisRepository analysisRepository;
 
   private final Cache<UUID, EntityManagerFactory> cache =
       Caffeine.newBuilder()
@@ -44,7 +44,7 @@ public class EntityManagerFactoryCache {
   public EntityManager getOrCreate(UUID analysisId) {
 
     var ankiAnalysis =
-        ankiAnalysisRepository
+        analysisRepository
             .findById(analysisId)
             .orElseThrow(
                 () -> new SmortException("Could not find analysis by id. id={}", analysisId));

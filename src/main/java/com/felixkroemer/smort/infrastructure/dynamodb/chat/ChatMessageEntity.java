@@ -1,4 +1,4 @@
-package com.felixkroemer.smort.infrastructure.dynamodb.analysis;
+package com.felixkroemer.smort.infrastructure.dynamodb.chat;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -15,39 +15,36 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 @NoArgsConstructor
 public class ChatMessageEntity {
 
-  private UUID analysisId;
-  private Long sourceNoteId;
-  private UUID uuid;
+  private UUID chatId;
+  private UUID messageId;
   private String role;
   private String contentJson;
+  private String responseId;
+  private String previousResponseId;
   private Instant createdAt;
 
   public ChatMessageEntity(
-      UUID analysisId,
-      Long sourceNoteId,
-      UUID uuid,
+      UUID chatId,
       String role,
       String contentJson,
-      Instant createdAt) {
-    this.analysisId = analysisId;
-    this.sourceNoteId = sourceNoteId;
-    this.uuid = uuid;
+      String responseId,
+      String previousResponseId) {
+    this.chatId = chatId;
     this.role = role;
     this.contentJson = contentJson;
-    this.createdAt = createdAt;
+    this.responseId = responseId;
+    this.previousResponseId = previousResponseId;
+    this.createdAt = Instant.now();
+    this.messageId = UUID.randomUUID();
   }
 
   @DynamoDbPartitionKey
   public String getPk() {
-    return "ANALYSIS#" + analysisId;
+    return "CHAT#" + chatId;
   }
 
   @DynamoDbSortKey
   public String getSk() {
-    return "NOTE#" + sourceNoteId + "#MSG#" + uuid;
-  }
-
-  public static String buildSkPrefix(Long noteId) {
-    return "NOTE#" + noteId + "#MSG";
+    return "MESSAGE#" + createdAt.toString() + "#" + messageId;
   }
 }

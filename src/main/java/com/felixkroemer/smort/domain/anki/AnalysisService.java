@@ -3,9 +3,12 @@ package com.felixkroemer.smort.domain.anki;
 import com.felixkroemer.smort.common.config.SmortProperties;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.common.util.TransactionUtil;
+import com.felixkroemer.smort.infrastructure.dynamodb.analysis.DerivedNoteEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.analysis.DerivedNoteRepository;
 import com.felixkroemer.smort.infrastructure.postgres.anki.AnkiAnalysisEntity;
-import com.felixkroemer.smort.infrastructure.postgres.anki.AnkiAnalysisRepository;
+import com.felixkroemer.smort.infrastructure.postgres.anki.AnalysisRepository;
 import com.felixkroemer.smort.infrastructure.postgres.anki.AnkiAnalysisStatus;
+import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiDeckEntity;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteEntity;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
 import java.io.IOException;
@@ -21,17 +24,18 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class AnkiAnalysisService {
+public class AnalysisService {
 
-  private final AnkiAnalysisRepository ankiAnalysisRepository;
+  private final AnalysisRepository analysisRepository;
   private final AnkiNoteRepository ankiNoteRepository;
+  private final DerivedNoteRepository derivedNoteRepository;
 
   private final SmortProperties smortProperties;
 
   @Transactional
   public UUID createAnalysis() {
     var analysis = new AnkiAnalysisEntity(AnkiAnalysisStatus.NEW);
-    ankiAnalysisRepository.save(analysis);
+    analysisRepository.save(analysis);
     TransactionUtil.afterCommit(
         () -> log.info("Started new Anki analysis. id={}", analysis.getId()));
     return analysis.getId();
@@ -40,7 +44,7 @@ public class AnkiAnalysisService {
   @Transactional
   public void uploadDB(UUID analysisId, byte[] bytes) {
     var ankiAnalysis =
-        ankiAnalysisRepository
+        analysisRepository
             .findById(analysisId)
             .orElseThrow(
                 () -> new SmortException("Could not find analysis by id. id={}", analysisId));
@@ -90,7 +94,15 @@ public class AnkiAnalysisService {
                 bytes.length / 1024.0));
   }
 
-  public List<AnkiNoteEntity> getNotes(UUID analysisId, String deckName) {
-    return ankiNoteRepository.findNotesByDeckName(analysisId, deckName);
+  public List<AnkiNoteEntity> getNotes(UUID analysisId, Long deckId) {
+    return ankiNoteRepository.findNotesByDeck(analysisId, deckId);
+  }
+
+  public List<AnkiDeckEntity> getDecks(UUID analysisId) {
+    return ankiNoteRepository.findAllDecks(analysisId);
+  }
+
+  public List<DerivedNoteEntity> getDerivedNotes(UUID analysisId, Long deckId) {
+    return derivedNoteRepository.findAllByDeckId(analysisId, deckId);
   }
 }
