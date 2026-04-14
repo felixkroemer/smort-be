@@ -2,7 +2,8 @@ package com.felixkroemer.smort.infrastructure.dynamodb;
 
 import java.net.URI;
 
-import com.felixkroemer.smort.infrastructure.dynamodb.analysis.DerivedNoteEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.anki.ChatMessageEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -35,5 +36,10 @@ public class DynamoDbClientConfig {
   @Bean
   public DynamoDbTable<DerivedNoteEntity> derivedNoteTable(DynamoDbEnhancedClient enhancedClient) {
     return enhancedClient.table("derived-notes", TableSchema.fromBean(DerivedNoteEntity.class));
+  }
+
+  @Bean
+  public DynamoDbTable<ChatMessageEntity> chatMessageEntity(DynamoDbEnhancedClient enhancedClient) {
+    return enhancedClient.table("derived-notes", TableSchema.fromBean(ChatMessageEntity.class));
   }
 }

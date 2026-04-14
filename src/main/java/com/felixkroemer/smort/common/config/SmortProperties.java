@@ -12,12 +12,12 @@ public class SmortProperties {
   String baseDir;
 
   @Value("${smort.anki.analysis.db-directory-name}")
-  String ankiAnalysisDbDirectoryName;
+  String analysisDbDirectoryName;
 
   @Value("${smort.anki.analysis.max-db-size}")
-  int ankiAnalysisMaxDbSize;
+  int analysisMaxDbSize;
 
   public Path getAnkiDbDirectory() {
-    return Path.of(System.getProperty("user.home"), baseDir, ankiAnalysisDbDirectoryName);
+    return Path.of(System.getProperty("user.home"), baseDir, analysisDbDirectoryName);
   }
 }

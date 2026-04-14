@@ -1,4 +1,4 @@
-package com.felixkroemer.smort.infrastructure.dynamodb.analysis;
+package com.felixkroemer.smort.infrastructure.dynamodb.anki;
 
 import java.util.List;
 import java.util.UUID;
@@ -27,8 +27,8 @@ public class DerivedNoteEntity {
     this.deckId = deckId;
     this.sourceNoteId = sourceNoteId;
     this.flds = flds;
-    this.pk = "ANALYSIS#" + analysisId;
-    this.sk = "DECK#" + deckId + "#NOTE#" + sourceNoteId;
+    this.pk = AnkiKeys.pk(analysisId);
+    this.sk = AnkiKeys.derivedNoteSk(deckId, sourceNoteId);
   }
 
   @DynamoDbPartitionKey

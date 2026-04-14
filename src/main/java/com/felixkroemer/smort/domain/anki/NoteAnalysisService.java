@@ -1,10 +1,12 @@
 package com.felixkroemer.smort.domain.anki;
 
-import com.felixkroemer.smort.domain.note.NoteChatService;
-import com.felixkroemer.smort.infrastructure.dynamodb.analysis.DerivedNoteEntity;
-import com.felixkroemer.smort.infrastructure.dynamodb.analysis.DerivedNoteRepository;
-import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteEntity;
-import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
+import com.felixkroemer.smort.domain.note.ChatMessageTextResponse;
+import com.felixkroemer.smort.domain.note.ChatService;
+import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
+import com.felixkroemer.smort.infrastructure.dynamodb.chat.AbstractChatMessageEntity;
+import com.felixkroemer.smort.infrastructure.sqlite.anki.NoteEntity;
+import com.felixkroemer.smort.infrastructure.sqlite.anki.NoteRepository;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,12 +19,13 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class NoteAnalysisService {
 
-  private final AnkiNoteRepository ankiNoteRepository;
+  private final NoteRepository noteRepository;
   private final DerivedNoteRepository derivedNoteRepository;
-  private final NoteChatService noteChatService;
+  private final ChatService chatService;
+  private final ChatRepository chatRepository;
 
-  public AnkiNoteEntity getNote(UUID analysisId, Long deckId, Long sourceNoteId) {
-    return ankiNoteRepository.findById(analysisId, sourceNoteId);
+  public NoteEntity getNote(UUID analysisId, Long deckId, Long sourceNoteId) {
+    return noteRepository.findById(analysisId, sourceNoteId);
   }
 
   public Optional<DerivedNoteEntity> getDerivedNote(
@@ -35,14 +38,14 @@ public class NoteAnalysisService {
         .map(DerivedNoteEntity::getFlds)
         .orElseGet(
             () -> {
-              var sourceNote = ankiNoteRepository.findById(analysisId, sourceNoteId);
+              var sourceNote = noteRepository.findById(analysisId, sourceNoteId);
               return sourceNote.getFlds();
             });
   }
 
   public DerivedNoteEntity formatNote(UUID analysisId, Long deckId, Long sourceNoteId) {
     var content = getContent(analysisId, deckId, sourceNoteId);
-    var formattedContent = noteChatService.formatNote(content);
+    var formattedContent = chatService.formatNote(content);
 
     var derivedNote =
         getDerivedNote(analysisId, deckId, sourceNoteId)
@@ -57,5 +60,31 @@ public class NoteAnalysisService {
         sourceNoteId);
 
     return derivedNote;
+  }
+
+  public String chat(UUID analysisId, Long deckId, Long sourceNoteId, String message) {
+
+    var latestChatMessage = chatRepository.findLatestChatMessage(analysisId, deckId, sourceNoteId);
+    var latestChatMessageResponseId =
+        latestChatMessage.map(AbstractChatMessageEntity::getResponseId);
+
+    var content = getContent(analysisId, deckId, sourceNoteId);
+    var response = chatService.chat(content, message, latestChatMessageResponseId);
+
+    switch (response) {
+      case ChatMessageTextResponse chatMessageTextResponse -> {
+        chatRepository.save(
+            new ChatMessageEntity(
+                analysisId,
+                deckId,
+                sourceNoteId,
+                chatMessageTextResponse.text(),
+                chatMessageTextResponse.meta().responseId(),
+                latestChatMessageResponseId,
+                Instant.now()));
+
+        return chatMessageTextResponse.text();
+      }
+    }
   }
 }

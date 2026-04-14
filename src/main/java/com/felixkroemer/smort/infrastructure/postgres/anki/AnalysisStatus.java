@@ -1,6 +1,6 @@
 package com.felixkroemer.smort.infrastructure.postgres.anki;
 
-public enum AnkiAnalysisStatus {
+public enum AnalysisStatus {
   NEW,
   READY,
   COMPLETE,

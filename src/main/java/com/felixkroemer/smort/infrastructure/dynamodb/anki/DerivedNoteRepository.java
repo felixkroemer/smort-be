@@ -1,4 +1,4 @@
-package com.felixkroemer.smort.infrastructure.dynamodb.analysis;
+package com.felixkroemer.smort.infrastructure.dynamodb.anki;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,8 +20,8 @@ public class DerivedNoteRepository {
     QueryConditional condition =
         QueryConditional.sortBeginsWith(
             Key.builder()
-                .partitionValue("ANALYSIS#" + analysisId)
-                .sortValue("DECK#" + deckId)
+                .partitionValue(AnkiKeys.pk(analysisId))
+                .sortValue(AnkiKeys.deckPrefix(deckId))
                 .build());
 
     return table
@@ -35,8 +35,8 @@ public class DerivedNoteRepository {
       UUID analysisId, Long deckId, Long sourceNoteId) {
     Key key =
         Key.builder()
-            .partitionValue("ANALYSIS#" + analysisId)
-            .sortValue("DECK#" + deckId + "NOTE#" + sourceNoteId)
+            .partitionValue(AnkiKeys.pk(analysisId))
+            .sortValue(AnkiKeys.derivedNoteSk(deckId, sourceNoteId))
             .build();
 
     return Optional.ofNullable(table.getItem(key));

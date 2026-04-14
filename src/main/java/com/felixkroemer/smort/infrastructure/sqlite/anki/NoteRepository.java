@@ -7,38 +7,38 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class AnkiNoteRepository {
+public class NoteRepository {
 
   private final EntityManagerFactoryCache entityManagerFactoryCache;
 
-  public List<AnkiNoteEntity> findNotesByDeck(UUID analysisId, Long deckId) {
+  public List<NoteEntity> findNotesByDeck(UUID analysisId, Long deckId) {
     var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
     return entityManager
         .createQuery(
             """
-                    SELECT n FROM AnkiNoteEntity n
+                    SELECT n FROM NoteEntity n
                         JOIN n.cards c
                         JOIN c.deck d
                     WHERE d.id = :deckId
                     """,
-            AnkiNoteEntity.class)
+            NoteEntity.class)
         .setParameter("deckId", deckId)
         .getResultList();
   }
 
-  public AnkiNoteEntity findById(UUID analysisId, Long sourceNoteId) {
+  public NoteEntity findById(UUID analysisId, Long sourceNoteId) {
     var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
     return entityManager
         .createQuery(
-            "SELECT n FROM AnkiNoteEntity n WHERE n.id = :sourceNoteId", AnkiNoteEntity.class)
+            "SELECT n FROM NoteEntity n WHERE n.id = :sourceNoteId", NoteEntity.class)
         .setParameter("sourceNoteId", sourceNoteId)
         .getSingleResult();
   }
 
-  public List<AnkiDeckEntity> findAllDecks(UUID analysisId) {
+  public List<DeckEntity> findAllDecks(UUID analysisId) {
     var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
     return entityManager
-        .createQuery("SELECT d FROM AnkiDeckEntity d", AnkiDeckEntity.class)
+        .createQuery("SELECT d FROM DeckEntity d", DeckEntity.class)
         .getResultList();
   }
 }

@@ -3,19 +3,20 @@ package com.felixkroemer.smort.domain.anki;
 import com.felixkroemer.smort.common.config.SmortProperties;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.common.util.TransactionUtil;
-import com.felixkroemer.smort.infrastructure.dynamodb.analysis.DerivedNoteEntity;
-import com.felixkroemer.smort.infrastructure.dynamodb.analysis.DerivedNoteRepository;
-import com.felixkroemer.smort.infrastructure.postgres.anki.AnkiAnalysisEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteRepository;
 import com.felixkroemer.smort.infrastructure.postgres.anki.AnalysisRepository;
-import com.felixkroemer.smort.infrastructure.postgres.anki.AnkiAnalysisStatus;
-import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiDeckEntity;
-import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteEntity;
-import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
+import com.felixkroemer.smort.infrastructure.postgres.anki.AnalysisEntity;
+import com.felixkroemer.smort.infrastructure.postgres.anki.AnalysisStatus;
+import com.felixkroemer.smort.infrastructure.sqlite.anki.DeckEntity;
+import com.felixkroemer.smort.infrastructure.sqlite.anki.NoteEntity;
+import com.felixkroemer.smort.infrastructure.sqlite.anki.NoteRepository;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.UUID;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,23 +28,23 @@ import org.springframework.transaction.annotation.Transactional;
 public class AnalysisService {
 
   private final AnalysisRepository analysisRepository;
-  private final AnkiNoteRepository ankiNoteRepository;
+  private final NoteRepository noteRepository;
   private final DerivedNoteRepository derivedNoteRepository;
 
   private final SmortProperties smortProperties;
 
   @Transactional
   public UUID createAnalysis() {
-    var analysis = new AnkiAnalysisEntity(AnkiAnalysisStatus.NEW);
+    var analysis = new AnalysisEntity(AnalysisStatus.NEW);
     analysisRepository.save(analysis);
     TransactionUtil.afterCommit(
-        () -> log.info("Started new Anki analysis. id={}", analysis.getId()));
+        () -> log.info("Started new analysis. id={}", analysis.getId()));
     return analysis.getId();
   }
 
   @Transactional
   public void uploadDB(UUID analysisId, byte[] bytes) {
-    var ankiAnalysis =
+    var analysis =
         analysisRepository
             .findById(analysisId)
             .orElseThrow(
@@ -52,15 +53,15 @@ public class AnalysisService {
     if (bytes == null || bytes.length == 0) {
       throw new SmortException("Empty upload for analysis. id={}", analysisId);
     }
-    if (bytes.length > smortProperties.getAnkiAnalysisMaxDbSize()) {
+    if (bytes.length > smortProperties.getAnalysisMaxDbSize()) {
       throw new SmortException("Anki DB upload too large. id={}", analysisId);
     }
 
-    if (ankiAnalysis.getStatus() != AnkiAnalysisStatus.NEW) {
+    if (analysis.getStatus() != AnalysisStatus.NEW) {
       throw new SmortException(
-          "Anki Analysis is not in NEW state. id={}, status={}",
+          "Analysis is not in NEW state. id={}, status={}",
           analysisId,
-          ankiAnalysis.getStatus());
+          analysis.getStatus());
     }
 
     var dbPath = smortProperties.getAnkiDbDirectory().resolve(analysisId.toString());
@@ -83,23 +84,23 @@ public class AnalysisService {
       throw new SmortException(e);
     }
 
-    ankiAnalysis.setDbPath(dbPath.toString());
-    ankiAnalysis.setStatus(AnkiAnalysisStatus.READY);
+    analysis.setDbPath(dbPath.toString());
+    analysis.setStatus(AnalysisStatus.READY);
 
     TransactionUtil.afterCommit(
         () ->
             log.info(
-                "Upload complete for Anki analysis. id={}, size={}KB",
+                "Upload complete for analysis. id={}, size={}KB",
                 analysisId,
                 bytes.length / 1024.0));
   }
 
-  public List<AnkiNoteEntity> getNotes(UUID analysisId, Long deckId) {
-    return ankiNoteRepository.findNotesByDeck(analysisId, deckId);
+  public List<NoteEntity> getNotes(UUID analysisId, Long deckId) {
+    return noteRepository.findNotesByDeck(analysisId, deckId);
   }
 
-  public List<AnkiDeckEntity> getDecks(UUID analysisId) {
-    return ankiNoteRepository.findAllDecks(analysisId);
+  public List<DeckEntity> getDecks(UUID analysisId) {
+    return noteRepository.findAllDecks(analysisId);
   }
 
   public List<DerivedNoteEntity> getDerivedNotes(UUID analysisId, Long deckId) {

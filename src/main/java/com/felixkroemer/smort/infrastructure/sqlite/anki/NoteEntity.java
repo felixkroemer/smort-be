@@ -11,14 +11,14 @@ import org.hibernate.annotations.Immutable;
 @Getter
 @Immutable
 @NoArgsConstructor
-public class AnkiNoteEntity {
+public class NoteEntity {
 
   @Id
   @Column(columnDefinition = "integer")
   private Long id;
 
   @OneToMany(mappedBy = "note")
-  private List<AnkiCardEntity> cards;
+  private List<CardEntity> cards;
 
   @Convert(converter = FldsConverter.class)
   @Column(name = "flds")

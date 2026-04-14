@@ -2,7 +2,7 @@ package com.felixkroemer.smort.infrastructure.sqlite.anki;
 
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.infrastructure.postgres.anki.AnalysisRepository;
-import com.felixkroemer.smort.infrastructure.postgres.anki.AnkiAnalysisStatus;
+import com.felixkroemer.smort.infrastructure.postgres.anki.AnalysisStatus;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.persistence.EntityManager;
@@ -43,17 +43,17 @@ public class EntityManagerFactoryCache {
 
   public EntityManager getOrCreate(UUID analysisId) {
 
-    var ankiAnalysis =
+    var analysis =
         analysisRepository
             .findById(analysisId)
             .orElseThrow(
                 () -> new SmortException("Could not find analysis by id. id={}", analysisId));
 
-    if (ankiAnalysis.getStatus() != AnkiAnalysisStatus.READY) {
+    if (analysis.getStatus() != AnalysisStatus.READY) {
       throw new SmortException("Analysis is not ready. id={}", analysisId);
     }
 
-    var dbPath = Path.of(ankiAnalysis.getDbPath());
+    var dbPath = Path.of(analysis.getDbPath());
 
     return cache
         .get(
