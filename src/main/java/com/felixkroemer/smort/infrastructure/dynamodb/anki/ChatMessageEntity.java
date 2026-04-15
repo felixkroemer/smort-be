@@ -27,11 +27,12 @@ public class ChatMessageEntity extends AbstractChatMessageEntity {
       UUID analysisId,
       Long deckId,
       Long sourceNoteId,
-      String content,
+      String response,
+      String message,
       String responseId,
       Optional<String> previousResponseId,
       Instant createdAt) {
-    super(content, responseId, previousResponseId, createdAt);
+    super(response, message, responseId, previousResponseId, createdAt);
     this.analysisId = analysisId;
     this.deckId = deckId;
     this.sourceNoteId = sourceNoteId;

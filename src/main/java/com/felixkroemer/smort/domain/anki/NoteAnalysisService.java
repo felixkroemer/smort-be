@@ -62,7 +62,7 @@ public class NoteAnalysisService {
     return derivedNote;
   }
 
-  public String chat(UUID analysisId, Long deckId, Long sourceNoteId, String message) {
+  public ChatMessageEntity chat(UUID analysisId, Long deckId, Long sourceNoteId, String message) {
 
     var latestChatMessage = chatRepository.findLatestChatMessage(analysisId, deckId, sourceNoteId);
     var latestChatMessageResponseId =
@@ -73,17 +73,18 @@ public class NoteAnalysisService {
 
     switch (response) {
       case ChatMessageTextResponse chatMessageTextResponse -> {
-        chatRepository.save(
+        var chatMessageEntity =
             new ChatMessageEntity(
                 analysisId,
                 deckId,
                 sourceNoteId,
                 chatMessageTextResponse.text(),
+                message,
                 chatMessageTextResponse.meta().responseId(),
                 latestChatMessageResponseId,
-                Instant.now()));
-
-        return chatMessageTextResponse.text();
+                Instant.now());
+        chatRepository.save(chatMessageEntity);
+        return chatMessageEntity;
       }
     }
   }

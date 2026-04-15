@@ -21,6 +21,7 @@ public class AnalysisController {
   private final AnalysisService analysisService;
   private final NoteAnalysisService noteAnalysisService;
   private final NoteMapper noteMapper;
+  private final ChatMessageMapper chatMessageMapper;
 
   @PostMapping()
   public StartAnalysisResponse startAnalysis() {
@@ -90,12 +91,14 @@ public class AnalysisController {
   }
 
   @PostMapping("/{analysisId}/notes/{deckId}/{noteId}/chat")
-  public String postChatMessage(
+  public ChatMessageResponse postChatMessage(
       @PathVariable("analysisId") UUID analysisId,
       @PathVariable("deckId") Long deckId,
       @PathVariable("noteId") Long noteId,
       @RequestBody ChatMessageRequest chatMessageRequest) {
-    return noteAnalysisService.chat(analysisId, deckId, noteId, chatMessageRequest.message());
+    var chatMessageEntity =
+        noteAnalysisService.chat(analysisId, deckId, noteId, chatMessageRequest.message());
+    return chatMessageMapper.toDto(chatMessageEntity);
   }
 
   /*  @GetMapping("/{analysisId}/notes/{deckId}/{noteId}/chat")

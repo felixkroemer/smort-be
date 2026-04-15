@@ -1,18 +1,14 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.chat;
 
+import com.felixkroemer.smort.infrastructure.dynamodb.OptionalStringConverter;
 import java.time.Instant;
 import java.util.Optional;
-import java.util.UUID;
-
-import com.felixkroemer.smort.infrastructure.dynamodb.OptionalStringConverter;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
 @DynamoDbBean
 @Getter
@@ -21,7 +17,8 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 @AllArgsConstructor
 public abstract class AbstractChatMessageEntity {
 
-  private String content;
+  private String response;
+  private String message;
   private String responseId;
   private Optional<String> previousResponseId;
   private Instant createdAt;
