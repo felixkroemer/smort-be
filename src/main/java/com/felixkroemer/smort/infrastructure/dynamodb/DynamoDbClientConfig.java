@@ -1,9 +1,8 @@
 package com.felixkroemer.smort.infrastructure.dynamodb;
 
-import java.net.URI;
-
-import com.felixkroemer.smort.infrastructure.dynamodb.anki.ChatMessageEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.anki.ChatMessageResponseEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
+import java.net.URI;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -21,16 +20,15 @@ public class DynamoDbClientConfig {
   @Bean
   @Profile("local")
   DynamoDbEnhancedClient createLocalDynamoDbClient() {
-    DynamoDbClient dynamoDbClient = DynamoDbClient.builder()
+    DynamoDbClient dynamoDbClient =
+        DynamoDbClient.builder()
             .endpointOverride(URI.create("http://localhost:8000"))
             .region(Region.EU_CENTRAL_1)
             .credentialsProvider(
-                    StaticCredentialsProvider.create(AwsBasicCredentials.create("local", "local")))
+                StaticCredentialsProvider.create(AwsBasicCredentials.create("local", "local")))
             .build();
 
-    return DynamoDbEnhancedClient.builder()
-            .dynamoDbClient(dynamoDbClient)
-            .build();
+    return DynamoDbEnhancedClient.builder().dynamoDbClient(dynamoDbClient).build();
   }
 
   @Bean
@@ -39,7 +37,9 @@ public class DynamoDbClientConfig {
   }
 
   @Bean
-  public DynamoDbTable<ChatMessageEntity> chatMessageEntity(DynamoDbEnhancedClient enhancedClient) {
-    return enhancedClient.table("derived-notes", TableSchema.fromBean(ChatMessageEntity.class));
+  public DynamoDbTable<ChatMessageResponseEntity> chatMessageResponseTable(
+      DynamoDbEnhancedClient enhancedClient) {
+    return enhancedClient.table(
+        "derived-notes", TableSchema.fromBean(ChatMessageResponseEntity.class));
   }
 }

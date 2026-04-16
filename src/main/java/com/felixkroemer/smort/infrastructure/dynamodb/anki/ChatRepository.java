@@ -4,6 +4,7 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
@@ -13,9 +14,10 @@ import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 @RequiredArgsConstructor
 public class ChatRepository {
 
-  private final DynamoDbTable<ChatMessageEntity> table;
+  private final DynamoDbTable<ChatMessageResponseEntity> table;
+  private final DynamoDbEnhancedClient enhancedClient;
 
-  public Optional<ChatMessageEntity> findLatestChatMessage(
+  public Optional<ChatMessageResponseEntity> findLatestChatMessage(
       UUID analysisId, Long deckId, Long sourceNoteId) {
 
     QueryEnhancedRequest request =
@@ -33,7 +35,13 @@ public class ChatRepository {
     return table.query(request).items().stream().findFirst();
   }
 
-  public void save(ChatMessageEntity chatMessage) {
+  public void save(ChatMessageResponseEntity chatMessage) {
     table.putItem(chatMessage);
+  }
+
+  public void saveInTransaction(ChatMessageResponseEntity first, ChatMessageResponseEntity second) {
+    enhancedClient.transactWriteItems(tx -> tx
+            .addPutItem(table, first)
+            .addPutItem(table, second));
   }
 }

@@ -91,7 +91,7 @@ public class AnalysisController {
   }
 
   @PostMapping("/{analysisId}/notes/{deckId}/{noteId}/chat")
-  public ChatMessageResponse postChatMessage(
+  public List<ChatMessageResponseDTO> postChatMessage(
       @PathVariable("analysisId") UUID analysisId,
       @PathVariable("deckId") Long deckId,
       @PathVariable("noteId") Long noteId,

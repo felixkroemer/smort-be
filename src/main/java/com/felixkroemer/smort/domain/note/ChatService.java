@@ -1,14 +1,14 @@
 package com.felixkroemer.smort.domain.note;
 
+import com.fasterxml.jackson.annotation.JsonClassDescription;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.openai.client.OpenAIClient;
 import com.openai.models.responses.*;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -42,6 +42,8 @@ public class ChatService {
   private final String CHAT_INSTRUCTIONS =
       """
       Your task is to assist the user in fact-checking, learning about, and improving the anki note provided in the form of its fields.
+      When you are asked to edit one or multiple fields in any way, use the tool for updating notes.
+      Then acknowledge with a short summary.
       """;
 
   private final OpenAIClient openAIClient;
@@ -68,6 +70,48 @@ public class ChatService {
     }
   }
 
+  @JsonClassDescription("Store a updated note.")
+  static class StoreNoteTool {
+    @JsonPropertyDescription("The notes fields.")
+    public List<String> fields;
+
+    public void execute() {}
+  }
+
+  public ChatMessageResponse acknowledgeStoreNoteToolCall(
+      String callId, String previousResponseId) {
+    ResponseCreateParams params =
+        ResponseCreateParams.builder()
+            .instructions(CHAT_INSTRUCTIONS)
+            .input(
+                ResponseCreateParams.Input.ofResponse(
+                    List.of(
+                        ResponseInputItem.ofFunctionCallOutput(
+                            ResponseInputItem.FunctionCallOutput.builder()
+                                .callId(callId)
+                                .outputAsJson("ok")
+                                .build()))))
+            .previousResponseId(previousResponseId)
+            .model(model)
+            .build();
+
+    var response = openAIClient.responses().create(params);
+    var output = response.output();
+
+    var responseOutputItem =
+        output.stream()
+            .reduce(
+                (a, b) -> {
+                  throw new SmortException("Received multiple output items");
+                })
+            .orElseThrow(() -> new SmortException("Received no output items"));
+
+    var meta =
+        new ChatMessageResponseMeta(response.id(), response.previousResponseId(), Instant.now());
+    ResponseOutputText outputText = getResponseOutputText(responseOutputItem.asMessage());
+    return new ChatMessageTextResponse(outputText.text(), meta);
+  }
+
   public ChatMessageResponse chat(
       List<String> fields, String message, Optional<String> previousResponseId) {
     String fullInput = "Fields:\n" + String.join("\n", fields) + "\n\n" + message;
@@ -78,32 +122,41 @@ public class ChatService {
             .input(fullInput)
             .previousResponseId(previousResponseId)
             .model(model)
+            .addTool(StoreNoteTool.class)
             .build();
 
     var response = openAIClient.responses().create(params);
-    ResponseOutputText outputText = getResponseOutputText(response);
-
-    return new ChatMessageTextResponse(
-        outputText.text(),
-        new ChatMessageResponseMeta(
-            response.id(),
-            response.previousResponseId(),
-            Instant.now())); // TODO: change to time absed on record
-  }
-
-  // TODO: convert to generic getContent
-  private static ResponseOutputText getResponseOutputText(Response response) {
     var output = response.output();
 
-    ResponseOutputMessage responseOutputMessage =
+    var responseOutputItem =
         output.stream()
-            .flatMap(item -> item.message().stream())
             .reduce(
                 (a, b) -> {
-                  throw new SmortException("Received multiple outputs");
+                  throw new SmortException("Received multiple output items");
                 })
-            .orElseThrow(() -> new SmortException("Received a non-message output"));
+            .orElseThrow(() -> new SmortException("Received no output items"));
 
+    var meta =
+        new ChatMessageResponseMeta(response.id(), response.previousResponseId(), Instant.now());
+
+    if (responseOutputItem.isFunctionCall()) {
+      var responseFunctionToolCall = responseOutputItem.asFunctionCall();
+      var storeNoteToolCall = responseFunctionToolCall.arguments(StoreNoteTool.class);
+      return new StoreNoteToolResponse(
+          StoreNoteTool.class.getName(),
+          responseFunctionToolCall.callId(),
+          storeNoteToolCall.fields,
+          meta);
+    } else if (responseOutputItem.isMessage()) {
+      ResponseOutputText outputText = getResponseOutputText(responseOutputItem.asMessage());
+      return new ChatMessageTextResponse(outputText.text(), meta);
+    } else {
+      throw new SmortException("Unexpected response output item type");
+    }
+  }
+
+  private static ResponseOutputText getResponseOutputText(
+      ResponseOutputMessage responseOutputMessage) {
     if (responseOutputMessage.content().size() != 1) {
       throw new SmortException(
           "Received multiple contents for a ResponseOutputMessage: {}",

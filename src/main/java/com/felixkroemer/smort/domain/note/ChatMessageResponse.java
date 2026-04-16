@@ -1,3 +1,4 @@
 package com.felixkroemer.smort.domain.note;
 
-public sealed interface ChatMessageResponse permits ChatMessageTextResponse {}
+public sealed interface ChatMessageResponse
+    permits ChatMessageTextResponse, StoreNoteToolResponse {}

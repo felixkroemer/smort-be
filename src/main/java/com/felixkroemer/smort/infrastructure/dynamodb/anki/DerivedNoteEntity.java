@@ -15,8 +15,12 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 @NoArgsConstructor
 public class DerivedNoteEntity {
 
+  @Getter(onMethod_ = @DynamoDbPartitionKey)
   private String pk;
+
+  @Getter(onMethod_ = @DynamoDbSortKey)
   private String sk;
+
   private UUID analysisId;
   private Long deckId;
   private Long sourceNoteId;
@@ -29,15 +33,5 @@ public class DerivedNoteEntity {
     this.flds = flds;
     this.pk = AnkiKeys.pk(analysisId);
     this.sk = AnkiKeys.derivedNoteSk(deckId, sourceNoteId);
-  }
-
-  @DynamoDbPartitionKey
-  public String getPk() {
-    return pk;
-  }
-
-  @DynamoDbSortKey
-  public String getSk() {
-    return sk;
   }
 }

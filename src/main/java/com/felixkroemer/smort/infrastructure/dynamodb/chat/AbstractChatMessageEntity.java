@@ -17,14 +17,24 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConve
 @AllArgsConstructor
 public abstract class AbstractChatMessageEntity {
 
-  private String response;
-  private String message;
-  private String responseId;
-  private Optional<String> previousResponseId;
-  private Instant createdAt;
+  private AbstractChatMessageEntityType type; // "TEXT" or "TOOL_CALL"
 
-  @DynamoDbConvertedBy(OptionalStringConverter.class)
-  public Optional<String> getPreviousResponseId() {
-    return previousResponseId;
-  }
+  @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalStringConverter.class))
+  private Optional<String> response; // only populated for TEXT
+
+  @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalStringConverter.class))
+  private Optional<String> callId; // only populated for TOOL_CALL
+
+  @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalStringConverter.class))
+  private Optional<String> toolName; // only populated for TOOL_CALL
+
+  @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalStringConverter.class))
+  private Optional<String> message;
+
+  private String responseId;
+
+  @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalStringConverter.class))
+  private Optional<String> previousResponseId;
+
+  private Instant createdAt;
 }
