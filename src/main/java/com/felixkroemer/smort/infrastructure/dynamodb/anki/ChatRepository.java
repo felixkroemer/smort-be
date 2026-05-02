@@ -1,5 +1,6 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.anki;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -35,13 +36,27 @@ public class ChatRepository {
     return table.query(request).items().stream().findFirst();
   }
 
+  public List<ChatMessageResponseEntity> findAll(UUID analysisId, Long deckId, Long sourceNoteId) {
+    QueryEnhancedRequest request =
+        QueryEnhancedRequest.builder()
+            .queryConditional(
+                QueryConditional.sortBeginsWith(
+                    Key.builder()
+                        .partitionValue(AnkiKeys.pk(analysisId))
+                        .sortValue(AnkiKeys.chatMessagePrefix(deckId, sourceNoteId))
+                        .build()))
+            .scanIndexForward(false)
+            .limit(1)
+            .build();
+
+    return table.query(request).items().stream().toList();
+  }
+
   public void save(ChatMessageResponseEntity chatMessage) {
     table.putItem(chatMessage);
   }
 
   public void saveInTransaction(ChatMessageResponseEntity first, ChatMessageResponseEntity second) {
-    enhancedClient.transactWriteItems(tx -> tx
-            .addPutItem(table, first)
-            .addPutItem(table, second));
+    enhancedClient.transactWriteItems(tx -> tx.addPutItem(table, first).addPutItem(table, second));
   }
 }

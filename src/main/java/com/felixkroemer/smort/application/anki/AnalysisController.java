@@ -96,16 +96,16 @@ public class AnalysisController {
       @PathVariable("deckId") Long deckId,
       @PathVariable("noteId") Long noteId,
       @RequestBody ChatMessageRequest chatMessageRequest) {
-    var chatMessageEntity =
+    var chatMessageResponses =
         noteAnalysisService.chat(analysisId, deckId, noteId, chatMessageRequest.message());
-    return chatMessageMapper.toDto(chatMessageEntity);
+    return chatMessageMapper.toDto(chatMessageResponses);
   }
 
-  /*  @GetMapping("/{analysisId}/notes/{deckId}/{noteId}/chat")
-  public List<ChatMessageResponse> getChat(
+  @GetMapping("/{analysisId}/notes/{deckId}/{noteId}/chat")
+  public List<ChatMessageResponseDTO> getChat(
       @PathVariable("analysisId") UUID analysisId,
       @PathVariable("deckId") Long deckId,
       @PathVariable("noteId") Long noteId) {
-    return null;
-  }*/
+    return chatMessageMapper.toDto(noteAnalysisService.getChat(analysisId, deckId, noteId));
+  }
 }

@@ -74,8 +74,6 @@ public class ChatService {
   static class StoreNoteTool {
     @JsonPropertyDescription("The notes fields.")
     public List<String> fields;
-
-    public void execute() {}
   }
 
   public ChatMessageResponse acknowledgeStoreNoteToolCall(

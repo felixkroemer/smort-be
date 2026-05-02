@@ -1,6 +1,7 @@
 package com.felixkroemer.smort.domain.anki;
 
 import com.felixkroemer.smort.common.exception.SmortException;
+import com.felixkroemer.smort.domain.note.ChatMessageResponseMeta;
 import com.felixkroemer.smort.domain.note.ChatMessageTextResponse;
 import com.felixkroemer.smort.domain.note.ChatService;
 import com.felixkroemer.smort.domain.note.StoreNoteToolResponse;
@@ -86,6 +87,10 @@ public class NoteAnalysisService {
     }
   }
 
+  public List<ChatMessageResponseEntity> getChat(UUID analysisId, Long deckId, Long sourceNoteId) {
+    return chatRepository.findAll(analysisId, deckId, sourceNoteId);
+  }
+
   private @NonNull List<ChatMessageResponseEntity> handleStoreNoteToolResponse(
       UUID analysisId,
       Long deckId,
@@ -103,12 +108,10 @@ public class NoteAnalysisService {
             latestChatMessageResponseId,
             r.callId(),
             r.toolName());
+    var derivedNote = new DerivedNoteEntity(analysisId, deckId, sourceNoteId, r.fields());
+    derivedNoteRepository.save(derivedNote); // TODO: add to save tx
     var ackResponse = chatService.acknowledgeStoreNoteToolCall(r.callId(), r.meta().responseId());
-    if (ackResponse
-        instanceof
-        ChatMessageTextResponse(
-            String text,
-            com.felixkroemer.smort.domain.note.ChatMessageResponseMeta meta)) {
+    if (ackResponse instanceof ChatMessageTextResponse(String text, ChatMessageResponseMeta meta)) {
       var chatMessageEntity =
           ChatMessageResponseEntity.text(
               analysisId,
