@@ -11,20 +11,24 @@ public final class AnkiKeys {
     return "ANALYSIS#" + analysisId;
   }
 
-  public static String deckPrefix(Long deckId) {
-    return "DECK#" + deckId;
+  public static String derivedNoteSk(Long deckId, Long sourceNoteId) {
+    return "NOTE#" + deckId + "#" + sourceNoteId;
   }
 
-  public static String derivedNoteSk(Long deckId, Long sourceNoteId) {
-    return "DECK#" + deckId + "#NOTE#" + sourceNoteId;
+  public static String derivedNotePrefix(Long deckId) {
+    return "NOTE#" + deckId;
+  }
+
+  public static String allDerivedNotesPrefix() {
+    return "NOTE";
   }
 
   public static String chatMessageSk(
       Long deckId, Long sourceNoteId, Instant createdAt, String responseId) {
-    return "DECK#" + deckId + "#NOTE#" + sourceNoteId + "#CHAT#" + createdAt + "#" + responseId;
+    return "CHAT#" + deckId + "#" + sourceNoteId + "#" + createdAt + "#" + responseId;
   }
 
   public static String chatMessagePrefix(Long deckId, Long sourceNoteId) {
-    return "DECK#" + deckId + "#NOTE#" + sourceNoteId + "#CHAT#";
+    return "CHAT#" + deckId + "#" + sourceNoteId;
   }
 }

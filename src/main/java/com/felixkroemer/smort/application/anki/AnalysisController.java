@@ -5,10 +5,14 @@ import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.AnalysisService;
 import com.felixkroemer.smort.domain.anki.NoteAnalysisService;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -41,12 +45,12 @@ public class AnalysisController {
   }
 
   @GetMapping("/{analysisId}/notes/{deckId}/{noteId}")
-  public NoteResponse getNote(
+  public SourceNoteResponse getNote(
       @PathVariable("analysisId") UUID analysisId,
       @PathVariable("deckId") Long deckId,
       @PathVariable("noteId") Long noteId) {
     var note = noteAnalysisService.getNote(analysisId, deckId, noteId);
-    return noteMapper.toNoteResponseDto(note);
+    return noteMapper.toSourceNoteResponseDto(note);
   }
 
   @GetMapping("/{analysisId}/decks")
@@ -56,38 +60,72 @@ public class AnalysisController {
   }
 
   @GetMapping("/{analysisId}/notes/{deckId}")
-  public List<NoteResponse> getNotes(
+  public List<SourceNoteResponse> getNotes(
       @PathVariable("analysisId") UUID analysisId, @PathVariable("deckId") Long deckId) {
     var notes = analysisService.getNotes(analysisId, deckId);
-    return noteMapper.toNoteResponseDto(notes);
+    return noteMapper.toSourceNoteResponseDto(notes);
   }
 
   @GetMapping("/{analysisId}/notes/{deckId}/{noteId}/derivedNote")
-  public NoteResponse getDerivedNote(
+  public DerivedNoteResponse getDerivedNote(
       @PathVariable("analysisId") UUID analysisId,
       @PathVariable("deckId") Long deckId,
       @PathVariable("noteId") Long noteId) {
-    return noteAnalysisService
-        .getDerivedNote(analysisId, deckId, noteId)
-        .map(noteMapper::toNoteResponseDto)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    return noteMapper.toDerivedNoteResponseDto(
+        noteAnalysisService
+            .getDerivedNote(analysisId, deckId, noteId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)));
   }
 
   @GetMapping("/{analysisId}/notes/{deckId}/derivedNotes")
-  public List<NoteResponse> getDerivedNotes(
+  public List<DerivedNoteResponse> getDerivedNotes(
       @PathVariable("analysisId") UUID analysisId, @PathVariable("deckId") Long deckId) {
     return analysisService.getDerivedNotes(analysisId, deckId).stream()
-        .map(noteMapper::toNoteResponseDto)
+        .map(noteMapper::toDerivedNoteResponseDto)
         .toList();
   }
 
+  @GetMapping("/{analysisId}/notes/derivedNotes/export")
+  public ResponseEntity<byte[]> createDerivedNotesExport(
+      @PathVariable("analysisId") UUID analysisId) {
+
+    var derivedNotes = analysisService.getAllDerivedNotes(analysisId);
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("#separator:tab\n");
+    sb.append("#html:false\n");
+    sb.append("#guid column:1\n");
+
+    for (var derivedNoteExportEntry : derivedNotes) {
+      sb.append(derivedNoteExportEntry.guid());
+      sb.append("\t");
+      sb.append(
+          String.join(
+              "\t",
+              derivedNoteExportEntry.derivedNote().getFlds().stream()
+                  .map(fld -> fld.replace("\"", "\"\""))
+                  .map(fld -> "\"" + fld + "\"")
+                  .toList()));
+      sb.append("\n");
+    }
+
+    var content = sb.toString().getBytes(StandardCharsets.UTF_8);
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.parseMediaType("text/csv"));
+    headers.setContentDispositionFormData("attachment", "export.csv");
+    headers.setContentLength(content.length);
+
+    return new ResponseEntity<>(content, headers, HttpStatus.OK);
+  }
+
   @PatchMapping("/{analysisId}/notes/{deckId}/{noteId}/format")
-  public NoteResponse formatNote(
+  public DerivedNoteResponse formatNote(
       @PathVariable("analysisId") UUID analysisId,
       @PathVariable("deckId") Long deckId,
       @PathVariable("noteId") Long noteId) {
     var derivedNote = noteAnalysisService.formatNote(analysisId, deckId, noteId);
-    return noteMapper.toNoteResponseDto(derivedNote);
+    return noteMapper.toDerivedNoteResponseDto(derivedNote);
   }
 
   @PostMapping("/{analysisId}/notes/{deckId}/{noteId}/chat")

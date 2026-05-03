@@ -16,12 +16,27 @@ public class DerivedNoteRepository {
 
   private final DynamoDbTable<DerivedNoteEntity> table;
 
+  public List<DerivedNoteEntity> findAll(UUID analysisId) {
+    QueryConditional condition =
+        QueryConditional.sortBeginsWith(
+            Key.builder()
+                .partitionValue(AnkiKeys.pk(analysisId))
+                .sortValue(AnkiKeys.allDerivedNotesPrefix())
+                .build());
+
+    return table
+        .query(QueryEnhancedRequest.builder().queryConditional(condition).build())
+        .items()
+        .stream()
+        .toList();
+  }
+
   public List<DerivedNoteEntity> findAllByDeckId(UUID analysisId, Long deckId) {
     QueryConditional condition =
         QueryConditional.sortBeginsWith(
             Key.builder()
                 .partitionValue(AnkiKeys.pk(analysisId))
-                .sortValue(AnkiKeys.deckPrefix(deckId))
+                .sortValue(AnkiKeys.derivedNotePrefix(deckId))
                 .build());
 
     return table

@@ -3,20 +3,22 @@ package com.felixkroemer.smort.domain.anki;
 import com.felixkroemer.smort.common.config.SmortProperties;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.common.util.TransactionUtil;
+import com.felixkroemer.smort.domain.note.DerivedNoteExportEntry;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteRepository;
-import com.felixkroemer.smort.infrastructure.postgres.anki.AnalysisRepository;
 import com.felixkroemer.smort.infrastructure.postgres.anki.AnalysisEntity;
+import com.felixkroemer.smort.infrastructure.postgres.anki.AnalysisRepository;
 import com.felixkroemer.smort.infrastructure.postgres.anki.AnalysisStatus;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.DeckEntity;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.NoteEntity;
+import com.felixkroemer.smort.infrastructure.sqlite.anki.NoteEntityGuidProjection;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.NoteRepository;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.UUID;
-
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -37,8 +39,7 @@ public class AnalysisService {
   public UUID createAnalysis() {
     var analysis = new AnalysisEntity(AnalysisStatus.NEW);
     analysisRepository.save(analysis);
-    TransactionUtil.afterCommit(
-        () -> log.info("Started new analysis. id={}", analysis.getId()));
+    TransactionUtil.afterCommit(() -> log.info("Started new analysis. id={}", analysis.getId()));
     return analysis.getId();
   }
 
@@ -59,9 +60,7 @@ public class AnalysisService {
 
     if (analysis.getStatus() != AnalysisStatus.NEW) {
       throw new SmortException(
-          "Analysis is not in NEW state. id={}, status={}",
-          analysisId,
-          analysis.getStatus());
+          "Analysis is not in NEW state. id={}, status={}", analysisId, analysis.getStatus());
     }
 
     var dbPath = smortProperties.getAnkiDbDirectory().resolve(analysisId.toString());
@@ -105,5 +104,20 @@ public class AnalysisService {
 
   public List<DerivedNoteEntity> getDerivedNotes(UUID analysisId, Long deckId) {
     return derivedNoteRepository.findAllByDeckId(analysisId, deckId);
+  }
+
+  public List<DerivedNoteExportEntry> getAllDerivedNotes(UUID analysisId) {
+    var derivedNotes = derivedNoteRepository.findAll(analysisId);
+
+    var derivedNoteIds =
+        derivedNotes.stream().map(DerivedNoteEntity::getSourceNoteId).collect(Collectors.toSet());
+    var guidByNoteId =
+        noteRepository.findNotesByIdIn(analysisId, derivedNoteIds).stream()
+            .collect(
+                Collectors.toMap(NoteEntityGuidProjection::id, NoteEntityGuidProjection::guid));
+
+    return derivedNotes.stream()
+        .map(d -> new DerivedNoteExportEntry(guidByNoteId.get(d.getSourceNoteId()), d))
+        .toList();
   }
 }

@@ -1,6 +1,7 @@
 package com.felixkroemer.smort.infrastructure.sqlite.anki;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,13 +27,23 @@ public class NoteRepository {
         .getResultList();
   }
 
-  public NoteEntity findById(UUID analysisId, Long sourceNoteId) {
+  public NoteEntity findNotesById(UUID analysisId, Long sourceNoteId) {
+    var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
+    return entityManager
+        .createQuery("SELECT n FROM NoteEntity n WHERE n.id = :sourceNoteId", NoteEntity.class)
+        .setParameter("sourceNoteId", sourceNoteId)
+        .getSingleResult();
+  }
+
+  public List<NoteEntityGuidProjection> findNotesByIdIn(UUID analysisId, Set<Long> ids) {
     var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
     return entityManager
         .createQuery(
-            "SELECT n FROM NoteEntity n WHERE n.id = :sourceNoteId", NoteEntity.class)
-        .setParameter("sourceNoteId", sourceNoteId)
-        .getSingleResult();
+            "SELECT new  com.felixkroemer.smort.infrastructure.sqlite.anki.NoteEntityGuidProjection(n.id, n.guid) "
+                + "FROM NoteEntity n WHERE n.id IN :ids",
+            NoteEntityGuidProjection.class)
+        .setParameter("ids", ids)
+        .getResultList();
   }
 
   public List<DeckEntity> findAllDecks(UUID analysisId) {

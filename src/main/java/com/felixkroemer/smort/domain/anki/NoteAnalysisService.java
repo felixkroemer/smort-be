@@ -28,7 +28,7 @@ public class NoteAnalysisService {
   private final ChatRepository chatRepository;
 
   public NoteEntity getNote(UUID analysisId, Long deckId, Long sourceNoteId) {
-    return noteRepository.findById(analysisId, sourceNoteId);
+    return noteRepository.findNotesById(analysisId, sourceNoteId);
   }
 
   public Optional<DerivedNoteEntity> getDerivedNote(
@@ -41,7 +41,7 @@ public class NoteAnalysisService {
         .map(DerivedNoteEntity::getFlds)
         .orElseGet(
             () -> {
-              var sourceNote = noteRepository.findById(analysisId, sourceNoteId);
+              var sourceNote = noteRepository.findNotesById(analysisId, sourceNoteId);
               return sourceNote.getFlds();
             });
   }

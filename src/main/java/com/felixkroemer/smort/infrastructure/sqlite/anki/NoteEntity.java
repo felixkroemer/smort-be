@@ -23,4 +23,6 @@ public class NoteEntity {
   @Convert(converter = FldsConverter.class)
   @Column(name = "flds")
   private List<String> flds;
+
+  private String guid;
 }
