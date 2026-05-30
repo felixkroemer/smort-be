@@ -26,12 +26,12 @@ public class ChatMessageResponseEntity extends AbstractChatMessageEntity {
 
   private UUID analysisId;
   private Long deckId;
-  private Long sourceNoteId;
+  private Long noteId;
 
   public ChatMessageResponseEntity(
       UUID analysisId,
       Long deckId,
-      Long sourceNoteId,
+      Long noteId,
       Optional<String> message,
       String responseId,
       Optional<String> previousResponseId,
@@ -43,15 +43,15 @@ public class ChatMessageResponseEntity extends AbstractChatMessageEntity {
     super(type, response, callId, toolName, message, responseId, previousResponseId, createdAt);
     this.analysisId = analysisId;
     this.deckId = deckId;
-    this.sourceNoteId = sourceNoteId;
+    this.noteId = noteId;
     this.pk = AnkiKeys.pk(analysisId);
-    this.sk = AnkiKeys.chatMessageSk(deckId, sourceNoteId, createdAt, responseId);
+    this.sk = AnkiKeys.chatMessageSk(deckId, noteId, createdAt, responseId);
   }
 
   public static ChatMessageResponseEntity text(
       UUID analysisId,
       Long deckId,
-      Long sourceNoteId,
+      Long noteId,
       Optional<String> message,
       String responseId,
       Optional<String> previousResponseId,
@@ -59,7 +59,7 @@ public class ChatMessageResponseEntity extends AbstractChatMessageEntity {
     return new ChatMessageResponseEntity(
         analysisId,
         deckId,
-        sourceNoteId,
+        noteId,
         message,
         responseId,
         previousResponseId,
@@ -73,7 +73,7 @@ public class ChatMessageResponseEntity extends AbstractChatMessageEntity {
   public static ChatMessageResponseEntity toolCall(
       UUID analysisId,
       Long deckId,
-      Long sourceNoteId,
+      Long noteId,
       String message,
       String responseId,
       Optional<String> previousResponseId,
@@ -82,7 +82,7 @@ public class ChatMessageResponseEntity extends AbstractChatMessageEntity {
     return new ChatMessageResponseEntity(
         analysisId,
         deckId,
-        sourceNoteId,
+        noteId,
         Optional.of(message),
         responseId,
         previousResponseId,

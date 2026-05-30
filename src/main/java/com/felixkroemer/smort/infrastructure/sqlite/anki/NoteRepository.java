@@ -27,11 +27,11 @@ public class NoteRepository {
         .getResultList();
   }
 
-  public NoteEntity findNotesById(UUID analysisId, Long sourceNoteId) {
+  public NoteEntity findNotesById(UUID analysisId, Long noteId) {
     var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
     return entityManager
-        .createQuery("SELECT n FROM NoteEntity n WHERE n.id = :sourceNoteId", NoteEntity.class)
-        .setParameter("sourceNoteId", sourceNoteId)
+        .createQuery("SELECT n FROM NoteEntity n WHERE n.id = :noteId", NoteEntity.class)
+        .setParameter("noteId", noteId)
         .getSingleResult();
   }
 

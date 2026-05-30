@@ -1,6 +1,5 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.anki;
 
-import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -23,17 +22,17 @@ public class DerivedNoteEntity {
 
   private UUID analysisId;
   private Long deckId;
-  private Long sourceNoteId;
+  private Long noteId;
   private String front;
   private String back;
 
-  public DerivedNoteEntity(UUID analysisId, Long deckId, Long sourceNoteId, String front, String back) {
+  public DerivedNoteEntity(UUID analysisId, Long deckId, Long noteId, String front, String back) {
     this.analysisId = analysisId;
     this.deckId = deckId;
-    this.sourceNoteId = sourceNoteId;
+    this.noteId = noteId;
     this.front = front;
     this.back = back;
     this.pk = AnkiKeys.pk(analysisId);
-    this.sk = AnkiKeys.derivedNoteSk(deckId, sourceNoteId);
+    this.sk = AnkiKeys.derivedNoteSk(deckId, noteId);
   }
 }

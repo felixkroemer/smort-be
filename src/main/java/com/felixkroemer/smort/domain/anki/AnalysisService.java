@@ -122,13 +122,13 @@ public class AnalysisService {
   public Map<DerivedNoteEntity, String> getDerivedNoteToGuidMapping(
       UUID analysisId, List<DerivedNoteEntity> derivedNotes) {
     var derivedNoteIds =
-        derivedNotes.stream().map(DerivedNoteEntity::getSourceNoteId).collect(Collectors.toSet());
+        derivedNotes.stream().map(DerivedNoteEntity::getNoteId).collect(Collectors.toSet());
     var guidByNoteId =
         noteRepository.findNotesByIdIn(analysisId, derivedNoteIds).stream()
             .collect(Collectors.toMap(NoteEntity::getId, NoteEntity::getGuid));
 
     return derivedNotes.stream()
-        .collect(Collectors.toMap(Function.identity(), d -> guidByNoteId.get(d.getSourceNoteId())));
+        .collect(Collectors.toMap(Function.identity(), d -> guidByNoteId.get(d.getNoteId())));
   }
 
   public List<DerivedNoteEntity> getAllDerivedNotes(UUID analysisId) {

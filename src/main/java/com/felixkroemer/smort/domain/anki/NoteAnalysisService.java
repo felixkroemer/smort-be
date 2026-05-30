@@ -30,82 +30,79 @@ public class NoteAnalysisService {
   private final NoteTypeService noteTypeService;
   private final ChatRepository chatRepository;
 
-  public Note getNote(UUID analysisId, Long deckId, Long sourceNoteId) {
-    var note = noteRepository.findNotesById(analysisId, sourceNoteId);
+  public Note getNote(UUID analysisId, Long deckId, Long noteId) {
+    var note = noteRepository.findNotesById(analysisId, noteId);
     var noteTypes = noteTypeService.getNoteTypes(analysisId);
     var noteType = noteTypes.get(note.getNoteTypeId());
     var noteTypeFieldNames = noteType.getFields();
     var fields =
-            IntStream.range(0, noteTypeFieldNames.size())
-                    .boxed()
-                    .collect(Collectors.toMap(noteTypeFieldNames::get, note.getFlds()::get));
+        IntStream.range(0, noteTypeFieldNames.size())
+            .boxed()
+            .collect(Collectors.toMap(noteTypeFieldNames::get, note.getFlds()::get));
     return new Note(note.getId(), note.getCards(), fields, note.getGuid());
   }
 
-  public Optional<DerivedNoteEntity> getDerivedNote(
-      UUID analysisId, Long deckId, Long sourceNoteId) {
-    return derivedNoteRepository.findBySourceNoteId(analysisId, deckId, sourceNoteId);
+  public Optional<DerivedNoteEntity> getDerivedNote(UUID analysisId, Long deckId, Long noteId) {
+    return derivedNoteRepository.findByNoteId(analysisId, deckId, noteId);
   }
 
-  public Map<String, String> getContent(UUID analysisId, Long deckId, Long sourceNoteId) {
-    return getDerivedNote(analysisId, deckId, sourceNoteId)
-        .map(derivedNote ->  Map.of("front", derivedNote.getFront(), "back", derivedNote.getBack()))
+  public Map<String, String> getContent(UUID analysisId, Long deckId, Long noteId) {
+    return getDerivedNote(analysisId, deckId, noteId)
+        .map(derivedNote -> Map.of("front", derivedNote.getFront(), "back", derivedNote.getBack()))
         .orElseGet(
             () -> {
-              var note = this.getNote(analysisId, deckId, sourceNoteId);
+              var note = this.getNote(analysisId, deckId, noteId);
               return note.getFlds();
             });
   }
 
-  public DerivedNoteEntity formatNote(UUID analysisId, Long deckId, Long sourceNoteId) {
-    var content = getContent(analysisId, deckId, sourceNoteId);
+  public DerivedNoteEntity formatNote(UUID analysisId, Long deckId, Long noteId) {
+    var content = getContent(analysisId, deckId, noteId);
     var noteK = chatService.formatNote(content);
 
     var derivedNote =
-        getDerivedNote(analysisId, deckId, sourceNoteId)
+        getDerivedNote(analysisId, deckId, noteId)
             .orElseGet(
-                () -> new DerivedNoteEntity(analysisId, deckId, sourceNoteId, noteK.getFront(), noteK.getBack()));
+                () ->
+                    new DerivedNoteEntity(
+                        analysisId, deckId, noteId, noteK.getFront(), noteK.getBack()));
     derivedNoteRepository.save(derivedNote);
 
-    log.info(
-        "Formatted note. analysisId={}, deckId={}, sourceNoteId={}",
-        analysisId,
-        deckId,
-        sourceNoteId);
+    log.info("Formatted note. analysisId={}, deckId={}, noteId={}", analysisId, deckId, noteId);
 
     return derivedNote;
   }
 
   public List<ChatMessageResponseEntity> chat(
-      UUID analysisId, Long deckId, Long sourceNoteId, String message) {
+      UUID analysisId, Long deckId, Long noteId, String message) {
 
-    var latestChatMessage = chatRepository.findLatestChatMessage(analysisId, deckId, sourceNoteId);
+    var latestChatMessage = chatRepository.findLatestChatMessage(analysisId, deckId, noteId);
     var latestChatMessageResponseId =
         latestChatMessage.map(AbstractChatMessageEntity::getResponseId);
 
-    var content = getContent(analysisId, deckId, sourceNoteId);
+    var content = getContent(analysisId, deckId, noteId);
     var chatMessageResponse = chatService.chat(content, message, latestChatMessageResponseId);
 
     switch (chatMessageResponse) {
       case ChatMessageTextResponse r -> {
         return handleChatMessageTextResponse(
-            analysisId, deckId, sourceNoteId, message, r, latestChatMessageResponseId);
+            analysisId, deckId, noteId, message, r, latestChatMessageResponseId);
       }
       case StoreNoteToolResponse r -> {
         return handleStoreNoteToolResponse(
-            analysisId, deckId, sourceNoteId, message, r, latestChatMessageResponseId);
+            analysisId, deckId, noteId, message, r, latestChatMessageResponseId);
       }
     }
   }
 
-  public List<ChatMessageResponseEntity> getChat(UUID analysisId, Long deckId, Long sourceNoteId) {
-    return chatRepository.findAll(analysisId, deckId, sourceNoteId);
+  public List<ChatMessageResponseEntity> getChat(UUID analysisId, Long deckId, Long noteId) {
+    return chatRepository.findAll(analysisId, deckId, noteId);
   }
 
   private @NonNull List<ChatMessageResponseEntity> handleStoreNoteToolResponse(
       UUID analysisId,
       Long deckId,
-      Long sourceNoteId,
+      Long noteId,
       String message,
       StoreNoteToolResponse r,
       Optional<String> latestChatMessageResponseId) {
@@ -113,13 +110,13 @@ public class NoteAnalysisService {
         ChatMessageResponseEntity.toolCall(
             analysisId,
             deckId,
-            sourceNoteId,
+            noteId,
             message,
             r.meta().responseId(),
             latestChatMessageResponseId,
             r.callId(),
             r.toolName());
-    var derivedNote = new DerivedNoteEntity(analysisId, deckId, sourceNoteId, r.front(), r.back());
+    var derivedNote = new DerivedNoteEntity(analysisId, deckId, noteId, r.front(), r.back());
     derivedNoteRepository.save(derivedNote); // TODO: add to save tx
     var ackResponse = chatService.acknowledgeStoreNoteToolCall(r.callId(), r.meta().responseId());
     if (ackResponse instanceof ChatMessageTextResponse(String text, ChatMessageResponseMeta meta)) {
@@ -127,7 +124,7 @@ public class NoteAnalysisService {
           ChatMessageResponseEntity.text(
               analysisId,
               deckId,
-              sourceNoteId,
+              noteId,
               Optional.empty(),
               meta.responseId(),
               latestChatMessageResponseId,
@@ -142,7 +139,7 @@ public class NoteAnalysisService {
   private @NonNull List<ChatMessageResponseEntity> handleChatMessageTextResponse(
       UUID analysisId,
       Long deckId,
-      Long sourceNoteId,
+      Long noteId,
       String message,
       ChatMessageTextResponse r,
       Optional<String> latestChatMessageResponseId) {
@@ -150,7 +147,7 @@ public class NoteAnalysisService {
         ChatMessageResponseEntity.text(
             analysisId,
             deckId,
-            sourceNoteId,
+            noteId,
             Optional.of(message),
             r.meta().responseId(),
             latestChatMessageResponseId,

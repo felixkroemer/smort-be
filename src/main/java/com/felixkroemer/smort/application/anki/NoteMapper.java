@@ -16,7 +16,7 @@ public interface NoteMapper {
 
   List<DerivedNoteResponse> toDerivedNoteResponseDto(List<DerivedNoteEntity> entities);
 
-  @Mapping(source = "sourceNoteId", target = "id")
+  @Mapping(source = "noteId", target = "id")
   DerivedNoteResponse toDerivedNoteResponseDto(DerivedNoteEntity derivedNoteEntity);
 
   List<NoteResponse> toNoteResponseDto(List<Note> entity);

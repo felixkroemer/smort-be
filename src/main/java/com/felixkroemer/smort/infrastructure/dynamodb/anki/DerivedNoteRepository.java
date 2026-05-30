@@ -46,12 +46,11 @@ public class DerivedNoteRepository {
         .toList();
   }
 
-  public Optional<DerivedNoteEntity> findBySourceNoteId(
-      UUID analysisId, Long deckId, Long sourceNoteId) {
+  public Optional<DerivedNoteEntity> findByNoteId(UUID analysisId, Long deckId, Long noteId) {
     Key key =
         Key.builder()
             .partitionValue(AnkiKeys.pk(analysisId))
-            .sortValue(AnkiKeys.derivedNoteSk(deckId, sourceNoteId))
+            .sortValue(AnkiKeys.derivedNoteSk(deckId, noteId))
             .build();
 
     return Optional.ofNullable(table.getItem(key));
