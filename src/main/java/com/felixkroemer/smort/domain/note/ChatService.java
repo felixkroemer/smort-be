@@ -1,14 +1,15 @@
 package com.felixkroemer.smort.domain.note;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.openai.client.OpenAIClient;
 import com.openai.models.responses.*;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -20,23 +21,33 @@ public class ChatService {
   @Value("${openai.model}")
   private String model;
 
-  public static class NotesList {
-    public List<String> notes;
+  @Getter
+  public static class NoteSchema {
+    public String front;
+    public String back;
   }
 
   private final String FORMATTING_INSTRUCTION =
       """
-      Your task is to format each input field individually without changing its content.
-      The number of input fields must equal the number of output fields.
-      Disregard any format that the field may already be in (e.g. HTML). Consider only its content.
-      Format according to the following rules:
-      %s
+          You receive an Anki note as a list of fields, each with a title and content.
+          Your task is to produce exactly two output fields: "front" and "back".
+
+          Mapping rules:
+          - Identify the single field that clearly represents the main question or term (e.g. titled "Front", "Question", "Term", or similar). Map it to "front".
+          - Concatenate all remaining fields into "back". When concatenating multiple fields, separate them using their titles to distinguish them.
+
+          When processing each field, consider only its content and intended meaning — disregard any existing formatting entirely.
+
+          Formatting rules (apply to both fields):
+          %s
       """;
 
   private final String FORMATTING_RULES =
       """
-      Format as markdown.
-      Fix any obvious spelling/punctuation mistakes as long as the intended meaning remains the same.
+          Output must be plain markdown. Never output HTML tags — not even a single one.
+          Convert all HTML in the input to its markdown equivalent before outputting (e.g. <strong> → **, <ul>/<li> → - lists, <code> → `code`).
+          When separating concatenated fields, use markdown headings (e.g. ## Definition, ## Example).
+          Fix any obvious spelling and punctuation mistakes as long as the intended meaning remains unchanged.
       """;
 
   private final String CHAT_INSTRUCTIONS =
@@ -44,18 +55,21 @@ public class ChatService {
       Your task is to assist the user in fact-checking, learning about, and improving the anki note provided in the form of its fields.
       When you are asked to edit one or multiple fields in any way, use the tool for updating notes.
       Then acknowledge with a short summary.
+
+      For the formatting, consider these rules:
+      %s
       """;
 
   private final OpenAIClient openAIClient;
   private final ObjectMapper mapper;
 
-  public List<String> formatNote(List<String> fields) {
+  public NoteSchema formatNote(Map<String, String> fields) {
     try {
-      StructuredResponseCreateParams<NotesList> params =
+      StructuredResponseCreateParams<NoteSchema> params =
           ResponseCreateParams.builder()
               .instructions(FORMATTING_INSTRUCTION.formatted(FORMATTING_RULES))
               .input(mapper.writeValueAsString(fields))
-              .text(NotesList.class)
+              .text(NoteSchema.class)
               .model(model)
               .build();
 
@@ -63,8 +77,8 @@ public class ChatService {
           .flatMap(item -> item.message().stream())
           .flatMap(message -> message.content().stream())
           .flatMap(content -> content.outputText().stream())
-          .flatMap(notesList -> notesList.notes.stream())
-          .toList();
+          .findFirst()
+          .orElseThrow();
     } catch (Exception e) {
       throw new SmortException("Could not format note", e);
     }
@@ -72,15 +86,16 @@ public class ChatService {
 
   @JsonClassDescription("Store a updated note.")
   static class StoreNoteTool {
-    @JsonPropertyDescription("The notes fields.")
-    public List<String> fields;
+    public String front;
+    public String back;
   }
 
   public ChatMessageResponse acknowledgeStoreNoteToolCall(
       String callId, String previousResponseId) {
     ResponseCreateParams params =
         ResponseCreateParams.builder()
-            .instructions(CHAT_INSTRUCTIONS)
+            .instructions(
+                CHAT_INSTRUCTIONS.formatted(FORMATTING_INSTRUCTION.formatted(FORMATTING_RULES)))
             .input(
                 ResponseCreateParams.Input.ofResponse(
                     List.of(
@@ -111,12 +126,19 @@ public class ChatService {
   }
 
   public ChatMessageResponse chat(
-      List<String> fields, String message, Optional<String> previousResponseId) {
-    String fullInput = "Fields:\n" + String.join("\n", fields) + "\n\n" + message;
+      Map<String, String> fields, String message, Optional<String> previousResponseId) {
+    String fullInput =
+        "Fields:\n"
+            + String.join(
+                "\n",
+                fields.entrySet().stream().map(e -> e.getKey() + ": " + e.getValue()).toList())
+            + "\n\n"
+            + message;
 
     ResponseCreateParams params =
         ResponseCreateParams.builder()
-            .instructions(CHAT_INSTRUCTIONS)
+            .instructions(
+                CHAT_INSTRUCTIONS.formatted(FORMATTING_INSTRUCTION.formatted(FORMATTING_RULES)))
             .input(fullInput)
             .previousResponseId(previousResponseId)
             .model(model)
@@ -143,7 +165,8 @@ public class ChatService {
       return new StoreNoteToolResponse(
           StoreNoteTool.class.getName(),
           responseFunctionToolCall.callId(),
-          storeNoteToolCall.fields,
+          storeNoteToolCall.front,
+          storeNoteToolCall.back,
           meta);
     } else if (responseOutputItem.isMessage()) {
       ResponseOutputText outputText = getResponseOutputText(responseOutputItem.asMessage());

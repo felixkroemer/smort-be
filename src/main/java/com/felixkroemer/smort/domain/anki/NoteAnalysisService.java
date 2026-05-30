@@ -7,11 +7,13 @@ import com.felixkroemer.smort.domain.note.ChatService;
 import com.felixkroemer.smort.domain.note.StoreNoteToolResponse;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.AbstractChatMessageEntity;
-import com.felixkroemer.smort.infrastructure.sqlite.anki.NoteEntity;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.NoteRepository;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
@@ -25,10 +27,19 @@ public class NoteAnalysisService {
   private final NoteRepository noteRepository;
   private final DerivedNoteRepository derivedNoteRepository;
   private final ChatService chatService;
+  private final NoteTypeService noteTypeService;
   private final ChatRepository chatRepository;
 
-  public NoteEntity getNote(UUID analysisId, Long deckId, Long sourceNoteId) {
-    return noteRepository.findNotesById(analysisId, sourceNoteId);
+  public Note getNote(UUID analysisId, Long deckId, Long sourceNoteId) {
+    var note = noteRepository.findNotesById(analysisId, sourceNoteId);
+    var noteTypes = noteTypeService.getNoteTypes(analysisId);
+    var noteType = noteTypes.get(note.getNoteTypeId());
+    var noteTypeFieldNames = noteType.getFields();
+    var fields =
+            IntStream.range(0, noteTypeFieldNames.size())
+                    .boxed()
+                    .collect(Collectors.toMap(noteTypeFieldNames::get, note.getFlds()::get));
+    return new Note(note.getId(), note.getCards(), fields, note.getGuid());
   }
 
   public Optional<DerivedNoteEntity> getDerivedNote(
@@ -36,24 +47,24 @@ public class NoteAnalysisService {
     return derivedNoteRepository.findBySourceNoteId(analysisId, deckId, sourceNoteId);
   }
 
-  public List<String> getContent(UUID analysisId, Long deckId, Long sourceNoteId) {
+  public Map<String, String> getContent(UUID analysisId, Long deckId, Long sourceNoteId) {
     return getDerivedNote(analysisId, deckId, sourceNoteId)
-        .map(DerivedNoteEntity::getFlds)
+        .map(derivedNote ->  Map.of("front", derivedNote.getFront(), "back", derivedNote.getBack()))
         .orElseGet(
             () -> {
-              var sourceNote = noteRepository.findNotesById(analysisId, sourceNoteId);
-              return sourceNote.getFlds();
+              var note = this.getNote(analysisId, deckId, sourceNoteId);
+              return note.getFlds();
             });
   }
 
   public DerivedNoteEntity formatNote(UUID analysisId, Long deckId, Long sourceNoteId) {
     var content = getContent(analysisId, deckId, sourceNoteId);
-    var formattedContent = chatService.formatNote(content);
+    var noteK = chatService.formatNote(content);
 
     var derivedNote =
         getDerivedNote(analysisId, deckId, sourceNoteId)
             .orElseGet(
-                () -> new DerivedNoteEntity(analysisId, deckId, sourceNoteId, formattedContent));
+                () -> new DerivedNoteEntity(analysisId, deckId, sourceNoteId, noteK.getFront(), noteK.getBack()));
     derivedNoteRepository.save(derivedNote);
 
     log.info(
@@ -108,7 +119,7 @@ public class NoteAnalysisService {
             latestChatMessageResponseId,
             r.callId(),
             r.toolName());
-    var derivedNote = new DerivedNoteEntity(analysisId, deckId, sourceNoteId, r.fields());
+    var derivedNote = new DerivedNoteEntity(analysisId, deckId, sourceNoteId, r.front(), r.back());
     derivedNoteRepository.save(derivedNote); // TODO: add to save tx
     var ackResponse = chatService.acknowledgeStoreNoteToolCall(r.callId(), r.meta().responseId());
     if (ackResponse instanceof ChatMessageTextResponse(String text, ChatMessageResponseMeta meta)) {

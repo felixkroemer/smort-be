@@ -35,13 +35,10 @@ public class NoteRepository {
         .getSingleResult();
   }
 
-  public List<NoteEntityGuidProjection> findNotesByIdIn(UUID analysisId, Set<Long> ids) {
+  public List<NoteEntity> findNotesByIdIn(UUID analysisId, Set<Long> ids) {
     var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
     return entityManager
-        .createQuery(
-            "SELECT new  com.felixkroemer.smort.infrastructure.sqlite.anki.NoteEntityGuidProjection(n.id, n.guid) "
-                + "FROM NoteEntity n WHERE n.id IN :ids",
-            NoteEntityGuidProjection.class)
+        .createQuery("SELECT n FROM NoteEntity n WHERE n.id IN :ids", NoteEntity.class)
         .setParameter("ids", ids)
         .getResultList();
   }
@@ -50,6 +47,17 @@ public class NoteRepository {
     var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
     return entityManager
         .createQuery("SELECT d FROM DeckEntity d", DeckEntity.class)
+        .getResultList();
+  }
+
+  public List<NoteTypeEntity> getNoteTypes(UUID analysisId) {
+    var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
+    return entityManager
+        .createQuery(
+            """
+                 SELECT nt FROM NoteTypeEntity nt
+             """,
+            NoteTypeEntity.class)
         .getResultList();
   }
 }

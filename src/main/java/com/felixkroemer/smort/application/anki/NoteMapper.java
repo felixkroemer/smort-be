@@ -2,10 +2,10 @@ package com.felixkroemer.smort.application.anki;
 
 import com.felixkroemer.smort.application.anki.dto.DeckResponse;
 import com.felixkroemer.smort.application.anki.dto.DerivedNoteResponse;
-import com.felixkroemer.smort.application.anki.dto.SourceNoteResponse;
+import com.felixkroemer.smort.application.anki.dto.NoteResponse;
+import com.felixkroemer.smort.domain.anki.Note;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.DeckEntity;
-import com.felixkroemer.smort.infrastructure.sqlite.anki.NoteEntity;
 import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -19,9 +19,9 @@ public interface NoteMapper {
   @Mapping(source = "sourceNoteId", target = "id")
   DerivedNoteResponse toDerivedNoteResponseDto(DerivedNoteEntity derivedNoteEntity);
 
-  List<SourceNoteResponse> toSourceNoteResponseDto(List<NoteEntity> entity);
+  List<NoteResponse> toNoteResponseDto(List<Note> entity);
 
-  SourceNoteResponse toSourceNoteResponseDto(NoteEntity entity);
+  NoteResponse toNoteResponseDto(Note entity);
 
   List<DeckResponse> toDeckResponseDto(List<DeckEntity> entities);
 

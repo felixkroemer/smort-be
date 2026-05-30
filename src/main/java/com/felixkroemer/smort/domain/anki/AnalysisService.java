@@ -3,22 +3,21 @@ package com.felixkroemer.smort.domain.anki;
 import com.felixkroemer.smort.common.config.SmortProperties;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.common.util.TransactionUtil;
-import com.felixkroemer.smort.domain.note.DerivedNoteExportEntry;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteRepository;
 import com.felixkroemer.smort.infrastructure.postgres.anki.AnalysisEntity;
 import com.felixkroemer.smort.infrastructure.postgres.anki.AnalysisRepository;
 import com.felixkroemer.smort.infrastructure.postgres.anki.AnalysisStatus;
-import com.felixkroemer.smort.infrastructure.sqlite.anki.DeckEntity;
-import com.felixkroemer.smort.infrastructure.sqlite.anki.NoteEntity;
-import com.felixkroemer.smort.infrastructure.sqlite.anki.NoteEntityGuidProjection;
-import com.felixkroemer.smort.infrastructure.sqlite.anki.NoteRepository;
+import com.felixkroemer.smort.infrastructure.sqlite.anki.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,6 +30,7 @@ public class AnalysisService {
 
   private final AnalysisRepository analysisRepository;
   private final NoteRepository noteRepository;
+  private final NoteTypeService noteTypeService;
   private final DerivedNoteRepository derivedNoteRepository;
 
   private final SmortProperties smortProperties;
@@ -94,8 +94,21 @@ public class AnalysisService {
                 bytes.length / 1024.0));
   }
 
-  public List<NoteEntity> getNotes(UUID analysisId, Long deckId) {
-    return noteRepository.findNotesByDeck(analysisId, deckId);
+  public List<Note> getNotes(UUID analysisId, Long deckId) {
+    var noteTypes = noteTypeService.getNoteTypes(analysisId);
+    var notes = noteRepository.findNotesByDeck(analysisId, deckId);
+    return notes.stream()
+        .map(
+            n -> {
+              var noteType = noteTypes.get(n.getNoteTypeId());
+              var noteTypeFieldNames = noteType.getFields();
+              var fields =
+                  IntStream.range(0, noteTypeFieldNames.size())
+                      .boxed()
+                      .collect(Collectors.toMap(noteTypeFieldNames::get, n.getFlds()::get));
+              return new Note(n.getId(), n.getCards(), fields, n.getGuid());
+            })
+        .toList();
   }
 
   public List<DeckEntity> getDecks(UUID analysisId) {
@@ -106,18 +119,19 @@ public class AnalysisService {
     return derivedNoteRepository.findAllByDeckId(analysisId, deckId);
   }
 
-  public List<DerivedNoteExportEntry> getAllDerivedNotes(UUID analysisId) {
-    var derivedNotes = derivedNoteRepository.findAll(analysisId);
-
+  public Map<DerivedNoteEntity, String> getDerivedNoteToGuidMapping(
+      UUID analysisId, List<DerivedNoteEntity> derivedNotes) {
     var derivedNoteIds =
         derivedNotes.stream().map(DerivedNoteEntity::getSourceNoteId).collect(Collectors.toSet());
     var guidByNoteId =
         noteRepository.findNotesByIdIn(analysisId, derivedNoteIds).stream()
-            .collect(
-                Collectors.toMap(NoteEntityGuidProjection::id, NoteEntityGuidProjection::guid));
+            .collect(Collectors.toMap(NoteEntity::getId, NoteEntity::getGuid));
 
     return derivedNotes.stream()
-        .map(d -> new DerivedNoteExportEntry(guidByNoteId.get(d.getSourceNoteId()), d))
-        .toList();
+        .collect(Collectors.toMap(Function.identity(), d -> guidByNoteId.get(d.getSourceNoteId())));
+  }
+
+  public List<DerivedNoteEntity> getAllDerivedNotes(UUID analysisId) {
+    return derivedNoteRepository.findAll(analysisId);
   }
 }

@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -45,12 +46,12 @@ public class AnalysisController {
   }
 
   @GetMapping("/{analysisId}/notes/{deckId}/{noteId}")
-  public SourceNoteResponse getNote(
+  public NoteResponse getNote(
       @PathVariable("analysisId") UUID analysisId,
       @PathVariable("deckId") Long deckId,
       @PathVariable("noteId") Long noteId) {
     var note = noteAnalysisService.getNote(analysisId, deckId, noteId);
-    return noteMapper.toSourceNoteResponseDto(note);
+    return noteMapper.toNoteResponseDto(note);
   }
 
   @GetMapping("/{analysisId}/decks")
@@ -60,10 +61,10 @@ public class AnalysisController {
   }
 
   @GetMapping("/{analysisId}/notes/{deckId}")
-  public List<SourceNoteResponse> getNotes(
+  public List<NoteResponse> getNotes(
       @PathVariable("analysisId") UUID analysisId, @PathVariable("deckId") Long deckId) {
     var notes = analysisService.getNotes(analysisId, deckId);
-    return noteMapper.toSourceNoteResponseDto(notes);
+    return noteMapper.toNoteResponseDto(notes);
   }
 
   @GetMapping("/{analysisId}/notes/{deckId}/{noteId}/derivedNote")
@@ -90,19 +91,21 @@ public class AnalysisController {
       @PathVariable("analysisId") UUID analysisId) {
 
     var derivedNotes = analysisService.getAllDerivedNotes(analysisId);
+    var derivedNotesGuidMapping =
+        analysisService.getDerivedNoteToGuidMapping(analysisId, derivedNotes);
 
     StringBuilder sb = new StringBuilder();
     sb.append("#separator:tab\n");
     sb.append("#html:false\n");
     sb.append("#guid column:1\n");
 
-    for (var derivedNoteExportEntry : derivedNotes) {
-      sb.append(derivedNoteExportEntry.guid());
+    for (var derivedNote : derivedNotes) {
+      sb.append(derivedNotesGuidMapping.get(derivedNote));
       sb.append("\t");
       sb.append(
           String.join(
               "\t",
-              derivedNoteExportEntry.derivedNote().getFlds().stream()
+              Stream.of(derivedNote.getBack())
                   .map(fld -> fld.replace("\"", "\"\""))
                   .map(fld -> "\"" + fld + "\"")
                   .toList()));
@@ -129,7 +132,7 @@ public class AnalysisController {
   }
 
   @PostMapping("/{analysisId}/notes/{deckId}/{noteId}/chat")
-  public List<ChatMessageResponseDTO> postChatMessage(
+  public List<ChatMessageResponse> postChatMessage(
       @PathVariable("analysisId") UUID analysisId,
       @PathVariable("deckId") Long deckId,
       @PathVariable("noteId") Long noteId,
@@ -140,7 +143,7 @@ public class AnalysisController {
   }
 
   @GetMapping("/{analysisId}/notes/{deckId}/{noteId}/chat")
-  public List<ChatMessageResponseDTO> getChat(
+  public List<ChatMessageResponse> getChat(
       @PathVariable("analysisId") UUID analysisId,
       @PathVariable("deckId") Long deckId,
       @PathVariable("noteId") Long noteId) {
