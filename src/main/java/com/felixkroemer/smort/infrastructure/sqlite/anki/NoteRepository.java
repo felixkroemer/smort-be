@@ -27,7 +27,7 @@ public class NoteRepository {
         .getResultList();
   }
 
-  public NoteEntity findNotesById(UUID analysisId, Long noteId) {
+  public NoteEntity findNoteById(UUID analysisId, Long noteId) {
     var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
     return entityManager
         .createQuery("SELECT n FROM NoteEntity n WHERE n.id = :noteId", NoteEntity.class)

@@ -14,6 +14,6 @@ public class FldsConverter implements AttributeConverter<List<String>, String> {
 
   @Override
   public List<String> convertToEntityAttribute(String value) {
-    return value == null ? List.of() : List.of(value.split("\u001f"));
+    return value == null ? List.of() : List.of(value.split("\u001f", -1));
   }
 }

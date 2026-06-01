@@ -49,7 +49,7 @@ public class EntityManagerFactoryCache {
             .orElseThrow(
                 () -> new SmortException("Could not find analysis by id. id={}", analysisId));
 
-    if (analysis.getStatus() != AnalysisStatus.READY) {
+    if (analysis.getStatus() == AnalysisStatus.NEW) {
       throw new SmortException("Analysis is not ready. id={}", analysisId);
     }
 

@@ -30,7 +30,6 @@ public class ChatMessageResponseEntity extends AbstractChatMessageEntity {
 
   public ChatMessageResponseEntity(
       UUID analysisId,
-      Long deckId,
       Long noteId,
       Optional<String> message,
       String responseId,
@@ -42,15 +41,13 @@ public class ChatMessageResponseEntity extends AbstractChatMessageEntity {
       Optional<String> toolName) {
     super(type, response, callId, toolName, message, responseId, previousResponseId, createdAt);
     this.analysisId = analysisId;
-    this.deckId = deckId;
     this.noteId = noteId;
     this.pk = AnkiKeys.pk(analysisId);
-    this.sk = AnkiKeys.chatMessageSk(deckId, noteId, createdAt, responseId);
+    this.sk = AnkiKeys.chatMessageSk(noteId, createdAt, responseId);
   }
 
   public static ChatMessageResponseEntity text(
       UUID analysisId,
-      Long deckId,
       Long noteId,
       Optional<String> message,
       String responseId,
@@ -58,7 +55,6 @@ public class ChatMessageResponseEntity extends AbstractChatMessageEntity {
       String text) {
     return new ChatMessageResponseEntity(
         analysisId,
-        deckId,
         noteId,
         message,
         responseId,
@@ -72,7 +68,6 @@ public class ChatMessageResponseEntity extends AbstractChatMessageEntity {
 
   public static ChatMessageResponseEntity toolCall(
       UUID analysisId,
-      Long deckId,
       Long noteId,
       String message,
       String responseId,
@@ -81,7 +76,6 @@ public class ChatMessageResponseEntity extends AbstractChatMessageEntity {
       String toolName) {
     return new ChatMessageResponseEntity(
         analysisId,
-        deckId,
         noteId,
         Optional.of(message),
         responseId,

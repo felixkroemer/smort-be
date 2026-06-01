@@ -21,18 +21,16 @@ public class DerivedNoteEntity {
   private String sk;
 
   private UUID analysisId;
-  private Long deckId;
   private Long noteId;
   private String front;
   private String back;
 
-  public DerivedNoteEntity(UUID analysisId, Long deckId, Long noteId, String front, String back) {
+  public DerivedNoteEntity(UUID analysisId, Long noteId, String front, String back) {
     this.analysisId = analysisId;
-    this.deckId = deckId;
     this.noteId = noteId;
     this.front = front;
     this.back = back;
     this.pk = AnkiKeys.pk(analysisId);
-    this.sk = AnkiKeys.derivedNoteSk(deckId, noteId);
+    this.sk = AnkiKeys.derivedNoteSk(noteId);
   }
 }

@@ -28,5 +28,5 @@ public class AuditEntity {
   @NonNull
   @Column(nullable = false)
   @LastModifiedDate
-  private Instant lastModifiedDate;
+  private Instant lastModifiedDateTime;
 }

@@ -13,6 +13,8 @@ import lombok.*;
 public class AnalysisEntity extends AuditEntity {
 
   String dbPath;
+  
+  Long deckId;
 
   @NonNull
   @Column(nullable = false)

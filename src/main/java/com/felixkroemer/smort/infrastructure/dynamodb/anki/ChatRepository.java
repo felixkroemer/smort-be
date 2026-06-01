@@ -19,7 +19,7 @@ public class ChatRepository {
   private final DynamoDbEnhancedClient enhancedClient;
 
   public Optional<ChatMessageResponseEntity> findLatestChatMessage(
-      UUID analysisId, Long deckId, Long noteId) {
+      UUID analysisId, Long noteId) {
 
     QueryEnhancedRequest request =
         QueryEnhancedRequest.builder()
@@ -27,7 +27,7 @@ public class ChatRepository {
                 QueryConditional.sortBeginsWith(
                     Key.builder()
                         .partitionValue(AnkiKeys.pk(analysisId))
-                        .sortValue(AnkiKeys.chatMessagePrefix(deckId, noteId))
+                        .sortValue(AnkiKeys.chatMessagePrefix(noteId))
                         .build()))
             .scanIndexForward(false)
             .limit(1)
@@ -36,14 +36,14 @@ public class ChatRepository {
     return table.query(request).items().stream().findFirst();
   }
 
-  public List<ChatMessageResponseEntity> findAll(UUID analysisId, Long deckId, Long noteId) {
+  public List<ChatMessageResponseEntity> findAll(UUID analysisId, Long noteId) {
     QueryEnhancedRequest request =
         QueryEnhancedRequest.builder()
             .queryConditional(
                 QueryConditional.sortBeginsWith(
                     Key.builder()
                         .partitionValue(AnkiKeys.pk(analysisId))
-                        .sortValue(AnkiKeys.chatMessagePrefix(deckId, noteId))
+                        .sortValue(AnkiKeys.chatMessagePrefix(noteId))
                         .build()))
             .scanIndexForward(false)
             .limit(1)

@@ -43,13 +43,19 @@ public class AnalysisService {
     return analysis.getId();
   }
 
+  public AnalysisEntity getAnalysis(UUID analysisId) {
+    return analysisRepository
+        .findById(analysisId)
+        .orElseThrow(() -> new SmortException("Could not find analysis by id. id={}", analysisId));
+  }
+  
+  public List<AnalysisEntity> getAnalyses() {
+    return analysisRepository.findAll();
+  }
+
   @Transactional
   public void uploadDB(UUID analysisId, byte[] bytes) {
-    var analysis =
-        analysisRepository
-            .findById(analysisId)
-            .orElseThrow(
-                () -> new SmortException("Could not find analysis by id. id={}", analysisId));
+    var analysis = getAnalysis(analysisId);
 
     if (bytes == null || bytes.length == 0) {
       throw new SmortException("Empty upload for analysis. id={}", analysisId);
@@ -84,7 +90,7 @@ public class AnalysisService {
     }
 
     analysis.setDbPath(dbPath.toString());
-    analysis.setStatus(AnalysisStatus.READY);
+    analysis.setStatus(AnalysisStatus.DB_UPLOADED);
 
     TransactionUtil.afterCommit(
         () ->
@@ -94,9 +100,32 @@ public class AnalysisService {
                 bytes.length / 1024.0));
   }
 
-  public List<Note> getNotes(UUID analysisId, Long deckId) {
+  @Transactional
+  public void setDeck(UUID analysisId, Long deckId) {
+    var analysis = getAnalysis(analysisId);
+
+    if (analysis.getStatus() != AnalysisStatus.DB_UPLOADED) {
+      throw new SmortException(
+          "Analysis is not in DB_UPLOADED state. id={}, status={}",
+          analysisId,
+          analysis.getStatus());
+    }
+
+    getDecks(analysisId).stream()
+        .filter(d -> d.getId().equals(deckId))
+        .findAny()
+        .orElseThrow(
+            () -> new SmortException("Deck not found. id={}, deckId={}", analysisId, deckId));
+
+    analysis.setStatus(AnalysisStatus.DECK_SELECTED);
+    analysis.setDeckId(deckId);
+  }
+
+  public List<Note> getNotes(UUID analysisId) {
+    var analysis = getAnalysis(analysisId);
+
     var noteTypes = noteTypeService.getNoteTypes(analysisId);
-    var notes = noteRepository.findNotesByDeck(analysisId, deckId);
+    var notes = noteRepository.findNotesByDeck(analysisId, analysis.getDeckId());
     return notes.stream()
         .map(
             n -> {
@@ -115,8 +144,9 @@ public class AnalysisService {
     return noteRepository.findAllDecks(analysisId);
   }
 
-  public List<DerivedNoteEntity> getDerivedNotes(UUID analysisId, Long deckId) {
-    return derivedNoteRepository.findAllByDeckId(analysisId, deckId);
+  public List<DerivedNoteEntity> getDerivedNotes(UUID analysisId) {
+    var analysis = getAnalysis(analysisId);
+    return derivedNoteRepository.findAllByDeckId(analysisId, analysis.getDeckId());
   }
 
   public Map<DerivedNoteEntity, String> getDerivedNoteToGuidMapping(
@@ -129,9 +159,5 @@ public class AnalysisService {
 
     return derivedNotes.stream()
         .collect(Collectors.toMap(Function.identity(), d -> guidByNoteId.get(d.getNoteId())));
-  }
-
-  public List<DerivedNoteEntity> getAllDerivedNotes(UUID analysisId) {
-    return derivedNoteRepository.findAll(analysisId);
   }
 }
