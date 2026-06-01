@@ -1,5 +1,7 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.anki;
 
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.NoteKeys;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,12 +18,12 @@ public class DerivedNoteRepository {
 
   private final DynamoDbTable<DerivedNoteEntity> table;
 
-  public List<DerivedNoteEntity> findAllByDeckId(UUID analysisId, Long deckId) {
+  public List<DerivedNoteEntity> findAllByAnalysisId(UUID analysisId) {
     QueryConditional condition =
         QueryConditional.sortBeginsWith(
             Key.builder()
-                .partitionValue(AnkiKeys.pk(analysisId))
-                .sortValue(AnkiKeys.derivedNotePrefix(deckId))
+                .partitionValue(AnalysisKeys.analysisPk(analysisId))
+                .sortValue(NoteKeys.derivedNotePrefix())
                 .build());
 
     return table
@@ -34,8 +36,8 @@ public class DerivedNoteRepository {
   public Optional<DerivedNoteEntity> findByNoteId(UUID analysisId, Long noteId) {
     Key key =
         Key.builder()
-            .partitionValue(AnkiKeys.pk(analysisId))
-            .sortValue(AnkiKeys.derivedNoteSk(noteId))
+            .partitionValue(AnalysisKeys.analysisPk(analysisId))
+            .sortValue(NoteKeys.derivedNoteSk(noteId))
             .build();
 
     return Optional.ofNullable(table.getItem(key));

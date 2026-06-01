@@ -1,10 +1,11 @@
-package com.felixkroemer.smort.infrastructure.dynamodb.anki;
+package com.felixkroemer.smort.infrastructure.dynamodb.chat;
 
-import com.felixkroemer.smort.infrastructure.dynamodb.chat.AbstractChatMessageEntity;
-import com.felixkroemer.smort.infrastructure.dynamodb.chat.AbstractChatMessageEntityType;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.ChatKeys;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -24,8 +25,6 @@ public class ChatMessageResponseEntity extends AbstractChatMessageEntity {
   @Getter(onMethod_ = @DynamoDbSortKey)
   private String sk;
 
-  private UUID analysisId;
-  private Long deckId;
   private Long noteId;
 
   public ChatMessageResponseEntity(
@@ -40,10 +39,9 @@ public class ChatMessageResponseEntity extends AbstractChatMessageEntity {
       Optional<String> callId,
       Optional<String> toolName) {
     super(type, response, callId, toolName, message, responseId, previousResponseId, createdAt);
-    this.analysisId = analysisId;
     this.noteId = noteId;
-    this.pk = AnkiKeys.pk(analysisId);
-    this.sk = AnkiKeys.chatMessageSk(noteId, createdAt, responseId);
+    this.pk = AnalysisKeys.analysisPk(analysisId);
+    this.sk = ChatKeys.chatMessageSk(noteId, createdAt, responseId);
   }
 
   public static ChatMessageResponseEntity text(

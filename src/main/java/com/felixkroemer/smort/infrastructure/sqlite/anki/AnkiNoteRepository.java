@@ -8,56 +8,56 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class NoteRepository {
+public class AnkiNoteRepository {
 
   private final EntityManagerFactoryCache entityManagerFactoryCache;
 
-  public List<NoteEntity> findNotesByDeck(UUID analysisId, Long deckId) {
+  public List<AnkiNoteEntity> findNotesByDeck(UUID analysisId, Long deckId) {
     var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
     return entityManager
         .createQuery(
             """
-                    SELECT n FROM NoteEntity n
+                    SELECT n FROM AnkiNoteEntity n
                         JOIN n.cards c
                         JOIN c.deck d
                     WHERE d.id = :deckId
                     """,
-            NoteEntity.class)
+            AnkiNoteEntity.class)
         .setParameter("deckId", deckId)
         .getResultList();
   }
 
-  public NoteEntity findNoteById(UUID analysisId, Long noteId) {
+  public AnkiNoteEntity findNoteById(UUID analysisId, Long noteId) {
     var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
     return entityManager
-        .createQuery("SELECT n FROM NoteEntity n WHERE n.id = :noteId", NoteEntity.class)
+        .createQuery("SELECT n FROM AnkiNoteEntity n WHERE n.id = :noteId", AnkiNoteEntity.class)
         .setParameter("noteId", noteId)
         .getSingleResult();
   }
 
-  public List<NoteEntity> findNotesByIdIn(UUID analysisId, Set<Long> ids) {
+  public List<AnkiNoteEntity> findNotesByIdIn(UUID analysisId, Set<Long> ids) {
     var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
     return entityManager
-        .createQuery("SELECT n FROM NoteEntity n WHERE n.id IN :ids", NoteEntity.class)
+        .createQuery("SELECT n FROM AnkiNoteEntity n WHERE n.id IN :ids", AnkiNoteEntity.class)
         .setParameter("ids", ids)
         .getResultList();
   }
 
-  public List<DeckEntity> findAllDecks(UUID analysisId) {
+  public List<AnkiDeckEntity> findAllDecks(UUID analysisId) {
     var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
     return entityManager
-        .createQuery("SELECT d FROM DeckEntity d", DeckEntity.class)
+        .createQuery("SELECT d FROM AnkiDeckEntity d", AnkiDeckEntity.class)
         .getResultList();
   }
 
-  public List<NoteTypeEntity> getNoteTypes(UUID analysisId) {
+  public List<AnkiNoteTypeEntity> getNoteTypes(UUID analysisId) {
     var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
     return entityManager
         .createQuery(
             """
-                 SELECT nt FROM NoteTypeEntity nt
+                 SELECT nt FROM AnkiNoteTypeEntity nt
              """,
-            NoteTypeEntity.class)
+            AnkiNoteTypeEntity.class)
         .getResultList();
   }
 }

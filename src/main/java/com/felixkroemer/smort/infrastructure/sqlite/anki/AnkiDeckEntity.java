@@ -9,14 +9,14 @@ import org.hibernate.annotations.Immutable;
 @Getter
 @Immutable
 @Table(name = "decks")
-public class DeckEntity {
+public class AnkiDeckEntity {
 
   @Id
   @Column(columnDefinition = "integer")
   private Long id;
 
   @OneToMany(mappedBy = "deck")
-  private List<CardEntity> cards;
+  private List<AnkiCardEntity> cards;
 
   @Column(name = "name")
   private String name;

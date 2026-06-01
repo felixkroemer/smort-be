@@ -1,13 +1,15 @@
 package com.felixkroemer.smort.domain.anki;
 
 import com.felixkroemer.smort.common.exception.SmortException;
-import com.felixkroemer.smort.domain.note.ChatMessageResponseMeta;
-import com.felixkroemer.smort.domain.note.ChatMessageTextResponse;
-import com.felixkroemer.smort.domain.note.ChatService;
-import com.felixkroemer.smort.domain.note.StoreNoteToolResponse;
+import com.felixkroemer.smort.domain.chat.ChatMessageResponseMeta;
+import com.felixkroemer.smort.domain.chat.ChatMessageTextResponse;
+import com.felixkroemer.smort.domain.chat.ChatService;
+import com.felixkroemer.smort.domain.chat.StoreNoteToolResponse;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.AbstractChatMessageEntity;
-import com.felixkroemer.smort.infrastructure.sqlite.anki.NoteRepository;
+import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageResponseEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatRepository;
+import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,17 +24,17 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class NoteAnalysisService {
+public class AnkiNoteAnalysisService {
 
   private final AnalysisService analysisService;
-  private final NoteRepository noteRepository;
+  private final AnkiNoteRepository ankiNoteRepository;
   private final DerivedNoteRepository derivedNoteRepository;
   private final ChatService chatService;
-  private final NoteTypeService noteTypeService;
+  private final AnkiNoteTypeService noteTypeService;
   private final ChatRepository chatRepository;
 
-  public Note getNote(UUID analysisId, Long noteId) {
-    var note = noteRepository.findNoteById(analysisId, noteId);
+  public AnalysisNote getNote(UUID analysisId, Long noteId) {
+    var note = ankiNoteRepository.findNoteById(analysisId, noteId);
     var noteTypes = noteTypeService.getNoteTypes(analysisId);
     var noteType = noteTypes.get(note.getNoteTypeId());
     var noteTypeFieldNames = noteType.getFields();
@@ -40,7 +42,7 @@ public class NoteAnalysisService {
         IntStream.range(0, noteTypeFieldNames.size())
             .boxed()
             .collect(Collectors.toMap(noteTypeFieldNames::get, note.getFlds()::get));
-    return new Note(note.getId(), note.getCards(), fields, note.getGuid());
+    return new AnalysisNote(note.getId(), fields, note.getGuid());
   }
 
   public Optional<DerivedNoteEntity> getDerivedNote(UUID analysisId, Long noteId) {
@@ -58,8 +60,6 @@ public class NoteAnalysisService {
   }
 
   public DerivedNoteEntity formatNote(UUID analysisId, Long noteId) {
-    var analysis = analysisService.getAnalysis(analysisId);
-
     var content = getContent(analysisId, noteId);
     var noteK = chatService.formatNote(content);
 
@@ -75,10 +75,7 @@ public class NoteAnalysisService {
   }
 
   public List<ChatMessageResponseEntity> chat(UUID analysisId, Long noteId, String message) {
-    var analysis = analysisService.getAnalysis(analysisId);
-
-    var latestChatMessage =
-        chatRepository.findLatestChatMessage(analysisId, noteId);
+    var latestChatMessage = chatRepository.findLatestChatMessage(analysisId, noteId);
     var latestChatMessageResponseId =
         latestChatMessage.map(AbstractChatMessageEntity::getResponseId);
 

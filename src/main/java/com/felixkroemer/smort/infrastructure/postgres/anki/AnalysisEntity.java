@@ -13,7 +13,7 @@ import lombok.*;
 public class AnalysisEntity extends AuditEntity {
 
   String dbPath;
-  
+
   Long deckId;
 
   @NonNull

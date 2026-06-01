@@ -8,7 +8,7 @@ import org.hibernate.annotations.Immutable;
 @Getter
 @Immutable
 @Table(name = "cards")
-public class CardEntity {
+public class AnkiCardEntity {
 
   @Id
   @Column(columnDefinition = "integer")
@@ -16,9 +16,9 @@ public class CardEntity {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "nid", columnDefinition = "integer")
-  private NoteEntity note;
+  private AnkiNoteEntity note;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "did", columnDefinition = "integer")
-  private DeckEntity deck;
+  private AnkiDeckEntity deck;
 }

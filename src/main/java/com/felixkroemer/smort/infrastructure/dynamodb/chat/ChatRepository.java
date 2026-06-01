@@ -1,8 +1,11 @@
-package com.felixkroemer.smort.infrastructure.dynamodb.anki;
+package com.felixkroemer.smort.infrastructure.dynamodb.chat;
 
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.ChatKeys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
@@ -18,16 +21,15 @@ public class ChatRepository {
   private final DynamoDbTable<ChatMessageResponseEntity> table;
   private final DynamoDbEnhancedClient enhancedClient;
 
-  public Optional<ChatMessageResponseEntity> findLatestChatMessage(
-      UUID analysisId, Long noteId) {
+  public Optional<ChatMessageResponseEntity> findLatestChatMessage(UUID analysisId, Long noteId) {
 
     QueryEnhancedRequest request =
         QueryEnhancedRequest.builder()
             .queryConditional(
                 QueryConditional.sortBeginsWith(
                     Key.builder()
-                        .partitionValue(AnkiKeys.pk(analysisId))
-                        .sortValue(AnkiKeys.chatMessagePrefix(noteId))
+                        .partitionValue(AnalysisKeys.analysisPk(analysisId))
+                        .sortValue(ChatKeys.chatMessagePrefix(noteId))
                         .build()))
             .scanIndexForward(false)
             .limit(1)
@@ -42,8 +44,8 @@ public class ChatRepository {
             .queryConditional(
                 QueryConditional.sortBeginsWith(
                     Key.builder()
-                        .partitionValue(AnkiKeys.pk(analysisId))
-                        .sortValue(AnkiKeys.chatMessagePrefix(noteId))
+                        .partitionValue(AnalysisKeys.analysisPk(analysisId))
+                        .sortValue(ChatKeys.chatMessagePrefix(noteId))
                         .build()))
             .scanIndexForward(false)
             .limit(1)

@@ -1,7 +1,8 @@
 package com.felixkroemer.smort.infrastructure.dynamodb;
 
-import com.felixkroemer.smort.infrastructure.dynamodb.anki.ChatMessageResponseEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageResponseEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
 import java.net.URI;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +17,8 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 @Configuration
 public class DynamoDbClientConfig {
+
+  private static final String COMMON_TABLE_NAME = "common-table";
 
   @Bean
   @Profile("local")
@@ -33,13 +36,18 @@ public class DynamoDbClientConfig {
 
   @Bean
   public DynamoDbTable<DerivedNoteEntity> derivedNoteTable(DynamoDbEnhancedClient enhancedClient) {
-    return enhancedClient.table("derived-notes", TableSchema.fromBean(DerivedNoteEntity.class));
+    return enhancedClient.table(COMMON_TABLE_NAME, TableSchema.fromBean(DerivedNoteEntity.class));
+  }
+
+  @Bean
+  public DynamoDbTable<NoteEntity> noteTable(DynamoDbEnhancedClient enhancedClient) {
+    return enhancedClient.table(COMMON_TABLE_NAME, TableSchema.fromBean(NoteEntity.class));
   }
 
   @Bean
   public DynamoDbTable<ChatMessageResponseEntity> chatMessageResponseTable(
       DynamoDbEnhancedClient enhancedClient) {
     return enhancedClient.table(
-        "derived-notes", TableSchema.fromBean(ChatMessageResponseEntity.class));
+        COMMON_TABLE_NAME, TableSchema.fromBean(ChatMessageResponseEntity.class));
   }
 }

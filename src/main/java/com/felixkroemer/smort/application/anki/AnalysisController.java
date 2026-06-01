@@ -3,7 +3,7 @@ package com.felixkroemer.smort.application.anki;
 import com.felixkroemer.smort.application.anki.dto.*;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.AnalysisService;
-import com.felixkroemer.smort.domain.anki.NoteAnalysisService;
+import com.felixkroemer.smort.domain.anki.AnkiNoteAnalysisService;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -25,7 +25,7 @@ public class AnalysisController {
 
   private final AnalysisService analysisService;
   private final AnalysisMapper analysisMapper;
-  private final NoteAnalysisService noteAnalysisService;
+  private final AnkiNoteAnalysisService ankiNoteAnalysisService;
   private final NoteMapper noteMapper;
   private final ChatMessageMapper chatMessageMapper;
 
@@ -51,7 +51,7 @@ public class AnalysisController {
     return analysisMapper.toAnalysisResponse(analysisService.getAnalysis(analysisId));
   }
 
-  @GetMapping("")
+  @GetMapping
   public List<AnalysisResponse> getAnalyses() {
     return analysisMapper.toAnalysisResponse(analysisService.getAnalyses());
   }
@@ -65,7 +65,7 @@ public class AnalysisController {
   @GetMapping("/{analysisId}/notes/{noteId}")
   public NoteResponse getNote(
       @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
-    var note = noteAnalysisService.getNote(analysisId, noteId);
+    var note = ankiNoteAnalysisService.getNote(analysisId, noteId);
     return noteMapper.toNoteResponseDto(note);
   }
 
@@ -85,7 +85,7 @@ public class AnalysisController {
   public DerivedNoteResponse getDerivedNote(
       @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
     return noteMapper.toDerivedNoteResponseDto(
-        noteAnalysisService
+        ankiNoteAnalysisService
             .getDerivedNote(analysisId, noteId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)));
   }
@@ -136,7 +136,7 @@ public class AnalysisController {
   @PatchMapping("/{analysisId}/notes/{noteId}/format")
   public DerivedNoteResponse formatNote(
       @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
-    var derivedNote = noteAnalysisService.formatNote(analysisId, noteId);
+    var derivedNote = ankiNoteAnalysisService.formatNote(analysisId, noteId);
     return noteMapper.toDerivedNoteResponseDto(derivedNote);
   }
 
@@ -146,13 +146,13 @@ public class AnalysisController {
       @PathVariable("noteId") Long noteId,
       @RequestBody ChatMessageRequest chatMessageRequest) {
     var chatMessageResponses =
-        noteAnalysisService.chat(analysisId, noteId, chatMessageRequest.message());
+        ankiNoteAnalysisService.chat(analysisId, noteId, chatMessageRequest.message());
     return chatMessageMapper.toDto(chatMessageResponses);
   }
 
   @GetMapping("/{analysisId}/notes/{noteId}/chat")
   public List<ChatMessageResponse> getChat(
       @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
-    return chatMessageMapper.toDto(noteAnalysisService.getChat(analysisId, noteId));
+    return chatMessageMapper.toDto(ankiNoteAnalysisService.getChat(analysisId, noteId));
   }
 }

@@ -1,8 +1,9 @@
-package com.felixkroemer.smort.infrastructure.dynamodb.anki;
+package com.felixkroemer.smort.infrastructure.dynamodb.deck;
 
-import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
-import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.NoteKeys;
 import java.util.UUID;
+
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.NoteKeys;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,7 +15,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 @Getter
 @Setter
 @NoArgsConstructor
-public class DerivedNoteEntity {
+public class NoteEntity {
 
   @Getter(onMethod_ = @DynamoDbPartitionKey)
   private String pk;
@@ -22,15 +23,13 @@ public class DerivedNoteEntity {
   @Getter(onMethod_ = @DynamoDbSortKey)
   private String sk;
 
-  private Long noteId;
   private String front;
   private String back;
 
-  public DerivedNoteEntity(UUID analysisId, Long noteId, String front, String back) {
-    this.noteId = noteId;
+  public NoteEntity(UUID deckId, UUID noteId, String front, String back) {
     this.front = front;
     this.back = back;
-    this.pk = AnalysisKeys.analysisPk(analysisId);
+    this.pk = DeckKeys.deckPk(deckId);
     this.sk = NoteKeys.derivedNoteSk(noteId);
   }
 }

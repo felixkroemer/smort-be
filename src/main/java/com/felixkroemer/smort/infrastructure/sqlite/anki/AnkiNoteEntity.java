@@ -7,20 +7,25 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Immutable;
 
 @Entity
-@Table(name = "notetypes")
+@Table(name = "notes")
 @Getter
 @Immutable
 @NoArgsConstructor
-public class NoteTypeEntity {
+public class AnkiNoteEntity {
 
   @Id
   @Column(columnDefinition = "integer")
   private Long id;
 
-  @ElementCollection(fetch = FetchType.EAGER)
-  @CollectionTable(name = "fields", joinColumns = @JoinColumn(name = "ntid"))
-  @Column(name = "name")
-  private List<String> fields;
+  @OneToMany(mappedBy = "note")
+  private List<AnkiCardEntity> cards;
 
-  String name;
+  @Convert(converter = FldsConverter.class)
+  @Column(name = "flds")
+  private List<String> flds;
+
+  @Column(name = "mid", columnDefinition = "integer")
+  private Long noteTypeId;
+
+  private String guid;
 }

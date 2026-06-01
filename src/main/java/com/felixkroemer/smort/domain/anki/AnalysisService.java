@@ -29,8 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class AnalysisService {
 
   private final AnalysisRepository analysisRepository;
-  private final NoteRepository noteRepository;
-  private final NoteTypeService noteTypeService;
+  private final AnkiNoteRepository ankiNoteRepository;
+  private final AnkiNoteTypeService noteTypeService;
   private final DerivedNoteRepository derivedNoteRepository;
 
   private final SmortProperties smortProperties;
@@ -48,7 +48,7 @@ public class AnalysisService {
         .findById(analysisId)
         .orElseThrow(() -> new SmortException("Could not find analysis by id. id={}", analysisId));
   }
-  
+
   public List<AnalysisEntity> getAnalyses() {
     return analysisRepository.findAll();
   }
@@ -121,11 +121,11 @@ public class AnalysisService {
     analysis.setDeckId(deckId);
   }
 
-  public List<Note> getNotes(UUID analysisId) {
+  public List<AnalysisNote> getNotes(UUID analysisId) {
     var analysis = getAnalysis(analysisId);
 
     var noteTypes = noteTypeService.getNoteTypes(analysisId);
-    var notes = noteRepository.findNotesByDeck(analysisId, analysis.getDeckId());
+    var notes = ankiNoteRepository.findNotesByDeck(analysisId, analysis.getDeckId());
     return notes.stream()
         .map(
             n -> {
@@ -135,18 +135,17 @@ public class AnalysisService {
                   IntStream.range(0, noteTypeFieldNames.size())
                       .boxed()
                       .collect(Collectors.toMap(noteTypeFieldNames::get, n.getFlds()::get));
-              return new Note(n.getId(), n.getCards(), fields, n.getGuid());
+              return new AnalysisNote(n.getId(), fields, n.getGuid());
             })
         .toList();
   }
 
-  public List<DeckEntity> getDecks(UUID analysisId) {
-    return noteRepository.findAllDecks(analysisId);
+  public List<AnkiDeckEntity> getDecks(UUID analysisId) {
+    return ankiNoteRepository.findAllDecks(analysisId);
   }
 
   public List<DerivedNoteEntity> getDerivedNotes(UUID analysisId) {
-    var analysis = getAnalysis(analysisId);
-    return derivedNoteRepository.findAllByDeckId(analysisId, analysis.getDeckId());
+    return derivedNoteRepository.findAllByAnalysisId(analysisId);
   }
 
   public Map<DerivedNoteEntity, String> getDerivedNoteToGuidMapping(
@@ -154,8 +153,8 @@ public class AnalysisService {
     var derivedNoteIds =
         derivedNotes.stream().map(DerivedNoteEntity::getNoteId).collect(Collectors.toSet());
     var guidByNoteId =
-        noteRepository.findNotesByIdIn(analysisId, derivedNoteIds).stream()
-            .collect(Collectors.toMap(NoteEntity::getId, NoteEntity::getGuid));
+        ankiNoteRepository.findNotesByIdIn(analysisId, derivedNoteIds).stream()
+            .collect(Collectors.toMap(AnkiNoteEntity::getId, AnkiNoteEntity::getGuid));
 
     return derivedNotes.stream()
         .collect(Collectors.toMap(Function.identity(), d -> guidByNoteId.get(d.getNoteId())));

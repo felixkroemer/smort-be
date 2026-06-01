@@ -1,4 +1,4 @@
-package com.felixkroemer.smort.domain.note;
+package com.felixkroemer.smort.domain.chat;
 
 public record ChatMessageTextResponse(String text, ChatMessageResponseMeta meta)
     implements ChatMessageResponse {}
