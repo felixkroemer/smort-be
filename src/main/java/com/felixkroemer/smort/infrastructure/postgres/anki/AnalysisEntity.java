@@ -16,6 +16,8 @@ public class AnalysisEntity extends AuditEntity {
 
   Long deckId;
 
+  String deckName;
+
   @NonNull
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)

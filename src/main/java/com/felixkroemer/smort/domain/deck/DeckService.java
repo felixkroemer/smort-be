@@ -3,7 +3,10 @@ package com.felixkroemer.smort.domain.deck;
 import com.felixkroemer.smort.domain.anki.AnalysisService;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckRepository;
+import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckMetaEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
+
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +20,8 @@ public class DeckService {
   private final DeckRepository deckRepository;
 
   public void importDeck(UUID analysisId) {
+    var analysis = analysisService.getAnalysis(analysisId);
+
     var notes = analysisService.getNotes(analysisId);
     var derivedNotes = analysisService.getDerivedNotes(analysisId);
     var derivedNoteKeys =
@@ -38,5 +43,11 @@ public class DeckService {
         .map(x -> String.join("\n", x.toList()))
         .map(text -> new NoteEntity(deckId, UUID.randomUUID(), "Front", text))
         .forEach(deckRepository::save);
+
+    deckRepository.save(new DeckMetaEntity(deckId, analysis.getDeckName(), "default"));
+  }
+  
+  public List<DeckMetaEntity> getDecks() {
+    return deckRepository.findAllByUserId("default");
   }
 }

@@ -2,6 +2,7 @@ package com.felixkroemer.smort.infrastructure.dynamodb;
 
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageResponseEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckMetaEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
 import java.net.URI;
 import org.springframework.context.annotation.Bean;
@@ -10,6 +11,7 @@ import org.springframework.context.annotation.Profile;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.regions.Region;
@@ -42,6 +44,16 @@ public class DynamoDbClientConfig {
   @Bean
   public DynamoDbTable<NoteEntity> noteTable(DynamoDbEnhancedClient enhancedClient) {
     return enhancedClient.table(COMMON_TABLE_NAME, TableSchema.fromBean(NoteEntity.class));
+  }
+
+  @Bean
+  DynamoDbTable<DeckMetaEntity> deckMetaTable(DynamoDbEnhancedClient enhancedClient) {
+    return enhancedClient.table(COMMON_TABLE_NAME, TableSchema.fromBean(DeckMetaEntity.class));
+  }
+
+  @Bean
+  DynamoDbIndex<DeckMetaEntity> userDeckIndex(DynamoDbTable<DeckMetaEntity> deckMetaTable) {
+    return deckMetaTable.index("UserDeckIndex");
   }
 
   @Bean

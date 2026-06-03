@@ -111,7 +111,7 @@ public class AnalysisService {
           analysis.getStatus());
     }
 
-    getDecks(analysisId).stream()
+    var deck = getDecks(analysisId).stream()
         .filter(d -> d.getId().equals(deckId))
         .findAny()
         .orElseThrow(
@@ -119,6 +119,7 @@ public class AnalysisService {
 
     analysis.setStatus(AnalysisStatus.DECK_SELECTED);
     analysis.setDeckId(deckId);
+    analysis.setDeckName(deck.getName());
   }
 
   public List<AnalysisNote> getNotes(UUID analysisId) {
