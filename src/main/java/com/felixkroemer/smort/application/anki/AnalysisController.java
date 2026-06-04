@@ -24,9 +24,10 @@ import org.springframework.web.server.ResponseStatusException;
 public class AnalysisController {
 
   private final AnalysisService analysisService;
-  private final AnalysisMapper analysisMapper;
   private final AnkiNoteAnalysisService ankiNoteAnalysisService;
-  private final NoteMapper noteMapper;
+
+  private final AnalysisMapper analysisMapper;
+  private final AnkiNoteMapper ankiNoteMapper;
   private final ChatMessageMapper chatMessageMapper;
 
   @PostMapping()
@@ -46,6 +47,18 @@ public class AnalysisController {
     analysisService.uploadDB(analysisId, bytes);
   }
 
+  @GetMapping("/{analysisId}/decks")
+  public List<DeckResponse> getDecks(@PathVariable("analysisId") UUID analysisId) {
+    var decks = analysisService.getDecks(analysisId);
+    return ankiNoteMapper.toDeckResponseDto(decks);
+  }
+
+  @PostMapping("/{analysisId}/setDeck")
+  public void setDeck(
+      @PathVariable("analysisId") UUID analysisId, @RequestParam("deckId") Long deckId) {
+    analysisService.setDeck(analysisId, deckId);
+  }
+
   @GetMapping("/{analysisId}")
   public AnalysisResponse getAnalysis(@PathVariable("analysisId") UUID analysisId) {
     return analysisMapper.toAnalysisResponse(analysisService.getAnalysis(analysisId));
@@ -56,35 +69,23 @@ public class AnalysisController {
     return analysisMapper.toAnalysisResponse(analysisService.getAnalyses());
   }
 
-  @PostMapping("/{analysisId}/setDeck")
-  public void setDeck(
-      @PathVariable("analysisId") UUID analysisId, @RequestParam("deckId") Long deckId) {
-    analysisService.setDeck(analysisId, deckId);
-  }
-
   @GetMapping("/{analysisId}/notes/{noteId}")
-  public NoteResponse getNote(
+  public AnkiNoteResponse getNote(
       @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
     var note = ankiNoteAnalysisService.getNote(analysisId, noteId);
-    return noteMapper.toNoteResponseDto(note);
-  }
-
-  @GetMapping("/{analysisId}/decks")
-  public List<DeckResponse> getDecks(@PathVariable("analysisId") UUID analysisId) {
-    var decks = analysisService.getDecks(analysisId);
-    return noteMapper.toDeckResponseDto(decks);
+    return ankiNoteMapper.toNoteResponseDto(note);
   }
 
   @GetMapping("/{analysisId}/notes")
-  public List<NoteResponse> getNotes(@PathVariable("analysisId") UUID analysisId) {
+  public List<AnkiNoteResponse> getNotes(@PathVariable("analysisId") UUID analysisId) {
     var notes = analysisService.getNotes(analysisId);
-    return noteMapper.toNoteResponseDto(notes);
+    return ankiNoteMapper.toNoteResponseDto(notes);
   }
 
   @GetMapping("/{analysisId}/notes/{noteId}/derivedNote")
   public DerivedNoteResponse getDerivedNote(
       @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
-    return noteMapper.toDerivedNoteResponseDto(
+    return ankiNoteMapper.toDerivedNoteResponseDto(
         ankiNoteAnalysisService
             .getDerivedNote(analysisId, noteId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)));
@@ -93,7 +94,7 @@ public class AnalysisController {
   @GetMapping("/{analysisId}/derivedNotes")
   public List<DerivedNoteResponse> getDerivedNotes(@PathVariable("analysisId") UUID analysisId) {
     return analysisService.getDerivedNotes(analysisId).stream()
-        .map(noteMapper::toDerivedNoteResponseDto)
+        .map(ankiNoteMapper::toDerivedNoteResponseDto)
         .toList();
   }
 
@@ -137,7 +138,7 @@ public class AnalysisController {
   public DerivedNoteResponse formatNote(
       @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
     var derivedNote = ankiNoteAnalysisService.formatNote(analysisId, noteId);
-    return noteMapper.toDerivedNoteResponseDto(derivedNote);
+    return ankiNoteMapper.toDerivedNoteResponseDto(derivedNote);
   }
 
   @PostMapping("/{analysisId}/notes/{noteId}/chat")

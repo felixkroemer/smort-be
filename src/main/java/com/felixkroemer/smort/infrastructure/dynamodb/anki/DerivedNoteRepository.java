@@ -11,6 +11,7 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest;
 
 @Repository
 @RequiredArgsConstructor
@@ -18,12 +19,12 @@ public class DerivedNoteRepository {
 
   private final DynamoDbTable<DerivedNoteEntity> table;
 
-  public List<DerivedNoteEntity> findAllByAnalysisId(UUID analysisId) {
+  public List<DerivedNoteEntity> findDerivedNotesByAnalysisId(UUID analysisId) {
     QueryConditional condition =
         QueryConditional.sortBeginsWith(
             Key.builder()
                 .partitionValue(AnalysisKeys.analysisPk(analysisId))
-                .sortValue(NoteKeys.derivedNotePrefix())
+                .sortValue(NoteKeys.notePrefix())
                 .build());
 
     return table
@@ -33,11 +34,11 @@ public class DerivedNoteRepository {
         .toList();
   }
 
-  public Optional<DerivedNoteEntity> findByNoteId(UUID analysisId, Long noteId) {
+  public Optional<DerivedNoteEntity> finDerivedNotedByAnalysisIdAndNoteId(UUID analysisId, Long noteId) {
     Key key =
         Key.builder()
             .partitionValue(AnalysisKeys.analysisPk(analysisId))
-            .sortValue(NoteKeys.derivedNoteSk(noteId))
+            .sortValue(NoteKeys.noteSk(noteId))
             .build();
 
     return Optional.ofNullable(table.getItem(key));
@@ -45,5 +46,10 @@ public class DerivedNoteRepository {
 
   public void save(DerivedNoteEntity entity) {
     table.putItem(entity);
+  }
+
+  public void saveInTx(
+          TransactWriteItemsEnhancedRequest.Builder txBuilder, DerivedNoteEntity entity) {
+    txBuilder.addPutItem(table, entity);
   }
 }

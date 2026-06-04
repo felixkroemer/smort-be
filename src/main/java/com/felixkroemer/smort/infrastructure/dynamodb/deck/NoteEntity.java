@@ -1,9 +1,8 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.deck;
 
-import java.util.UUID;
-
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.NoteKeys;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -23,13 +22,15 @@ public class NoteEntity {
   @Getter(onMethod_ = @DynamoDbSortKey)
   private String sk;
 
+  private UUID id;
   private String front;
   private String back;
 
   public NoteEntity(UUID deckId, UUID noteId, String front, String back) {
     this.front = front;
     this.back = back;
+    this.id = noteId;
     this.pk = DeckKeys.deckPk(deckId);
-    this.sk = NoteKeys.derivedNoteSk(noteId);
+    this.sk = NoteKeys.noteSk(noteId);
   }
 }

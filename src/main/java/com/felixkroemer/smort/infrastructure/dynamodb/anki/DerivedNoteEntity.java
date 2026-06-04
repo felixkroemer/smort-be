@@ -31,6 +31,6 @@ public class DerivedNoteEntity {
     this.front = front;
     this.back = back;
     this.pk = AnalysisKeys.analysisPk(analysisId);
-    this.sk = NoteKeys.derivedNoteSk(noteId);
+    this.sk = NoteKeys.noteSk(noteId);
   }
 }

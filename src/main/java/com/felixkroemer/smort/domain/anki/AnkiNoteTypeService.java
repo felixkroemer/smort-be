@@ -18,7 +18,7 @@ public class AnkiNoteTypeService {
   private final AnkiNoteRepository ankiNoteRepository;
 
   public Map<Long, AnkiNoteTypeEntity> getNoteTypes(UUID analysisId) {
-    var noteTypes = ankiNoteRepository.getNoteTypes(analysisId);
+    var noteTypes = ankiNoteRepository.findNoteTypesByAnalysisId(analysisId);
     return noteTypes.stream()
         .collect(Collectors.toMap(AnkiNoteTypeEntity::getId, Function.identity()));
   }

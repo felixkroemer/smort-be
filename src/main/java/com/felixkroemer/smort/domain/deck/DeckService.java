@@ -36,18 +36,18 @@ public class DeckService {
 
     derivedNotes.stream()
         .map(d -> new NoteEntity(deckId, UUID.randomUUID(), d.getFront(), d.getBack()))
-        .forEach(deckRepository::save);
+        .forEach(deckRepository::saveNote);
 
     unmapped.stream()
         .map(u -> u.getFlds().entrySet().stream().map(e -> e.getKey() + "\n" + e.getValue()))
         .map(x -> String.join("\n", x.toList()))
         .map(text -> new NoteEntity(deckId, UUID.randomUUID(), "Front", text))
-        .forEach(deckRepository::save);
+        .forEach(deckRepository::saveNote);
 
-    deckRepository.save(new DeckMetaEntity(deckId, analysis.getDeckName(), "default"));
+    deckRepository.saveDeckMeta(new DeckMetaEntity(deckId, analysis.getDeckName(), "default"));
   }
   
   public List<DeckMetaEntity> getDecks() {
-    return deckRepository.findAllByUserId("default");
+    return deckRepository.findDeckMetasByUserId("default");
   }
 }

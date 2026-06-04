@@ -126,7 +126,7 @@ public class AnalysisService {
     var analysis = getAnalysis(analysisId);
 
     var noteTypes = noteTypeService.getNoteTypes(analysisId);
-    var notes = ankiNoteRepository.findNotesByDeck(analysisId, analysis.getDeckId());
+    var notes = ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, analysis.getDeckId());
     return notes.stream()
         .map(
             n -> {
@@ -142,11 +142,11 @@ public class AnalysisService {
   }
 
   public List<AnkiDeckEntity> getDecks(UUID analysisId) {
-    return ankiNoteRepository.findAllDecks(analysisId);
+    return ankiNoteRepository.findDecksByAnalysisId(analysisId);
   }
 
   public List<DerivedNoteEntity> getDerivedNotes(UUID analysisId) {
-    return derivedNoteRepository.findAllByAnalysisId(analysisId);
+    return derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId);
   }
 
   public Map<DerivedNoteEntity, String> getDerivedNoteToGuidMapping(
@@ -154,7 +154,7 @@ public class AnalysisService {
     var derivedNoteIds =
         derivedNotes.stream().map(DerivedNoteEntity::getNoteId).collect(Collectors.toSet());
     var guidByNoteId =
-        ankiNoteRepository.findNotesByIdIn(analysisId, derivedNoteIds).stream()
+        ankiNoteRepository.findNotesByAnalysisIdAndNoteIdIn(analysisId, derivedNoteIds).stream()
             .collect(Collectors.toMap(AnkiNoteEntity::getId, AnkiNoteEntity::getGuid));
 
     return derivedNotes.stream()

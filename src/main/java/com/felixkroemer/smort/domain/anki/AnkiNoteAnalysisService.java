@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 
 @Service
 @RequiredArgsConstructor
@@ -32,9 +33,10 @@ public class AnkiNoteAnalysisService {
   private final ChatService chatService;
   private final AnkiNoteTypeService noteTypeService;
   private final ChatRepository chatRepository;
+  private final DynamoDbEnhancedClient enhancedClient;
 
   public AnalysisNote getNote(UUID analysisId, Long noteId) {
-    var note = ankiNoteRepository.findNoteById(analysisId, noteId);
+    var note = ankiNoteRepository.findNoteByAnalysisIdAndNoteId(analysisId, noteId);
     var noteTypes = noteTypeService.getNoteTypes(analysisId);
     var noteType = noteTypes.get(note.getNoteTypeId());
     var noteTypeFieldNames = noteType.getFields();
@@ -46,7 +48,7 @@ public class AnkiNoteAnalysisService {
   }
 
   public Optional<DerivedNoteEntity> getDerivedNote(UUID analysisId, Long noteId) {
-    return derivedNoteRepository.findByNoteId(analysisId, noteId);
+    return derivedNoteRepository.finDerivedNotedByAnalysisIdAndNoteId(analysisId, noteId);
   }
 
   public Map<String, String> getContent(UUID analysisId, Long noteId) {
@@ -102,20 +104,20 @@ public class AnkiNoteAnalysisService {
       UUID analysisId,
       Long noteId,
       String message,
-      StoreNoteToolResponse r,
+      StoreNoteToolResponse storeNoteToolResponse,
       Optional<String> latestChatMessageResponseId) {
     var toolCallChatMessageEntity =
         ChatMessageResponseEntity.toolCall(
             analysisId,
             noteId,
             message,
-            r.meta().responseId(),
+            storeNoteToolResponse.meta().responseId(),
             latestChatMessageResponseId,
-            r.callId(),
-            r.toolName());
-    var derivedNote = new DerivedNoteEntity(analysisId, noteId, r.front(), r.back());
-    derivedNoteRepository.save(derivedNote); // TODO: add to save tx
-    var ackResponse = chatService.acknowledgeStoreNoteToolCall(r.callId(), r.meta().responseId());
+            storeNoteToolResponse.callId(),
+            storeNoteToolResponse.toolName());
+    var ackResponse =
+        chatService.acknowledgeStoreNoteToolCall(
+            storeNoteToolResponse.callId(), storeNoteToolResponse.meta().responseId());
     if (ackResponse instanceof ChatMessageTextResponse(String text, ChatMessageResponseMeta meta)) {
       var chatMessageEntity =
           ChatMessageResponseEntity.text(
@@ -125,7 +127,18 @@ public class AnkiNoteAnalysisService {
               meta.responseId(),
               latestChatMessageResponseId,
               text);
-      chatRepository.saveInTransaction(toolCallChatMessageEntity, chatMessageEntity);
+      enhancedClient.transactWriteItems(
+          tx -> {
+            chatRepository.saveInTx(tx, toolCallChatMessageEntity);
+            chatRepository.saveInTx(tx, chatMessageEntity);
+            derivedNoteRepository.saveInTx(
+                tx,
+                new DerivedNoteEntity(
+                    analysisId,
+                    noteId,
+                    storeNoteToolResponse.front(),
+                    storeNoteToolResponse.back()));
+          });
       return List.of(toolCallChatMessageEntity, chatMessageEntity);
     } else {
       throw new SmortException("Expected ChatMessageTextResponse in response to tool call ack.");

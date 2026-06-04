@@ -12,7 +12,7 @@ public class AnkiNoteRepository {
 
   private final EntityManagerFactoryCache entityManagerFactoryCache;
 
-  public List<AnkiNoteEntity> findNotesByDeck(UUID analysisId, Long deckId) {
+  public List<AnkiNoteEntity> findNotesByAnalysisIdAndDeckId(UUID analysisId, Long deckId) {
     var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
     return entityManager
         .createQuery(
@@ -27,7 +27,7 @@ public class AnkiNoteRepository {
         .getResultList();
   }
 
-  public AnkiNoteEntity findNoteById(UUID analysisId, Long noteId) {
+  public AnkiNoteEntity findNoteByAnalysisIdAndNoteId(UUID analysisId, Long noteId) {
     var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
     return entityManager
         .createQuery("SELECT n FROM AnkiNoteEntity n WHERE n.id = :noteId", AnkiNoteEntity.class)
@@ -35,22 +35,22 @@ public class AnkiNoteRepository {
         .getSingleResult();
   }
 
-  public List<AnkiNoteEntity> findNotesByIdIn(UUID analysisId, Set<Long> ids) {
+  public List<AnkiNoteEntity> findNotesByAnalysisIdAndNoteIdIn(UUID analysisId, Set<Long> noteIds) {
     var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
     return entityManager
-        .createQuery("SELECT n FROM AnkiNoteEntity n WHERE n.id IN :ids", AnkiNoteEntity.class)
-        .setParameter("ids", ids)
+        .createQuery("SELECT n FROM AnkiNoteEntity n WHERE n.id IN :noteIds", AnkiNoteEntity.class)
+        .setParameter("noteIds", noteIds)
         .getResultList();
   }
 
-  public List<AnkiDeckEntity> findAllDecks(UUID analysisId) {
+  public List<AnkiDeckEntity> findDecksByAnalysisId(UUID analysisId) {
     var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
     return entityManager
         .createQuery("SELECT d FROM AnkiDeckEntity d", AnkiDeckEntity.class)
         .getResultList();
   }
 
-  public List<AnkiNoteTypeEntity> getNoteTypes(UUID analysisId) {
+  public List<AnkiNoteTypeEntity> findNoteTypesByAnalysisId(UUID analysisId) {
     var entityManager = entityManagerFactoryCache.getOrCreate(analysisId);
     return entityManager
         .createQuery(

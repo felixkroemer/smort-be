@@ -4,15 +4,15 @@ import java.util.UUID;
 
 public final class NoteKeys {
 
-  public static String derivedNoteSk(Long noteId) {
+  public static String noteSk(Long noteId) {
     return "NOTE#" + noteId;
   }
 
-  public static String derivedNoteSk(UUID noteId) {
+  public static String noteSk(UUID noteId) {
     return "NOTE#" + noteId;
   }
 
-  public static String derivedNotePrefix() {
+  public static String notePrefix() {
     return "NOTE#";
   }
 }
