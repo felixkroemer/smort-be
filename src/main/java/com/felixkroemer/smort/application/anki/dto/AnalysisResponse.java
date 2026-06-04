@@ -5,4 +5,4 @@ import java.util.Optional;
 import java.util.UUID;
 
 public record AnalysisResponse(
-    UUID id, String status, Optional<String> deckId, Instant lastModifiedDateTime) {}
+    UUID id, String status, Optional<String> deckId, Instant updatedAt) {}

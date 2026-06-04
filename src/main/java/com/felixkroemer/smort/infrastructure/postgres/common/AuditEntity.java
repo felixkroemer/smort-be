@@ -23,10 +23,10 @@ public class AuditEntity {
   @NonNull
   @Column(nullable = false)
   @CreatedDate
-  private Instant createdDate;
+  private Instant createdAt;
 
   @NonNull
   @Column(nullable = false)
   @LastModifiedDate
-  private Instant lastModifiedDateTime;
+  private Instant updatedAt;
 }
