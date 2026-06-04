@@ -4,6 +4,7 @@ import com.felixkroemer.smort.application.anki.dto.*;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.AnalysisService;
 import com.felixkroemer.smort.domain.anki.AnkiNoteAnalysisService;
+import jakarta.websocket.server.PathParam;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -20,7 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("anki/analysis")
+@RequestMapping("analysis")
 public class AnalysisController {
 
   private final AnalysisService analysisService;
@@ -34,9 +35,9 @@ public class AnalysisController {
     return new StartAnalysisResponse(analysisService.createAnalysis());
   }
 
-  @PostMapping("/db")
+  @PostMapping("/{analysisId}/uploadDb")
   public void uploadDb(
-      @RequestParam("analysisId") UUID analysisId, @RequestParam("db") MultipartFile file) {
+      @PathParam("analysisId") UUID analysisId, @RequestParam("db") MultipartFile file) {
     byte[] bytes;
     try {
       bytes = file.getBytes();
@@ -46,7 +47,7 @@ public class AnalysisController {
     analysisService.uploadDB(analysisId, bytes);
   }
 
-  @GetMapping("/{analysisId}")
+  @GetMapping("analysis")
   public AnalysisResponse getAnalysis(@PathVariable("analysisId") UUID analysisId) {
     return analysisMapper.toAnalysisResponse(analysisService.getAnalysis(analysisId));
   }
@@ -56,9 +57,9 @@ public class AnalysisController {
     return analysisMapper.toAnalysisResponse(analysisService.getAnalyses());
   }
 
-  @PostMapping("/deck")
+  @PostMapping("/{analysisId}/setDeck")
   public void setDeck(
-      @RequestParam("analysisId") UUID analysisId, @RequestParam("deckId") Long deckId) {
+      @PathParam("analysisId") UUID analysisId, @RequestParam("deckId") Long deckId) {
     analysisService.setDeck(analysisId, deckId);
   }
 
@@ -90,14 +91,14 @@ public class AnalysisController {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)));
   }
 
-  @GetMapping("/{analysisId}/notes/derivedNotes")
+  @GetMapping("/{analysisId}/derivedNotes")
   public List<DerivedNoteResponse> getDerivedNotes(@PathVariable("analysisId") UUID analysisId) {
     return analysisService.getDerivedNotes(analysisId).stream()
         .map(noteMapper::toDerivedNoteResponseDto)
         .toList();
   }
 
-  @GetMapping("/{analysisId}/notes/derivedNotes/export")
+  @GetMapping("/{analysisId}/derivedNotes/export")
   public ResponseEntity<byte[]> createDerivedNotesExport(
       @PathVariable("analysisId") UUID analysisId) {
 
