@@ -63,6 +63,10 @@ public class ChatService {
   private final OpenAIClient openAIClient;
   private final ObjectMapper mapper;
 
+  public NoteSchema formatNote(String front, String back) {
+    return formatNote(Map.of("front", front, "back", back));
+  }
+
   public NoteSchema formatNote(Map<String, String> fields) {
     try {
       StructuredResponseCreateParams<NoteSchema> params =
@@ -123,6 +127,12 @@ public class ChatService {
         new ChatMessageResponseMeta(response.id(), response.previousResponseId(), Instant.now());
     ResponseOutputText outputText = getResponseOutputText(responseOutputItem.asMessage());
     return new ChatMessageTextResponse(outputText.text(), meta);
+  }
+
+  public ChatMessageResponse chat(
+      String front, String back, String message, Optional<String> previousResponseId) {
+    var content = Map.of("front", front, "back", back);
+    return chat(content, message, previousResponseId);
   }
 
   public ChatMessageResponse chat(

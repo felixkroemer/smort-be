@@ -25,11 +25,11 @@ public class ChatMessageResponseEntity extends AbstractChatMessageEntity {
   @Getter(onMethod_ = @DynamoDbSortKey)
   private String sk;
 
-  private Long noteId;
+  private String noteId;
 
   public ChatMessageResponseEntity(
-      UUID analysisId,
-      Long noteId,
+      String pk,
+      String noteId,
       Optional<String> message,
       String responseId,
       Optional<String> previousResponseId,
@@ -40,20 +40,20 @@ public class ChatMessageResponseEntity extends AbstractChatMessageEntity {
       Optional<String> toolName) {
     super(type, response, callId, toolName, message, responseId, previousResponseId, createdAt);
     this.noteId = noteId;
-    this.pk = AnalysisKeys.analysisPk(analysisId);
+    this.pk = pk;
     this.sk = ChatKeys.chatMessageSk(noteId, createdAt, responseId);
   }
 
-  public static ChatMessageResponseEntity text(
-      UUID analysisId,
-      Long noteId,
+  public static <T> ChatMessageResponseEntity text(
+      String pk,
+      T noteId,
       Optional<String> message,
       String responseId,
       Optional<String> previousResponseId,
       String text) {
     return new ChatMessageResponseEntity(
-        analysisId,
-        noteId,
+        pk,
+        String.valueOf(noteId),
         message,
         responseId,
         previousResponseId,
@@ -64,17 +64,17 @@ public class ChatMessageResponseEntity extends AbstractChatMessageEntity {
         Optional.empty());
   }
 
-  public static ChatMessageResponseEntity toolCall(
-      UUID analysisId,
-      Long noteId,
+  public static <T> ChatMessageResponseEntity toolCall(
+      String pk,
+      T noteId,
       String message,
       String responseId,
       Optional<String> previousResponseId,
       String callId,
       String toolName) {
     return new ChatMessageResponseEntity(
-        analysisId,
-        noteId,
+        pk,
+        String.valueOf(noteId),
         Optional.of(message),
         responseId,
         previousResponseId,

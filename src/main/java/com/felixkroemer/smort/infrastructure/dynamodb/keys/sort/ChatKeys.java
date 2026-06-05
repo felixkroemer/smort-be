@@ -4,11 +4,11 @@ import java.time.Instant;
 
 public final class ChatKeys {
 
-  public static String chatMessageSk(Long noteId, Instant createdAt, String responseId) {
+  public static String chatMessageSk(String noteId, Instant createdAt, String responseId) {
     return "CHAT#" + noteId + "#" + createdAt + "#" + responseId;
   }
 
-  public static String chatMessagePrefix(Long noteId) {
+  public static <T> String chatMessagePrefix(T noteId) {
     return "CHAT#" + noteId + "#";
   }
 }

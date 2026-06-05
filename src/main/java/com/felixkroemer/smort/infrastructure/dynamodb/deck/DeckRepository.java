@@ -1,5 +1,6 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.deck;
 
+import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.NoteKeys;
 import java.util.List;
@@ -12,6 +13,7 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest;
 
 @Repository
 @RequiredArgsConstructor
@@ -23,6 +25,11 @@ public class DeckRepository {
 
   public void saveNote(NoteEntity entity) {
     noteTable.putItem(entity);
+  }
+
+  public void saveNoteInTx(
+          TransactWriteItemsEnhancedRequest.Builder txBuilder, NoteEntity note) {
+    txBuilder.addPutItem(noteTable, note);
   }
 
   public void saveDeckMeta(DeckMetaEntity entity) {

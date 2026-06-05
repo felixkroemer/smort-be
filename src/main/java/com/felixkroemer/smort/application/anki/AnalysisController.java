@@ -4,6 +4,8 @@ import com.felixkroemer.smort.application.anki.dto.*;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.AnalysisService;
 import com.felixkroemer.smort.domain.anki.AnkiNoteAnalysisService;
+import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -25,6 +27,7 @@ public class AnalysisController {
 
   private final AnalysisService analysisService;
   private final AnkiNoteAnalysisService ankiNoteAnalysisService;
+  private final ChatOrchestrationService chatOrchestrationService;
 
   private final AnalysisMapper analysisMapper;
   private final AnkiNoteMapper ankiNoteMapper;
@@ -154,6 +157,8 @@ public class AnalysisController {
   @GetMapping("/{analysisId}/notes/{noteId}/chat")
   public List<ChatMessageResponse> getChat(
       @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
-    return chatMessageMapper.toDto(ankiNoteAnalysisService.getChat(analysisId, noteId));
+    var chatMessageResponses =
+        chatOrchestrationService.getChat(AnalysisKeys.analysisPk(analysisId), noteId);
+    return chatMessageMapper.toDto(chatMessageResponses);
   }
 }

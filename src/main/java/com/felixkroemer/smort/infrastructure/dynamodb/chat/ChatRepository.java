@@ -1,10 +1,8 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.chat;
 
-import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.ChatKeys;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -19,14 +17,14 @@ public class ChatRepository {
 
   private final DynamoDbTable<ChatMessageResponseEntity> table;
 
-  public Optional<ChatMessageResponseEntity> findLatestChatMessage(UUID analysisId, Long noteId) {
+  public <T> Optional<ChatMessageResponseEntity> findLatestChatMessage(String pk, T noteId) {
 
     QueryEnhancedRequest request =
         QueryEnhancedRequest.builder()
             .queryConditional(
                 QueryConditional.sortBeginsWith(
                     Key.builder()
-                        .partitionValue(AnalysisKeys.analysisPk(analysisId))
+                        .partitionValue(pk)
                         .sortValue(ChatKeys.chatMessagePrefix(noteId))
                         .build()))
             .scanIndexForward(false)
@@ -36,13 +34,13 @@ public class ChatRepository {
     return table.query(request).items().stream().findFirst();
   }
 
-  public List<ChatMessageResponseEntity> findAll(UUID analysisId, Long noteId) {
+  public <T> List<ChatMessageResponseEntity> findAll(String pk, T noteId) {
     QueryEnhancedRequest request =
         QueryEnhancedRequest.builder()
             .queryConditional(
                 QueryConditional.sortBeginsWith(
                     Key.builder()
-                        .partitionValue(AnalysisKeys.analysisPk(analysisId))
+                        .partitionValue(pk)
                         .sortValue(ChatKeys.chatMessagePrefix(noteId))
                         .build()))
             .scanIndexForward(false)
