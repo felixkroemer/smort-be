@@ -29,7 +29,7 @@ public class ChatService {
 
   private final String FORMATTING_INSTRUCTION =
       """
-          You receive an Anki analysisNote as a list of fields, each with a title and content.
+          You receive an Anki ankiNote as a list of fields, each with a title and content.
           Your task is to produce exactly two output fields: "front" and "back".
 
           Mapping rules:
@@ -52,7 +52,7 @@ public class ChatService {
 
   private final String CHAT_INSTRUCTIONS =
       """
-      Your task is to assist the user in fact-checking, learning about, and improving the anki analysisNote provided in the form of its fields.
+      Your task is to assist the user in fact-checking, learning about, and improving the anki ankiNote provided in the form of its fields.
       When you are asked to edit one or multiple fields in any way, use the tool for updating notes.
       Then acknowledge with a short summary.
 
@@ -84,11 +84,11 @@ public class ChatService {
           .findFirst()
           .orElseThrow();
     } catch (Exception e) {
-      throw new SmortException("Could not format analysisNote", e);
+      throw new SmortException("Could not format ankiNote", e);
     }
   }
 
-  @JsonClassDescription("Store a updated analysisNote.")
+  @JsonClassDescription("Store a updated ankiNote.")
   static class StoreNoteTool {
     public String front;
     public String back;

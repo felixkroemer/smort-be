@@ -7,7 +7,6 @@ import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.util.TriConsumer;
 import org.jspecify.annotations.NonNull;

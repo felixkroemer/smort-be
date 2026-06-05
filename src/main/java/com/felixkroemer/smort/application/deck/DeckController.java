@@ -9,10 +9,9 @@ import com.felixkroemer.smort.application.deck.dto.NoteResponse;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.domain.deck.DeckService;
 import com.felixkroemer.smort.domain.deck.NoteService;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import java.util.List;
 import java.util.UUID;
-
-import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -78,7 +77,7 @@ public class DeckController {
     var chatMessageResponses = chatOrchestrationService.getChat(DeckKeys.deckPk(deckId), noteId);
     return chatMessageMapper.toDto(chatMessageResponses);
   }
-  
+
   @DeleteMapping("/{deckId}")
   public void deleteDeck(@PathVariable("deckId") UUID deckId) {
     deckService.deleteDeck(deckId);

@@ -2,8 +2,8 @@ package com.felixkroemer.smort.domain.deck;
 
 import com.felixkroemer.smort.application.deck.dto.NoteTypeTemplate;
 import com.felixkroemer.smort.common.exception.SmortException;
-import com.felixkroemer.smort.domain.anki.AnalysisNote;
 import com.felixkroemer.smort.domain.anki.AnalysisService;
+import com.felixkroemer.smort.domain.anki.AnkiNote;
 import com.felixkroemer.smort.domain.anki.AnkiNoteTypeService;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
@@ -68,7 +68,7 @@ public class DeckService {
 
   private void handleUnmappedNotes(
       UUID deckId,
-      List<AnalysisNote> unmappedNotes,
+      List<AnkiNote> unmappedNotes,
       UUID analysisId,
       Map<String, NoteTypeTemplate> templates) {
     var noteTypes = ankiNoteTypeService.getNoteTypesByAnalysisId(analysisId);
@@ -80,17 +80,17 @@ public class DeckService {
 
   private NoteEntity toNoteEntity(
       UUID deckId,
-      AnalysisNote analysisNote,
+      AnkiNote ankiNote,
       Map<Long, AnkiNoteTypeEntity> noteTypes,
       Map<String, NoteTypeTemplate> templates) {
-    var noteType = noteTypes.get(analysisNote.getNoteTypeId());
+    var noteType = noteTypes.get(ankiNote.getNoteTypeId());
     var template = templates.get(noteType.getName());
     if (template == null) {
       throw new SmortException(
           "No template provided for note type. noteType={}", noteType.getName());
     }
     var schema =
-        getNoteSchema(analysisNote.getFlds(), template.frontTemplate(), template.backTemplate());
+        getNoteSchema(ankiNote.getFlds(), template.frontTemplate(), template.backTemplate());
     return new NoteEntity(deckId, UUID.randomUUID(), schema.front(), schema.back());
   }
 

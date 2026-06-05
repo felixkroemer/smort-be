@@ -23,8 +23,7 @@ public class DeckCron {
         deckMeta.setStatus(DeckStatus.DELETED);
         deckRepository.saveDeckMeta(deckMeta);
       } catch (Exception e) {
-        log.error(
-            "Could not delete deck marked for deletion. deckId={}", deckMeta.getDeckId());
+        log.error("Could not delete deck marked for deletion. deckId={}", deckMeta.getDeckId());
       }
     }
   }

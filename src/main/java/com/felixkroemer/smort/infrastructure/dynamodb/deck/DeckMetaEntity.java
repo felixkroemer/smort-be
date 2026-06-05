@@ -31,7 +31,7 @@ public class DeckMetaEntity {
   private String name;
 
   private String userId;
-  
+
   private DeckStatus status;
 
   public DeckMetaEntity(UUID deckId, String name, String userId) {

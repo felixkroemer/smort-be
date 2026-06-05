@@ -3,7 +3,7 @@ package com.felixkroemer.smort.application.anki;
 import com.felixkroemer.smort.application.anki.dto.*;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.AnalysisService;
-import com.felixkroemer.smort.domain.anki.AnkiNoteAnalysisService;
+import com.felixkroemer.smort.domain.anki.AnkiNoteService;
 import com.felixkroemer.smort.domain.anki.AnkiNoteTypeService;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
@@ -30,7 +30,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class AnalysisController {
 
   private final AnalysisService analysisService;
-  private final AnkiNoteAnalysisService ankiNoteAnalysisService;
+  private final AnkiNoteService ankiNoteService;
   private final ChatOrchestrationService chatOrchestrationService;
   private final AnkiNoteTypeService ankiNoteTypeService;
 
@@ -80,7 +80,7 @@ public class AnalysisController {
   @GetMapping("/{analysisId}/notes/{noteId}")
   public AnkiNoteResponse getNote(
       @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
-    var note = ankiNoteAnalysisService.getNote(analysisId, noteId);
+    var note = ankiNoteService.getNote(analysisId, noteId);
     return ankiNoteMapper.toNoteResponseDto(note);
   }
 
@@ -94,7 +94,7 @@ public class AnalysisController {
   public DerivedNoteResponse getDerivedNote(
       @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
     return ankiNoteMapper.toDerivedNoteResponseDto(
-        ankiNoteAnalysisService
+        ankiNoteService
             .getDerivedNote(analysisId, noteId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)));
   }
@@ -152,7 +152,7 @@ public class AnalysisController {
   @PatchMapping("/{analysisId}/notes/{noteId}/format")
   public DerivedNoteResponse formatNote(
       @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
-    var derivedNote = ankiNoteAnalysisService.formatNote(analysisId, noteId);
+    var derivedNote = ankiNoteService.formatNote(analysisId, noteId);
     return ankiNoteMapper.toDerivedNoteResponseDto(derivedNote);
   }
 
@@ -162,7 +162,7 @@ public class AnalysisController {
       @PathVariable("noteId") Long noteId,
       @RequestBody ChatMessageRequest chatMessageRequest) {
     var chatMessageResponses =
-        ankiNoteAnalysisService.chat(analysisId, noteId, chatMessageRequest.message());
+        ankiNoteService.chat(analysisId, noteId, chatMessageRequest.message());
     return chatMessageMapper.toDto(chatMessageResponses);
   }
 

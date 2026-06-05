@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class AnkiNoteAnalysisService {
+public class AnkiNoteService {
 
   private final AnkiNoteRepository ankiNoteRepository;
   private final DerivedNoteRepository derivedNoteRepository;
@@ -26,7 +26,7 @@ public class AnkiNoteAnalysisService {
   private final ChatService chatService;
   private final AnkiNoteTypeService noteTypeService;
 
-  public AnalysisNote getNote(UUID analysisId, Long noteId) {
+  public AnkiNote getNote(UUID analysisId, Long noteId) {
     var note = ankiNoteRepository.findNoteByAnalysisIdAndNoteId(analysisId, noteId);
     var noteTypes = noteTypeService.getNoteTypesByAnalysisId(analysisId);
     var noteType = noteTypes.get(note.getNoteTypeId());
@@ -35,7 +35,7 @@ public class AnkiNoteAnalysisService {
         IntStream.range(0, noteTypeFieldNames.size())
             .boxed()
             .collect(Collectors.toMap(noteTypeFieldNames::get, note.getFlds()::get));
-    return new AnalysisNote(note.getId(), fields, note.getGuid(), note.getNoteTypeId());
+    return new AnkiNote(note.getId(), fields, note.getGuid(), note.getNoteTypeId());
   }
 
   public Optional<DerivedNoteEntity> getDerivedNote(UUID analysisId, Long noteId) {

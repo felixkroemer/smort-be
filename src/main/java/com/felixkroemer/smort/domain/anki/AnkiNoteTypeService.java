@@ -2,8 +2,6 @@ package com.felixkroemer.smort.domain.anki;
 
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteTypeEntity;
-
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;

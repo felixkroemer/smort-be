@@ -3,7 +3,7 @@ package com.felixkroemer.smort.application.anki;
 import com.felixkroemer.smort.application.anki.dto.AnkiNoteResponse;
 import com.felixkroemer.smort.application.anki.dto.DeckResponse;
 import com.felixkroemer.smort.application.anki.dto.DerivedNoteResponse;
-import com.felixkroemer.smort.domain.anki.AnalysisNote;
+import com.felixkroemer.smort.domain.anki.AnkiNote;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiDeckEntity;
 import java.util.List;
@@ -19,9 +19,9 @@ public interface AnkiNoteMapper {
   @Mapping(source = "noteId", target = "id")
   DerivedNoteResponse toDerivedNoteResponseDto(DerivedNoteEntity derivedNoteEntity);
 
-  List<AnkiNoteResponse> toNoteResponseDto(List<AnalysisNote> entity);
+  List<AnkiNoteResponse> toNoteResponseDto(List<AnkiNote> entity);
 
-  AnkiNoteResponse toNoteResponseDto(AnalysisNote entity);
+  AnkiNoteResponse toNoteResponseDto(AnkiNote entity);
 
   List<DeckResponse> toDeckResponseDto(List<AnkiDeckEntity> entities);
 

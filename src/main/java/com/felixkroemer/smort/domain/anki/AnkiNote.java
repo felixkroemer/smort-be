@@ -6,12 +6,12 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class AnalysisNote {
+public class AnkiNote {
   private Long id;
 
   private Map<String, String> flds;
 
   private String guid;
-  
+
   private Long noteTypeId;
 }

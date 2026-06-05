@@ -1,11 +1,8 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.chat;
 
-import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.ChatKeys;
 import java.time.Instant;
 import java.util.Optional;
-import java.util.UUID;
-
-import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.ChatKeys;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

@@ -34,7 +34,8 @@ public class DerivedNoteRepository {
         .toList();
   }
 
-  public Optional<DerivedNoteEntity> finDerivedNotedByAnalysisIdAndNoteId(UUID analysisId, Long noteId) {
+  public Optional<DerivedNoteEntity> finDerivedNotedByAnalysisIdAndNoteId(
+      UUID analysisId, Long noteId) {
     Key key =
         Key.builder()
             .partitionValue(AnalysisKeys.analysisPk(analysisId))
@@ -49,7 +50,7 @@ public class DerivedNoteRepository {
   }
 
   public void saveInTx(
-          TransactWriteItemsEnhancedRequest.Builder txBuilder, DerivedNoteEntity entity) {
+      TransactWriteItemsEnhancedRequest.Builder txBuilder, DerivedNoteEntity entity) {
     txBuilder.addPutItem(table, entity);
   }
 }
