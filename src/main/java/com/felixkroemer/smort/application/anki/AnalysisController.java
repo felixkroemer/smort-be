@@ -4,12 +4,16 @@ import com.felixkroemer.smort.application.anki.dto.*;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.AnalysisService;
 import com.felixkroemer.smort.domain.anki.AnkiNoteAnalysisService;
+import com.felixkroemer.smort.domain.anki.AnkiNoteTypeService;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
+import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteTypeEntity;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -28,6 +32,7 @@ public class AnalysisController {
   private final AnalysisService analysisService;
   private final AnkiNoteAnalysisService ankiNoteAnalysisService;
   private final ChatOrchestrationService chatOrchestrationService;
+  private final AnkiNoteTypeService ankiNoteTypeService;
 
   private final AnalysisMapper analysisMapper;
   private final AnkiNoteMapper ankiNoteMapper;
@@ -99,6 +104,13 @@ public class AnalysisController {
     return analysisService.getDerivedNotes(analysisId).stream()
         .map(ankiNoteMapper::toDerivedNoteResponseDto)
         .toList();
+  }
+
+  @GetMapping("/{analysisId}/noteTypes")
+  public Map<String, List<String>> getNoteTypes(@PathVariable("analysisId") UUID analysisId) {
+    var noteTypes = analysisService.getNoteTypes(analysisId);
+    return noteTypes.stream()
+        .collect(Collectors.toMap(AnkiNoteTypeEntity::getName, AnkiNoteTypeEntity::getFields));
   }
 
   @GetMapping("/{analysisId}/derivedNotes/export")

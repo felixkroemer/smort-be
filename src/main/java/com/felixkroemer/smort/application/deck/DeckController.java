@@ -33,7 +33,7 @@ public class DeckController {
 
   @PostMapping()
   public void importAnalysis(@RequestBody ImportAnalysisRequest importAnalysisRequest) {
-    deckService.importDeck(importAnalysisRequest.id());
+    deckService.importDeck(importAnalysisRequest.id(), importAnalysisRequest.templates());
   }
 
   @GetMapping

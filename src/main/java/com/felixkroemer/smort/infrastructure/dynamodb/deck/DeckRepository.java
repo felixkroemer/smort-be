@@ -105,7 +105,8 @@ public class DeckRepository {
         Expression.builder()
             .expression("#s = :status")
             .expressionNames(Map.of("#s", "status"))
-            .expressionValues(Map.of(":status", AttributeValue.fromS("MARKED_FOR_DELETION")))
+            .expressionValues(
+                Map.of(":status", AttributeValue.fromS(DeckStatus.MARKED_FOR_DELETION.toString())))
             .build();
 
     return deckMetaTable

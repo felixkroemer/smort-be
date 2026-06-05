@@ -2,6 +2,8 @@ package com.felixkroemer.smort.domain.anki;
 
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteTypeEntity;
+
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
@@ -17,7 +19,7 @@ public class AnkiNoteTypeService {
 
   private final AnkiNoteRepository ankiNoteRepository;
 
-  public Map<Long, AnkiNoteTypeEntity> getNoteTypes(UUID analysisId) {
+  public Map<Long, AnkiNoteTypeEntity> getNoteTypesByAnalysisId(UUID analysisId) {
     var noteTypes = ankiNoteRepository.findNoteTypesByAnalysisId(analysisId);
     return noteTypes.stream()
         .collect(Collectors.toMap(AnkiNoteTypeEntity::getId, Function.identity()));

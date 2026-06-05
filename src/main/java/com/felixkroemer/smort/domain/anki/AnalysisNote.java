@@ -12,4 +12,6 @@ public class AnalysisNote {
   private Map<String, String> flds;
 
   private String guid;
+  
+  private Long noteTypeId;
 }

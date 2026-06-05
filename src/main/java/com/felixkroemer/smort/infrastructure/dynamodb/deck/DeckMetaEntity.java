@@ -41,6 +41,6 @@ public class DeckMetaEntity {
     this.userDeckIndexGsiSk = MetaKeys.userDeckIndexGsiSk(deckId);
     this.deckId = deckId;
     this.name = name;
-    this.status = DeckStatus.ACTIVE;
+    this.status = DeckStatus.IMPORTING;
   }
 }

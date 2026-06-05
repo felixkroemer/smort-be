@@ -28,14 +28,14 @@ public class AnkiNoteAnalysisService {
 
   public AnalysisNote getNote(UUID analysisId, Long noteId) {
     var note = ankiNoteRepository.findNoteByAnalysisIdAndNoteId(analysisId, noteId);
-    var noteTypes = noteTypeService.getNoteTypes(analysisId);
+    var noteTypes = noteTypeService.getNoteTypesByAnalysisId(analysisId);
     var noteType = noteTypes.get(note.getNoteTypeId());
     var noteTypeFieldNames = noteType.getFields();
     var fields =
         IntStream.range(0, noteTypeFieldNames.size())
             .boxed()
             .collect(Collectors.toMap(noteTypeFieldNames::get, note.getFlds()::get));
-    return new AnalysisNote(note.getId(), fields, note.getGuid());
+    return new AnalysisNote(note.getId(), fields, note.getGuid(), note.getNoteTypeId());
   }
 
   public Optional<DerivedNoteEntity> getDerivedNote(UUID analysisId, Long noteId) {

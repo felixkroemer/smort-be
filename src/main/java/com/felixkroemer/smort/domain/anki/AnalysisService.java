@@ -111,11 +111,12 @@ public class AnalysisService {
           analysis.getStatus());
     }
 
-    var deck = getDecks(analysisId).stream()
-        .filter(d -> d.getId().equals(deckId))
-        .findAny()
-        .orElseThrow(
-            () -> new SmortException("Deck not found. id={}, deckId={}", analysisId, deckId));
+    var deck =
+        getDecks(analysisId).stream()
+            .filter(d -> d.getId().equals(deckId))
+            .findAny()
+            .orElseThrow(
+                () -> new SmortException("Deck not found. id={}, deckId={}", analysisId, deckId));
 
     analysis.setStatus(AnalysisStatus.DECK_SELECTED);
     analysis.setDeckId(deckId);
@@ -125,7 +126,7 @@ public class AnalysisService {
   public List<AnalysisNote> getNotes(UUID analysisId) {
     var analysis = getAnalysis(analysisId);
 
-    var noteTypes = noteTypeService.getNoteTypes(analysisId);
+    var noteTypes = noteTypeService.getNoteTypesByAnalysisId(analysisId);
     var notes = ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, analysis.getDeckId());
     return notes.stream()
         .map(
@@ -136,7 +137,7 @@ public class AnalysisService {
                   IntStream.range(0, noteTypeFieldNames.size())
                       .boxed()
                       .collect(Collectors.toMap(noteTypeFieldNames::get, n.getFlds()::get));
-              return new AnalysisNote(n.getId(), fields, n.getGuid());
+              return new AnalysisNote(n.getId(), fields, n.getGuid(), n.getNoteTypeId());
             })
         .toList();
   }
@@ -147,6 +148,16 @@ public class AnalysisService {
 
   public List<DerivedNoteEntity> getDerivedNotes(UUID analysisId) {
     return derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId);
+  }
+
+  public List<AnkiNoteTypeEntity> getNoteTypes(UUID analysisId) {
+    var notes = getNotes(analysisId);
+    var deckNoteTypeIds =
+        notes.stream().map(AnalysisNote::getNoteTypeId).collect(Collectors.toSet());
+    var allNoteTypes = ankiNoteRepository.findNoteTypesByAnalysisId(analysisId);
+    return allNoteTypes.stream()
+        .filter(noteType -> deckNoteTypeIds.contains(noteType.getId()))
+        .toList();
   }
 
   public Map<DerivedNoteEntity, String> getDerivedNoteToGuidMapping(
