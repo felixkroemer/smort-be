@@ -1,11 +1,12 @@
 package com.felixkroemer.smort.domain.deck;
 
+import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.AnalysisService;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
-import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckMetaEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckRepository;
+import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
-
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -46,8 +47,24 @@ public class DeckService {
 
     deckRepository.saveDeckMeta(new DeckMetaEntity(deckId, analysis.getDeckName(), "default"));
   }
-  
+
   public List<DeckMetaEntity> getDecks() {
     return deckRepository.findDeckMetasByUserId("default");
+  }
+
+  public void deleteDeck(UUID deckId) {
+    var deck =
+        deckRepository
+            .findDeckMetaByDeckId(deckId)
+            .orElseThrow(() -> new SmortException("Could not find deck. deckId={}", deckId));
+    if (deck.getStatus() == DeckStatus.MARKED_FOR_DELETION) {
+      throw new SmortException("Deck is already marked for deletion. deckId={}", deckId);
+    }
+    deck.setStatus(DeckStatus.MARKED_FOR_DELETION);
+    deckRepository.saveDeckMeta(deck);
+  }
+
+  public void deleteNote(UUID deckId, UUID noteId) {
+    deckRepository.deleteNoteByDeckIdAndNoteId(deckId, noteId);
   }
 }

@@ -31,6 +31,8 @@ public class DeckMetaEntity {
   private String name;
 
   private String userId;
+  
+  private DeckStatus status;
 
   public DeckMetaEntity(UUID deckId, String name, String userId) {
     this.pk = DeckKeys.deckPk(deckId);
@@ -39,5 +41,6 @@ public class DeckMetaEntity {
     this.userDeckIndexGsiSk = MetaKeys.userDeckIndexGsiSk(deckId);
     this.deckId = deckId;
     this.name = name;
+    this.status = DeckStatus.ACTIVE;
   }
 }

@@ -78,4 +78,14 @@ public class DeckController {
     var chatMessageResponses = chatOrchestrationService.getChat(DeckKeys.deckPk(deckId), noteId);
     return chatMessageMapper.toDto(chatMessageResponses);
   }
+  
+  @DeleteMapping("/{deckId}")
+  public void deleteDeck(@PathVariable("deckId") UUID deckId) {
+    deckService.deleteDeck(deckId);
+  }
+
+  @DeleteMapping("/{deckId}/notes/{noteId}")
+  public void deleteDeck(@PathVariable("deckId") UUID deckId, @PathVariable("noteId") UUID noteId) {
+    deckService.deleteNote(deckId, noteId);
+  }
 }

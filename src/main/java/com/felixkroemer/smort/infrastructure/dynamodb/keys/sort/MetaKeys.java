@@ -8,6 +8,11 @@ public final class MetaKeys {
     return "META#";
   }
 
+
+  public static String metaPrefix() {
+    return "META#";
+  }
+
   public static String userDeckIndexGsiSk(UUID deckId) {
     return "DECK#" + deckId;
   }
