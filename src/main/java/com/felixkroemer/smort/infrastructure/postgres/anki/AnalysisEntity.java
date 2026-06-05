@@ -4,6 +4,8 @@ import com.felixkroemer.smort.infrastructure.postgres.common.AuditEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.nio.file.Path;
+
 @Entity()
 @Table(name = "analysis")
 @Getter
@@ -12,7 +14,7 @@ import lombok.*;
 @RequiredArgsConstructor
 public class AnalysisEntity extends AuditEntity {
 
-  String dbPath;
+  Path dbPath;
 
   Long deckId;
 

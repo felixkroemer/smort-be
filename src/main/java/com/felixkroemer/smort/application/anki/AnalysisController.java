@@ -72,6 +72,11 @@ public class AnalysisController {
     return analysisMapper.toAnalysisResponse(analysisService.getAnalysis(analysisId));
   }
 
+  @DeleteMapping("/{analysisId}")
+  public void deleteAnalysis(@PathVariable("analysisId") UUID analysisId) {
+    analysisService.deleteAnalysis(analysisId);
+  }
+
   @GetMapping
   public List<AnalysisResponse> getAnalyses() {
     return analysisMapper.toAnalysisResponse(analysisService.getAnalyses());

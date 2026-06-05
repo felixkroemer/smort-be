@@ -4,5 +4,4 @@ public enum DeckStatus {
   IMPORTING,
   ACTIVE,
   MARKED_FOR_DELETION,
-  DELETED
 }

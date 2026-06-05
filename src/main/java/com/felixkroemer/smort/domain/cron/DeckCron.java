@@ -1,7 +1,6 @@
 package com.felixkroemer.smort.domain.cron;
 
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckRepository;
-import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -20,10 +19,9 @@ public class DeckCron {
     for (var deckMeta : decksMarkedForDeletion) {
       try {
         deckRepository.deleteDeckNotes(deckMeta.getDeckId());
-        deckMeta.setStatus(DeckStatus.DELETED);
-        deckRepository.saveDeckMeta(deckMeta);
+        deckRepository.deleteDeckMeta(deckMeta.getDeckId());
       } catch (Exception e) {
-        log.error("Could not delete deck marked for deletion. deckId={}", deckMeta.getDeckId());
+        log.error("Could not fully delete deck marked for deletion. deckId={}", deckMeta.getDeckId());
       }
     }
   }

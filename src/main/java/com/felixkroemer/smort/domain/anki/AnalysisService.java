@@ -89,7 +89,7 @@ public class AnalysisService {
       throw new SmortException(e);
     }
 
-    analysis.setDbPath(dbPath.toString());
+    analysis.setDbPath(dbPath);
     analysis.setStatus(AnalysisStatus.DB_UPLOADED);
 
     TransactionUtil.afterCommit(
@@ -169,5 +169,19 @@ public class AnalysisService {
 
     return derivedNotes.stream()
         .collect(Collectors.toMap(Function.identity(), d -> guidByNoteId.get(d.getNoteId())));
+  }
+
+  // TODO: retry failed deletion attempts
+  public void deleteAnalysis(UUID analysisId) {
+    var analysis = getAnalysis(analysisId);
+    analysis.setStatus(AnalysisStatus.MARKED_FOR_DELETION);
+    analysisRepository.save(analysis);
+    try {
+      Files.deleteIfExists(analysis.getDbPath());
+      derivedNoteRepository.deleteAnalysisDerivedNotes(analysisId);
+      analysisRepository.delete(analysis);
+    } catch (Exception e) {
+      log.warn("Could not fully delete analysis. analysisId={}", analysis.getId(), e);
+    }
   }
 }

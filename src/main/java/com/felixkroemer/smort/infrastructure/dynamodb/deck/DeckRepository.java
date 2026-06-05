@@ -152,6 +152,15 @@ public class DeckRepository {
                   BatchWriteItemEnhancedRequest.builder().writeBatches(writeBatch.build()).build());
             });
 
-    log.info("Deleted deck. deckId={}", deckId);
+    log.info("Deleted deck notes. deckId={}", deckId);
+  }
+
+  public void deleteDeckMeta(UUID deckId) {
+    var key =
+        Key.builder()
+            .partitionValue(DeckKeys.deckPk(deckId))
+            .sortValue(MetaKeys.metaPrefix())
+            .build();
+    deckMetaTable.deleteItem(key);
   }
 }

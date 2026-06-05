@@ -3,8 +3,19 @@ package com.felixkroemer.smort.infrastructure.sqlite.anki;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.IntStream;
+
+import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.NoteKeys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.enhanced.dynamodb.Key;
+import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteItemEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.WriteBatch;
 
 @Service
 @RequiredArgsConstructor

@@ -53,7 +53,7 @@ public class EntityManagerFactoryCache {
       throw new SmortException("Analysis is not ready. id={}", analysisId);
     }
 
-    var dbPath = Path.of(analysis.getDbPath());
+    var dbPath = analysis.getDbPath();
 
     return cache
         .get(

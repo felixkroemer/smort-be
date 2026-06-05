@@ -121,9 +121,6 @@ public class DeckService {
         deckRepository
             .findDeckMetaByDeckId(deckId)
             .orElseThrow(() -> new SmortException("Could not find deck. deckId={}", deckId));
-    if (deck.getStatus() == DeckStatus.MARKED_FOR_DELETION) {
-      throw new SmortException("Deck is already marked for deletion. deckId={}", deckId);
-    }
     deck.setStatus(DeckStatus.MARKED_FOR_DELETION);
     deckRepository.saveDeckMeta(deck);
   }
