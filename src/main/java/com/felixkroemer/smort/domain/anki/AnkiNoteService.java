@@ -39,7 +39,7 @@ public class AnkiNoteService {
   }
 
   public Optional<DerivedNoteEntity> getDerivedNote(UUID analysisId, Long noteId) {
-    return derivedNoteRepository.finDerivedNotedByAnalysisIdAndNoteId(analysisId, noteId);
+    return derivedNoteRepository.findDerivedNotedByAnalysisIdAndNoteId(analysisId, noteId);
   }
 
   public Map<String, String> getContent(UUID analysisId, Long noteId) {

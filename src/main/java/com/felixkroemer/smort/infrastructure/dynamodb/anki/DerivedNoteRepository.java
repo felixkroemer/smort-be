@@ -37,7 +37,7 @@ public class DerivedNoteRepository {
         .toList();
   }
 
-  public Optional<DerivedNoteEntity> finDerivedNotedByAnalysisIdAndNoteId(
+  public Optional<DerivedNoteEntity> findDerivedNotedByAnalysisIdAndNoteId(
       UUID analysisId, Long noteId) {
     Key key =
         Key.builder()

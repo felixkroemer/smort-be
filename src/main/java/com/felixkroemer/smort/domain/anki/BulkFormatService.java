@@ -70,19 +70,21 @@ public class BulkFormatService {
     var notes = ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, analysis.getDeckId());
     var noteTypes = noteTypeService.getNoteTypesByAnalysisId(analysisId);
 
+    var existingDerivedNotes =
+        derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId).stream()
+            .map(DerivedNoteEntity::getNoteId)
+            .collect(Collectors.toSet());
+
+    var notesToProcess =
+        notes.stream().filter(note -> !existingDerivedNotes.contains(note.getId())).toList();
+
+    job.setCompletedNotes(existingDerivedNotes.size());
+    job.setTotalNotes(notes.size());
+
+    int processed = 0;
     int failed = 0;
 
-    for (var noteEntity : notes) {
-      var existing =
-          derivedNoteRepository.finDerivedNotedByAnalysisIdAndNoteId(
-              analysisId, noteEntity.getId());
-      if (existing.isPresent()) {
-        job.setCompletedNotes(job.getCompletedNotes() + 1);
-        job.setLastUpdatedAt(Instant.now());
-        bulkFormatRepository.save(job);
-        continue;
-      }
-
+    for (var noteEntity : notesToProcess) {
       try {
         var noteType = noteTypes.get(noteEntity.getNoteTypeId());
         var typeFieldNames = noteType.getFields();
@@ -97,6 +99,7 @@ public class BulkFormatService {
                 analysisId, noteEntity.getId(), noteSchema.getFront(), noteSchema.getBack());
         derivedNoteRepository.save(derivedNote);
 
+        processed++;
         job.setCompletedNotes(job.getCompletedNotes() + 1);
         job.setLastUpdatedAt(Instant.now());
         bulkFormatRepository.save(job);
@@ -118,7 +121,7 @@ public class BulkFormatService {
     log.info(
         "Bulk format complete. analysisId={}, processed={}, failed={}",
         analysisId,
-        job.getCompletedNotes(),
+        processed,
         failed);
   }
 
