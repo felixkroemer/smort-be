@@ -1,5 +1,6 @@
 package com.felixkroemer.smort.infrastructure.dynamodb;
 
+import com.felixkroemer.smort.infrastructure.dynamodb.anki.BulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageResponseEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckMetaEntity;
@@ -52,8 +53,19 @@ public class DynamoDbClientConfig {
   }
 
   @Bean
+  DynamoDbTable<BulkFormatEntity> bulkFormatTable(DynamoDbEnhancedClient enhancedClient) {
+    return enhancedClient.table(COMMON_TABLE_NAME, TableSchema.fromBean(BulkFormatEntity.class));
+  }
+
+  @Bean
   DynamoDbIndex<DeckMetaEntity> userDeckIndex(DynamoDbTable<DeckMetaEntity> deckMetaTable) {
     return deckMetaTable.index("UserDeckIndex");
+  }
+
+  @Bean
+  DynamoDbIndex<BulkFormatEntity> statusBulkFormatIndex(
+      DynamoDbTable<BulkFormatEntity> bulkFormatTable) {
+    return bulkFormatTable.index("statusBulkFormatIndex");
   }
 
   @Bean

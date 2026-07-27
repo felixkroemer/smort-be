@@ -21,6 +21,12 @@ public class BulkFormatEntity {
     @Getter(onMethod_ = @DynamoDbSortKey)
     private String sk;
 
+    @Getter(onMethod_ = @DynamoDbSecondaryPartitionKey(indexNames = "StatusBulkFormatIndex"))
+    private String statusBulkFormatIndexGsiPk;
+
+    @Getter(onMethod_ = @DynamoDbSecondarySortKey(indexNames = "StatusBulkFormatIndex"))
+    private String statusBulkFormatIndexGsiSk;
+
     private BulkFormatStatus status;
     private Instant createdAt;
     private Instant lastUpdatedAt;
@@ -33,6 +39,17 @@ public class BulkFormatEntity {
         this.status = BulkFormatStatus.PENDING;
         this.createdAt = Instant.now();
         this.lastUpdatedAt = Instant.now();
+        updateGsiKeys();
+    }
+
+    public void setStatus(BulkFormatStatus status) {
+        this.status = status;
+        updateGsiKeys();
+    }
+
+    private void updateGsiKeys() {
+        this.statusBulkFormatIndexGsiPk = status.name();
+        this.statusBulkFormatIndexGsiSk = Instant.now().toString();
     }
 
     public UUID getAnalysisId() {

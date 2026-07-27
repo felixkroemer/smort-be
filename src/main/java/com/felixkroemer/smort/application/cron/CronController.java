@@ -1,5 +1,6 @@
 package com.felixkroemer.smort.application.cron;
 
+import com.felixkroemer.smort.domain.cron.BulkFormatCron;
 import com.felixkroemer.smort.domain.cron.DeckCron;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,9 +13,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class CronController {
 
   private final DeckCron deckCron;
+  private final BulkFormatCron bulkFormatCron;
 
   @PostMapping("/deleteDecksMarkedForDeletion")
   public void deleteDecksMarkedForDeletion() {
     deckCron.deleteDecksMarkedForDeletion();
+  }
+
+  @PostMapping("/resumeCrashedBulkFormats")
+  public void resumeCrashedBulkFormats() {
+    bulkFormatCron.resumeCrashedBulkFormats();
   }
 }
