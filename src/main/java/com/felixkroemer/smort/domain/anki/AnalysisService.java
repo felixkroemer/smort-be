@@ -177,7 +177,9 @@ public class AnalysisService {
     analysis.setStatus(AnalysisStatus.MARKED_FOR_DELETION);
     analysisRepository.save(analysis);
     try {
-      Files.deleteIfExists(analysis.getDbPath());
+      if (analysis.getDbPath() != null) {
+        Files.deleteIfExists(analysis.getDbPath());
+      }
       derivedNoteRepository.deleteAnalysisDerivedNotes(analysisId);
       analysisRepository.delete(analysis);
     } catch (Exception e) {

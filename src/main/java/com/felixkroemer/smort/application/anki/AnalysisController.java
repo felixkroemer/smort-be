@@ -5,6 +5,7 @@ import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.AnalysisService;
 import com.felixkroemer.smort.domain.anki.AnkiNoteService;
 import com.felixkroemer.smort.domain.anki.AnkiNoteTypeService;
+import com.felixkroemer.smort.domain.anki.BulkFormatService;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteTypeEntity;
@@ -33,6 +34,7 @@ public class AnalysisController {
   private final AnkiNoteService ankiNoteService;
   private final ChatOrchestrationService chatOrchestrationService;
   private final AnkiNoteTypeService ankiNoteTypeService;
+  private final BulkFormatService bulkFormatService;
 
   private final AnalysisMapper analysisMapper;
   private final AnkiNoteMapper ankiNoteMapper;
@@ -177,5 +179,19 @@ public class AnalysisController {
     var chatMessageResponses =
         chatOrchestrationService.getChat(AnalysisKeys.analysisPk(analysisId), noteId);
     return chatMessageMapper.toDto(chatMessageResponses);
+  }
+
+  @PostMapping("/{analysisId}/format")
+  @ResponseStatus(HttpStatus.ACCEPTED)
+  public void startBulkFormat(@PathVariable UUID analysisId) {
+    bulkFormatService.startBulkFormat(analysisId);
+  }
+
+  @GetMapping("/{analysisId}/format/status")
+  public BulkFormatStatusResponse getBulkFormatStatus(@PathVariable UUID analysisId) {
+    var job = bulkFormatService.getJobStatus(analysisId);
+    return new BulkFormatStatusResponse(
+        job.getStatus().name(), job.getCreatedAt(), job.getLastUpdatedAt(),
+        job.getTotalNotes(), job.getCompletedNotes());
   }
 }
