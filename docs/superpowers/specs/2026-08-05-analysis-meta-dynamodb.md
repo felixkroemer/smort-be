@@ -39,7 +39,7 @@ Single DynamoDB table (`common-table`). The `ANALYSIS#<analysisId>` partition co
 `@DynamoDbBean` with:
 - `pk` — `ANALYSIS#<analysisId>` via `AnalysisKeys.analysisPk(UUID)`
 - `sk` — `META#` via `MetaKeys.metaSk()`
-- `dbPath` — `Path` (nullable)
+- `dbPath` — `String` (nullable; the DynamoDB enhanced client cannot map `java.nio.file.Path` directly, so the raw path string is stored and converted to/from `Path` in the service layer)
 - `deckId` — `Long` (nullable; the sqlite deck id, distinct from DynamoDB `DECK#` UUIDs)
 - `deckName` — `String`
 - `status` — `AnalysisStatus`
@@ -64,14 +64,14 @@ Single DynamoDB table (`common-table`). The `ANALYSIS#<analysisId>` partition co
 - `void save(AnalysisMetaEntity)`
 - `void delete(UUID analysisId)` — delete by key
 
-`BulkFormatRepository` is unchanged except for the key constant.
+`BulkFormatRepository` is unchanged except for the key constant. A `delete(UUID analysisId)` method is added for `deleteAnalysis`.
 
 ### 4. Domain classes — new, `domain/anki/`
 
 - `Analysis` — `analysisId` (UUID), `status`, `deckId` (Long, nullable), `deckName`, `dbPath` (Path), `createdAt`, `updatedAt`, `Optional<BulkFormat> bulkFormat`. `@Getter`/`@Setter` mutable, mirroring current service usage.
 - `BulkFormat` — `status` (`BulkFormatStatus`), `createdAt`, `lastUpdatedAt`, `totalNotes` (int), `completedNotes` (int).
 
-`AnalysisService` builds `Analysis` from an `AnalysisMetaEntity` + `Optional<BulkFormatEntity>` (mapping `BulkFormatEntity` → `BulkFormat`).
+`AnalysisService` builds `Analysis` from an `AnalysisMetaEntity` + `Optional<BulkFormatEntity>` (mapping `BulkFormatEntity` → `BulkFormat`). The domain `Analysis.dbPath` remains `Path`; conversion between the entity's `String` and the domain's `Path` happens in `AnalysisService`. The entity gets a `setDbPath(String)` (service converts), and `EntityManagerFactoryCache` wraps the entity's string with `Path.of(...)`.
 
 ### 5. `AnalysisService` — modified, `domain/anki/`
 
@@ -107,7 +107,7 @@ Injects `AnalysisMetaRepository` + `BulkFormatRepository` (replaces `AnalysisRep
   - Remove `spring-boot-starter-data-jpa`, `org.postgresql:postgresql`, `spring-boot-starter-liquibase`, `spring-boot-starter-data-jpa-test`, `spring-boot-starter-liquibase-test`
   - Add explicit `spring-orm`, `hibernate-core`, `spring-jdbc` (used by `EntityManagerFactoryCache`: `LocalContainerEntityManagerFactoryBean`, `HibernateJpaVendorAdapter`, `DelegatingDataSource`, and the sqlite entities' `jakarta.persistence` annotations)
 - `application.properties` / `application-local.properties`: remove `spring.datasource.*` and `spring.liquibase.*`
-- `docker-compose.yaml`: remove postgres service
+- `docker-compose.yaml`: remove the postgres service block, keep `dynamodb-local`
 - Delete `src/main/resources/db/changelog/`
 - Delete `common/util/TransactionUtil.java` (only used by `AnalysisService`)
 
@@ -119,9 +119,9 @@ Injects `AnalysisMetaRepository` + `BulkFormatRepository` (replaces `AnalysisRep
 
 ## Testing / verification
 
-- `./mvnw compile` — compile clean
-- `./mvnw test` — context-load smoke test (`SmortApplicationTests`) passes
-- No unit tests exist for the affected classes; behavior is verified by compile + context load, consistent with the current repo state
+- `./mvnw compile` — compile clean (with `JAVA_HOME=/home/fekr/.jdks/corretto-25.0.2`)
+- `./mvnw test` — context-load smoke test (`SmortApplicationTests`) is pre-existing-broken in this environment (requires `POSTGRES_URL` + the `local` DynamoDB profile) and is not part of this work's gate; the datasource failure it hits disappears once `spring.datasource.*` is removed
+- No unit tests exist for the affected classes; behavior is verified by compile, consistent with the current repo state
 
 ## Out of scope
 
