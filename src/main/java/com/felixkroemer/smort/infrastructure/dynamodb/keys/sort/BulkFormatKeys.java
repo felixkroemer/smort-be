@@ -3,11 +3,11 @@ package com.felixkroemer.smort.infrastructure.dynamodb.keys.sort;
 public final class BulkFormatKeys {
 
   public static String bulkFormatSk() {
-    return "BULKFORMAT#";
+    return "META#BULKFORMAT#";
   }
 
   public static String bulkFormatPrefix() {
-    return "BULKFORMAT#";
+    return "META#BULKFORMAT#";
   }
 
 }
