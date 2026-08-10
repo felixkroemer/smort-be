@@ -5,6 +5,7 @@ import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageResponseEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -62,12 +63,17 @@ public class AnkiNoteService {
                 d -> {
                   d.setFront(noteSchema.getFront());
                   d.setBack(noteSchema.getBack());
+                  d.setLastFormattedAt(Optional.of(Instant.now()));
                   return d;
                 })
             .orElseGet(
-                () ->
-                    new DerivedNoteEntity(
-                        analysisId, noteId, noteSchema.getFront(), noteSchema.getBack()));
+                () -> {
+                  var newNote =
+                      new DerivedNoteEntity(
+                          analysisId, noteId, noteSchema.getFront(), noteSchema.getBack());
+                  newNote.setLastFormattedAt(Optional.of(Instant.now()));
+                  return newNote;
+                });
     derivedNoteRepository.save(derivedNote);
 
     log.info("Formatted note. analysisId={}, noteId={}", analysisId, noteId);
