@@ -1,6 +1,8 @@
 package com.felixkroemer.smort.application.anki;
 
 import com.felixkroemer.smort.application.anki.dto.*;
+import com.felixkroemer.smort.application.anki.mapping.AnalysisDtoMapper;
+import com.felixkroemer.smort.application.anki.mapping.AnkiNoteMapper;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.AnalysisService;
 import com.felixkroemer.smort.domain.anki.AnkiNoteService;
@@ -36,7 +38,7 @@ public class AnalysisController {
   private final AnkiNoteTypeService ankiNoteTypeService;
   private final BulkFormatService bulkFormatService;
 
-  private final AnalysisMapper analysisMapper;
+  private final AnalysisDtoMapper analysisDtoMapper;
   private final AnkiNoteMapper ankiNoteMapper;
   private final ChatMessageMapper chatMessageMapper;
 
@@ -71,7 +73,7 @@ public class AnalysisController {
 
   @GetMapping("/{analysisId}")
   public AnalysisResponse getAnalysis(@PathVariable("analysisId") UUID analysisId) {
-    return analysisMapper.toAnalysisResponse(analysisService.getAnalysis(analysisId));
+    return analysisDtoMapper.toAnalysisResponse(analysisService.getAnalysis(analysisId));
   }
 
   @DeleteMapping("/{analysisId}")
@@ -81,7 +83,7 @@ public class AnalysisController {
 
   @GetMapping
   public List<AnalysisResponse> getAnalyses() {
-    return analysisMapper.toAnalysisResponse(analysisService.getAnalyses());
+    return analysisDtoMapper.toAnalysisResponse(analysisService.getAnalyses());
   }
 
   @GetMapping("/{analysisId}/notes/{noteId}")

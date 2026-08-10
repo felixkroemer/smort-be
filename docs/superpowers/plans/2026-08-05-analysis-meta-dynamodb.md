@@ -605,7 +605,7 @@ Add this method (after `save`):
   }
 ```
 
-- [ ] **Step 4: Update `AnalysisMapper` to map the domain `Analysis`**
+- [ ] **Step 4: Update `AnalysisDtoMapper` to map the domain `Analysis`**
 
 Replace the entire file:
 

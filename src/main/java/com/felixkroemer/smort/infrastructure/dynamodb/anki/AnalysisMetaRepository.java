@@ -1,0 +1,61 @@
+package com.felixkroemer.smort.infrastructure.dynamodb.anki;
+
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.MetaKeys;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Repository;
+import software.amazon.awssdk.enhanced.dynamodb.*;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
+@Repository
+@RequiredArgsConstructor
+@Slf4j
+public class AnalysisMetaRepository {
+
+  private final DynamoDbTable<AnalysisMetaEntity> analysisMetaTable;
+
+  public Optional<AnalysisMetaEntity> findAnalysisMetaByAnalysisId(UUID analysisId) {
+    var key =
+        Key.builder()
+            .partitionValue(AnalysisKeys.analysisPk(analysisId))
+            .sortValue(MetaKeys.metaSk())
+            .build();
+
+    return Optional.ofNullable(analysisMetaTable.getItem(key));
+  }
+
+  public List<AnalysisMetaEntity> findAllAnalysisMetas() {
+    Expression filter =
+        Expression.builder()
+            .expression("#sk = :sk")
+            .expressionNames(Map.of("#sk", "sk"))
+            .expressionValues(Map.of(":sk", AttributeValue.fromS(MetaKeys.metaSk())))
+            .build();
+
+    return analysisMetaTable
+        .scan(ScanEnhancedRequest.builder().filterExpression(filter).build())
+        .items()
+        .stream()
+        .toList();
+  }
+
+  public void save(AnalysisMetaEntity entity) {
+    analysisMetaTable.putItem(entity);
+  }
+
+  public void delete(UUID analysisId) {
+    var key =
+        Key.builder()
+            .partitionValue(AnalysisKeys.analysisPk(analysisId))
+            .sortValue(MetaKeys.metaSk())
+            .build();
+    analysisMetaTable.deleteItem(key);
+  }
+}

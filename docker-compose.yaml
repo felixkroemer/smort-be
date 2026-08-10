@@ -1,12 +1,4 @@
 services:
-  postgres:
-    image: postgres:latest
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
-    ports:
-      - "5432:5432"
   dynamodb-local:
     image: amazon/dynamodb-local
     container_name: dynamodb-local

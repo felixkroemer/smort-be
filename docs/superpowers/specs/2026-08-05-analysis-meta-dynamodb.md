@@ -97,7 +97,7 @@ Injects `AnalysisMetaRepository` + `BulkFormatRepository` (replaces `AnalysisRep
 
 ### 8. Controller & mapper — modified, `application/anki/`
 
-- `AnalysisMapper` (MapStruct) maps domain `Analysis` → `AnalysisResponse` instead of the entity
+- `AnalysisDtoMapper` (MapStruct) maps domain `Analysis` → `AnalysisResponse` instead of the entity
 - `AnalysisResponse` and all REST endpoints remain unchanged; bulk format stays exposed via the existing `/format/status` endpoint
 
 ## Postgres/JPA removal

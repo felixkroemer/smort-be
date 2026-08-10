@@ -6,6 +6,8 @@ import com.felixkroemer.smort.application.anki.dto.ChatMessageResponse;
 import com.felixkroemer.smort.application.deck.dto.DeckResponse;
 import com.felixkroemer.smort.application.deck.dto.ImportAnalysisRequest;
 import com.felixkroemer.smort.application.deck.dto.NoteResponse;
+import com.felixkroemer.smort.application.deck.mapping.DeckMapper;
+import com.felixkroemer.smort.application.deck.mapping.NoteMapper;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.domain.deck.DeckService;
 import com.felixkroemer.smort.domain.deck.NoteService;

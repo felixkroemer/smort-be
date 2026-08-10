@@ -1,8 +1,8 @@
 package com.felixkroemer.smort.infrastructure.sqlite.anki;
 
 import com.felixkroemer.smort.common.exception.SmortException;
-import com.felixkroemer.smort.infrastructure.postgres.anki.AnalysisRepository;
-import com.felixkroemer.smort.infrastructure.postgres.anki.AnalysisStatus;
+import com.felixkroemer.smort.infrastructure.dynamodb.anki.AnalysisMetaRepository;
+import com.felixkroemer.smort.infrastructure.dynamodb.anki.AnalysisStatus;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.persistence.EntityManager;
@@ -28,7 +28,7 @@ import org.sqlite.SQLiteDataSource;
 @Slf4j
 public class EntityManagerFactoryCache {
 
-  private final AnalysisRepository analysisRepository;
+  private final AnalysisMetaRepository analysisMetaRepository;
 
   private final Cache<UUID, EntityManagerFactory> cache =
       Caffeine.newBuilder()
@@ -44,8 +44,8 @@ public class EntityManagerFactoryCache {
   public EntityManager getOrCreate(UUID analysisId) {
 
     var analysis =
-        analysisRepository
-            .findById(analysisId)
+        analysisMetaRepository
+            .findAnalysisMetaByAnalysisId(analysisId)
             .orElseThrow(
                 () -> new SmortException("Could not find analysis by id. id={}", analysisId));
 
@@ -53,7 +53,7 @@ public class EntityManagerFactoryCache {
       throw new SmortException("Analysis is not ready. id={}", analysisId);
     }
 
-    var dbPath = analysis.getDbPath();
+    var dbPath = Path.of(analysis.getDbPath());
 
     return cache
         .get(

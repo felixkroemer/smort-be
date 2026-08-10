@@ -1,4 +1,4 @@
-package com.felixkroemer.smort.application.deck;
+package com.felixkroemer.smort.application.deck.mapping;
 
 import com.felixkroemer.smort.application.deck.dto.NoteResponse;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;

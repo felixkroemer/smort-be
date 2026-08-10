@@ -14,25 +14,25 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class BulkFormatCron {
 
-  private static final Duration CRASH_TIMEOUT = Duration.ofMinutes(5);
+  private static final Duration CRASH_TIMEOUT = Duration.ofMinutes(2);
 
   private final BulkFormatRepository bulkFormatRepository;
   private final BulkFormatService bulkFormatService;
 
-  @Scheduled(cron = "${app.scheduling.bulk-format-cron}")
+  @Scheduled(fixedDelayString = "${app.scheduling.bulk-format-delay}")
   public void resumeCrashedBulkFormats() {
     var allJobs = bulkFormatRepository.findAllInProgress();
     for (var job : allJobs) {
       if (Duration.between(job.getLastUpdatedAt(), Instant.now()).compareTo(CRASH_TIMEOUT) > 0) {
         log.warn(
-            "Resuming crashed bulk format. analysisId={}, lastUpdate={}",
+            "Resuming IN_PROGRESS bulk format. analysisId={}, lastUpdate={}, attempts={}",
             job.getAnalysisId(),
-            job.getLastUpdatedAt());
+            job.getLastUpdatedAt(),
+            job.getAttempts());
         try {
           bulkFormatService.resumeBulkFormat(job.getAnalysisId());
         } catch (Exception e) {
-          log.error(
-              "Failed to resume bulk format. analysisId={}", job.getAnalysisId(), e);
+          log.error("Failed to resume bulk format. analysisId={}", job.getAnalysisId(), e);
         }
       }
     }

@@ -1,4 +1,4 @@
-package com.felixkroemer.smort.application.anki;
+package com.felixkroemer.smort.application.anki.mapping;
 
 import com.felixkroemer.smort.application.anki.dto.AnkiNoteResponse;
 import com.felixkroemer.smort.application.anki.dto.DeckResponse;

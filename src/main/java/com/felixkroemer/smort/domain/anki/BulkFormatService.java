@@ -1,6 +1,7 @@
 package com.felixkroemer.smort.domain.anki;
 
 import com.felixkroemer.smort.common.exception.SmortException;
+import com.felixkroemer.smort.domain.anki.mapping.BulkFormatMapper;
 import com.felixkroemer.smort.domain.chat.ChatService;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
@@ -17,12 +18,15 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class BulkFormatService {
 
+  public static final int MAX_RECENT_FAILED = 2;
+  public static final int MAX_ATTEMPTS = 2;
   private final BulkFormatRepository bulkFormatRepository;
   private final DerivedNoteRepository derivedNoteRepository;
   private final AnkiNoteRepository ankiNoteRepository;
   private final AnkiNoteTypeService noteTypeService;
   private final AnalysisService analysisService;
   private final ChatService chatService;
+  private final BulkFormatMapper bulkFormatMapper;
 
   public void startBulkFormat(UUID analysisId) {
     var existing = bulkFormatRepository.findBulkFormatByAnalysisId(analysisId);
@@ -58,7 +62,6 @@ public class BulkFormatService {
             .orElseThrow(
                 () -> new SmortException("No bulk format job found. analysisId={}", analysisId));
 
-    job.setStatus(BulkFormatStatus.IN_PROGRESS);
     job.setLastUpdatedAt(Instant.now());
     bulkFormatRepository.save(job);
 
@@ -78,11 +81,15 @@ public class BulkFormatService {
     var notesToProcess =
         notes.stream().filter(note -> !existingDerivedNotes.contains(note.getId())).toList();
 
-    job.setCompletedNotes(existingDerivedNotes.size());
-    job.setTotalNotes(notes.size());
-
     int processed = 0;
     int failed = 0;
+    int consecutiveFailed = 0;
+    int attempts = job.getAttempts() + 1;
+
+    job.setAttempts(attempts);
+    job.setCompletedNotes(existingDerivedNotes.size());
+    job.setTotalNotes(notes.size());
+    bulkFormatRepository.save(job);
 
     for (var noteEntity : notesToProcess) {
       try {
@@ -100,34 +107,64 @@ public class BulkFormatService {
         derivedNoteRepository.save(derivedNote);
 
         processed++;
+        consecutiveFailed = 0;
         job.setCompletedNotes(job.getCompletedNotes() + 1);
         job.setLastUpdatedAt(Instant.now());
         bulkFormatRepository.save(job);
 
       } catch (Exception e) {
         failed++;
+        consecutiveFailed++;
         log.warn(
             "Failed to format note during bulk format. analysisId={}, noteId={}",
             analysisId,
             noteEntity.getId(),
             e);
+        if (consecutiveFailed >= MAX_RECENT_FAILED) {
+          log.warn(
+              "Hit consecutive failed limit while processing bulk format. analysisId={}",
+              analysisId);
+          break;
+        }
       }
     }
 
-    job.setStatus(BulkFormatStatus.COMPLETED);
-    job.setLastUpdatedAt(Instant.now());
-    bulkFormatRepository.save(job);
+    if (failed == 0) {
+      job.setStatus(BulkFormatStatus.COMPLETED);
+      job.setLastUpdatedAt(Instant.now());
+      bulkFormatRepository.save(job);
 
-    log.info(
-        "Bulk format complete. analysisId={}, processed={}, failed={}",
-        analysisId,
-        processed,
-        failed);
+      log.info(
+          "Bulk format complete. analysisId={}, processed={}, failed={}",
+          analysisId,
+          processed,
+          failed);
+    } else {
+      if (job.getAttempts() >= MAX_ATTEMPTS) {
+        job.setStatus(BulkFormatStatus.FAILED);
+        job.setLastUpdatedAt(Instant.now());
+        bulkFormatRepository.save(job);
+
+        log.warn(
+            "Bulk format reached max attempts. Setting to FAILED. analysisId={}, processed={}, failed={}",
+            analysisId,
+            processed,
+            failed);
+      } else {
+        log.info(
+            "Bulk format had errors. Will resume later.  analysisId={}, processed={}, failed={}, attempts={}",
+            analysisId,
+            processed,
+            failed,
+            attempts);
+      }
+    }
   }
 
-  public BulkFormatEntity getJobStatus(UUID analysisId) {
+  public BulkFormat getJobStatus(UUID analysisId) {
     return bulkFormatRepository
         .findBulkFormatByAnalysisId(analysisId)
+        .map(bulkFormatMapper::toBulkFormat)
         .orElseThrow(
             () -> new SmortException("No bulk format job found. analysisId={}", analysisId));
   }

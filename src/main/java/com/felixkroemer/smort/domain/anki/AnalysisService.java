@@ -2,15 +2,13 @@ package com.felixkroemer.smort.domain.anki;
 
 import com.felixkroemer.smort.common.config.SmortProperties;
 import com.felixkroemer.smort.common.exception.SmortException;
-import com.felixkroemer.smort.common.util.TransactionUtil;
-import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
-import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteRepository;
-import com.felixkroemer.smort.infrastructure.postgres.anki.AnalysisEntity;
-import com.felixkroemer.smort.infrastructure.postgres.anki.AnalysisRepository;
-import com.felixkroemer.smort.infrastructure.postgres.anki.AnalysisStatus;
+import com.felixkroemer.smort.domain.anki.mapping.AnalysisMapper;
+import com.felixkroemer.smort.domain.anki.mapping.BulkFormatMapper;
+import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.*;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
@@ -21,41 +19,52 @@ import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AnalysisService {
 
-  private final AnalysisRepository analysisRepository;
+  private final AnalysisMetaRepository analysisMetaRepository;
+  private final BulkFormatRepository bulkFormatRepository;
   private final AnkiNoteRepository ankiNoteRepository;
   private final AnkiNoteTypeService noteTypeService;
   private final DerivedNoteRepository derivedNoteRepository;
 
   private final SmortProperties smortProperties;
 
-  @Transactional
+  private final AnalysisMapper analysisMapper;
+  private final BulkFormatMapper bulkFormatMapper;
+
   public UUID createAnalysis() {
-    var analysis = new AnalysisEntity(AnalysisStatus.NEW);
-    analysisRepository.save(analysis);
-    TransactionUtil.afterCommit(() -> log.info("Started new analysis. id={}", analysis.getId()));
-    return analysis.getId();
+    var analysis = new AnalysisMetaEntity(UUID.randomUUID(), AnalysisStatus.NEW);
+    analysisMetaRepository.save(analysis);
+    log.info("Started new analysis. id={}", analysis.getAnalysisId());
+    return analysis.getAnalysisId();
   }
 
-  public AnalysisEntity getAnalysis(UUID analysisId) {
-    return analysisRepository
-        .findById(analysisId)
-        .orElseThrow(() -> new SmortException("Could not find analysis by id. id={}", analysisId));
+  public Analysis getAnalysis(UUID analysisId) {
+    var bulkFormat =
+        bulkFormatRepository
+            .findBulkFormatByAnalysisId(analysisId)
+            .map(bulkFormatMapper::toBulkFormat);
+    return analysisMapper.toAnalysis(getMeta(analysisId), bulkFormat);
   }
 
-  public List<AnalysisEntity> getAnalyses() {
-    return analysisRepository.findAll();
+  public List<Analysis> getAnalyses() {
+    return analysisMetaRepository.findAllAnalysisMetas().stream()
+        .map(
+            entity ->
+                analysisMapper.toAnalysis(
+                    entity,
+                    bulkFormatRepository
+                        .findBulkFormatByAnalysisId(entity.getAnalysisId())
+                        .map(bulkFormatMapper::toBulkFormat)))
+        .toList();
   }
 
-  @Transactional
   public void uploadDB(UUID analysisId, byte[] bytes) {
-    var analysis = getAnalysis(analysisId);
+    var analysis = getMeta(analysisId);
 
     if (bytes == null || bytes.length == 0) {
       throw new SmortException("Empty upload for analysis. id={}", analysisId);
@@ -73,36 +82,30 @@ public class AnalysisService {
     try {
       Files.createDirectories(dbPath.getParent());
       Files.write(dbPath, bytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-      TransactionUtil.afterRollback(
-          () -> {
-            try {
-              log.warn(
-                  "Tx rolled back. Attempting to deleted potentially uploaded db. id={}, db={}",
-                  analysisId,
-                  dbPath);
-              Files.deleteIfExists(dbPath);
-            } catch (Exception e) {
-              log.error("Failed to delete db after rollback. id={}", analysisId, e);
-            }
-          });
     } catch (IOException e) {
       throw new SmortException(e);
     }
 
-    analysis.setDbPath(dbPath);
-    analysis.setStatus(AnalysisStatus.DB_UPLOADED);
+    try {
+      analysis.setDbPath(dbPath.toString());
+      analysis.setStatus(AnalysisStatus.DB_UPLOADED);
+      analysisMetaRepository.save(analysis);
+    } catch (Exception e) {
+      try {
+        log.warn("Failed to persist analysis meta, deleting uploaded db. id={}, db={}", analysisId, dbPath);
+        Files.deleteIfExists(dbPath);
+      } catch (Exception cleanupException) {
+        log.error("Failed to delete db after save failure. id={}", analysisId, cleanupException);
+      }
+      throw e;
+    }
 
-    TransactionUtil.afterCommit(
-        () ->
-            log.info(
-                "Upload complete for analysis. id={}, size={}KB",
-                analysisId,
-                bytes.length / 1024.0));
+    log.info(
+        "Upload complete for analysis. id={}, size={}KB", analysisId, bytes.length / 1024.0);
   }
 
-  @Transactional
   public void setDeck(UUID analysisId, Long deckId) {
-    var analysis = getAnalysis(analysisId);
+    var analysis = getMeta(analysisId);
 
     if (analysis.getStatus() != AnalysisStatus.DB_UPLOADED) {
       throw new SmortException(
@@ -121,6 +124,7 @@ public class AnalysisService {
     analysis.setStatus(AnalysisStatus.DECK_SELECTED);
     analysis.setDeckId(deckId);
     analysis.setDeckName(deck.getName());
+    analysisMetaRepository.save(analysis);
   }
 
   public List<AnkiNote> getNotes(UUID analysisId) {
@@ -171,19 +175,26 @@ public class AnalysisService {
         .collect(Collectors.toMap(Function.identity(), d -> guidByNoteId.get(d.getNoteId())));
   }
 
-  // TODO: retry failed deletion attempts
   public void deleteAnalysis(UUID analysisId) {
-    var analysis = getAnalysis(analysisId);
+    var analysis = getMeta(analysisId);
     analysis.setStatus(AnalysisStatus.MARKED_FOR_DELETION);
-    analysisRepository.save(analysis);
+    analysisMetaRepository.save(analysis);
     try {
       if (analysis.getDbPath() != null) {
-        Files.deleteIfExists(analysis.getDbPath());
+        Files.deleteIfExists(Path.of(analysis.getDbPath()));
       }
+      // TODO: bulk
       derivedNoteRepository.deleteAnalysisDerivedNotes(analysisId);
-      analysisRepository.delete(analysis);
+      bulkFormatRepository.delete(analysisId);
+      analysisMetaRepository.delete(analysisId);
     } catch (Exception e) {
-      log.warn("Could not fully delete analysis. analysisId={}", analysis.getId(), e);
+      log.warn("Could not fully delete analysis. analysisId={}", analysisId, e);
     }
+  }
+
+  private AnalysisMetaEntity getMeta(UUID analysisId) {
+    return analysisMetaRepository
+        .findAnalysisMetaByAnalysisId(analysisId)
+        .orElseThrow(() -> new SmortException("Could not find analysis by id. id={}", analysisId));
   }
 }

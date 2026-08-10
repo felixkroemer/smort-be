@@ -48,4 +48,13 @@ public class BulkFormatRepository {
   public void save(BulkFormatEntity bulkFormatEntity) {
     bulkFormatTable.putItem(bulkFormatEntity);
   }
+
+  public void delete(UUID analysisId) {
+    var key =
+        Key.builder()
+            .partitionValue(AnalysisKeys.analysisPk(analysisId))
+            .sortValue(BulkFormatKeys.bulkFormatSk())
+            .build();
+    bulkFormatTable.deleteItem(key);
+  }
 }

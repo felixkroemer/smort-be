@@ -32,6 +32,7 @@ public class BulkFormatEntity {
     private Instant lastUpdatedAt;
     private int totalNotes;
     private int completedNotes;
+    private int attempts;
 
     public BulkFormatEntity(UUID analysisId) {
         this.pk = AnalysisKeys.analysisPk(analysisId);
@@ -39,6 +40,7 @@ public class BulkFormatEntity {
         this.status = BulkFormatStatus.PENDING;
         this.createdAt = Instant.now();
         this.lastUpdatedAt = Instant.now();
+        this.attempts = 0;
         updateGsiKeys();
     }
 

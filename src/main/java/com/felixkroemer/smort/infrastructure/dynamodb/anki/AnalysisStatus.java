@@ -1,4 +1,4 @@
-package com.felixkroemer.smort.infrastructure.postgres.anki;
+package com.felixkroemer.smort.infrastructure.dynamodb.anki;
 
 public enum AnalysisStatus {
   NEW,
