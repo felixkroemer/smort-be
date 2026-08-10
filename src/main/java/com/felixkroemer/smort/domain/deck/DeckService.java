@@ -47,8 +47,12 @@ public class DeckService {
             .filter(n -> !derivedNoteKeys.contains(n.getId()))
             .collect(Collectors.toList());
 
-    handleDerivedNotes(deck.getDeckId(), derivedNotes);
-    handleUnmappedNotes(deck.getDeckId(), unmappedNotes, analysisId, templates);
+    if (!derivedNotes.isEmpty()) {
+      handleDerivedNotes(deck.getDeckId(), derivedNotes);
+    }
+    if (!unmappedNotes.isEmpty()) {
+      handleUnmappedNotes(deck.getDeckId(), unmappedNotes, analysisId, templates);
+    }
 
     deck.setStatus(DeckStatus.ACTIVE);
     deckRepository.saveDeckMeta(deck);
