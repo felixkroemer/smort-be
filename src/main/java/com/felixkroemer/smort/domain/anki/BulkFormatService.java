@@ -6,6 +6,7 @@ import com.felixkroemer.smort.domain.chat.ChatService;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -104,6 +105,7 @@ public class BulkFormatService {
         var derivedNote =
             new DerivedNoteEntity(
                 analysisId, noteEntity.getId(), noteSchema.getFront(), noteSchema.getBack());
+        derivedNote.setLastFormattedAt(Optional.of(Instant.now()));
         derivedNoteRepository.save(derivedNote);
 
         processed++;
