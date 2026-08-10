@@ -5,6 +5,7 @@ import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.BulkFormatKeys;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
@@ -32,16 +33,19 @@ public class BulkFormatRepository {
     return Optional.ofNullable(bulkFormatTable.getItem(key));
   }
 
-  public List<BulkFormatEntity> findAllInProgress() {
-    return statusBulkFormatIndex
-        .query(
-            QueryEnhancedRequest.builder()
-                .queryConditional(
-                    QueryConditional.keyEqualTo(
-                        Key.builder().partitionValue(BulkFormatStatus.IN_PROGRESS.name()).build()))
-                .build())
-        .stream()
-        .flatMap(page -> page.items().stream())
+  public List<BulkFormatEntity> findAllActive() {
+    return Stream.of(BulkFormatStatus.IN_PROGRESS, BulkFormatStatus.WAITING_RETRY)
+        .flatMap(
+            status ->
+                statusBulkFormatIndex
+                    .query(
+                        QueryEnhancedRequest.builder()
+                            .queryConditional(
+                                QueryConditional.keyEqualTo(
+                                    Key.builder().partitionValue(status.name()).build()))
+                            .build())
+                    .stream()
+                    .flatMap(page -> page.items().stream()))
         .toList();
   }
 

@@ -21,7 +21,7 @@ public class BulkFormatCron {
 
   @Scheduled(fixedDelayString = "${app.scheduling.bulk-format-delay}")
   public void resumeCrashedBulkFormats() {
-    var allJobs = bulkFormatRepository.findAllInProgress();
+    var allJobs = bulkFormatRepository.findAllActive();
     for (var job : allJobs) {
       if (Duration.between(job.getLastUpdatedAt(), Instant.now()).compareTo(CRASH_TIMEOUT) > 0) {
         log.warn(
