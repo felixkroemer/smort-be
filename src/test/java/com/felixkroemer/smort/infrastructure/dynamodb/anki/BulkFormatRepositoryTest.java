@@ -46,7 +46,7 @@ class BulkFormatRepositoryTest {
   }
 
   private PageIterable<BulkFormatEntity> pageOf(BulkFormatEntity... items) {
-    Page<BulkFormatEntity> page = Page.create(List.of(items), null, null);
+    Page<BulkFormatEntity> page = Page.create(List.of(items));
     return () -> List.of(page).iterator();
   }
 }
