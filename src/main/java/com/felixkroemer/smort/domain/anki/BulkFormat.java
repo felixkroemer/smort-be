@@ -17,4 +17,6 @@ public class BulkFormat {
   private Instant lastUpdatedAt;
   private int totalNotes;
   private int completedNotes;
+  private int failedCount;
+  private int attempts;
 }

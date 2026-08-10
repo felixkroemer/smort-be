@@ -194,6 +194,6 @@ public class AnalysisController {
     var job = bulkFormatService.getJobStatus(analysisId);
     return new BulkFormatStatusResponse(
         job.getStatus().name(), job.getCreatedAt(), job.getLastUpdatedAt(),
-        job.getTotalNotes(), job.getCompletedNotes());
+        job.getTotalNotes(), job.getCompletedNotes(), job.getFailedCount(), job.getAttempts());
   }
 }
