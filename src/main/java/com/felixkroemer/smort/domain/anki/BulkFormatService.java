@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -28,13 +29,15 @@ public class BulkFormatService {
   private final AnalysisService analysisService;
   private final ChatService chatService;
   private final BulkFormatMapper bulkFormatMapper;
+  private final TaskExecutor bulkFormatTaskExecutor;
 
   public void startBulkFormat(UUID analysisId) {
     var existing = bulkFormatRepository.findBulkFormatByAnalysisId(analysisId);
     if (existing.isPresent()) {
       var job = existing.get();
       if (job.getStatus() == BulkFormatStatus.IN_PROGRESS
-          || job.getStatus() == BulkFormatStatus.PENDING) {
+          || job.getStatus() == BulkFormatStatus.PENDING
+          || job.getStatus() == BulkFormatStatus.WAITING_RETRY) {
         throw new SmortException(
             "Bulk format already in progress for analysis. analysisId={}", analysisId);
       }
@@ -53,7 +56,7 @@ public class BulkFormatService {
     job.setTotalNotes(totalNotes);
     bulkFormatRepository.save(job);
 
-    processNotes(analysisId, job);
+    dispatch(analysisId, job);
   }
 
   public void resumeBulkFormat(UUID analysisId) {
@@ -63,10 +66,22 @@ public class BulkFormatService {
             .orElseThrow(
                 () -> new SmortException("No bulk format job found. analysisId={}", analysisId));
 
+    job.setStatus(BulkFormatStatus.IN_PROGRESS);
     job.setLastUpdatedAt(Instant.now());
     bulkFormatRepository.save(job);
 
-    processNotes(analysisId, job);
+    dispatch(analysisId, job);
+  }
+
+  private void dispatch(UUID analysisId, BulkFormatEntity job) {
+    bulkFormatTaskExecutor.execute(
+        () -> {
+          try {
+            processNotes(analysisId, job);
+          } catch (Exception e) {
+            log.error("Unexpected error during bulk format processing. analysisId={}", analysisId, e);
+          }
+        });
   }
 
   private void processNotes(UUID analysisId, BulkFormatEntity job) {
@@ -90,6 +105,7 @@ public class BulkFormatService {
     job.setAttempts(attempts);
     job.setCompletedNotes(existingDerivedNotes.size());
     job.setTotalNotes(notes.size());
+    job.setFailedCount(0);
     bulkFormatRepository.save(job);
 
     for (var noteEntity : notesToProcess) {
@@ -112,11 +128,13 @@ public class BulkFormatService {
         consecutiveFailed = 0;
         job.setCompletedNotes(job.getCompletedNotes() + 1);
         job.setLastUpdatedAt(Instant.now());
+        job.setFailedCount(failed);
         bulkFormatRepository.save(job);
 
       } catch (Exception e) {
         failed++;
         consecutiveFailed++;
+        job.setFailedCount(failed);
         log.warn(
             "Failed to format note during bulk format. analysisId={}, noteId={}",
             analysisId,
@@ -134,6 +152,7 @@ public class BulkFormatService {
     if (failed == 0) {
       job.setStatus(BulkFormatStatus.COMPLETED);
       job.setLastUpdatedAt(Instant.now());
+      job.setFailedCount(0);
       bulkFormatRepository.save(job);
 
       log.info(
@@ -153,6 +172,10 @@ public class BulkFormatService {
             processed,
             failed);
       } else {
+        job.setStatus(BulkFormatStatus.WAITING_RETRY);
+        job.setLastUpdatedAt(Instant.now());
+        bulkFormatRepository.save(job);
+
         log.info(
             "Bulk format had errors. Will resume later.  analysisId={}, processed={}, failed={}, attempts={}",
             analysisId,
