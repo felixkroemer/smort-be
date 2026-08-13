@@ -46,16 +46,8 @@ public class BulkFormatService {
             "Bulk format already completed for analysis. analysisId={}", analysisId);
       }
     }
-
-    var analysis = analysisService.getAnalysis(analysisId);
-    var totalNotes =
-        ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, analysis.getDeckId()).size();
-
     var job = new BulkFormatEntity(analysisId);
-    job.setStatus(BulkFormatStatus.IN_PROGRESS);
-    job.setTotalNotes(totalNotes);
     bulkFormatRepository.save(job);
-
     dispatch(analysisId, job);
   }
 
@@ -65,11 +57,6 @@ public class BulkFormatService {
             .findBulkFormatByAnalysisId(analysisId)
             .orElseThrow(
                 () -> new SmortException("No bulk format job found. analysisId={}", analysisId));
-
-    job.setStatus(BulkFormatStatus.IN_PROGRESS);
-    job.setLastUpdatedAt(Instant.now());
-    bulkFormatRepository.save(job);
-
     dispatch(analysisId, job);
   }
 
@@ -102,6 +89,7 @@ public class BulkFormatService {
     int consecutiveFailed = 0;
     int attempts = job.getAttempts() + 1;
 
+    job.setStatus(BulkFormatStatus.IN_PROGRESS);
     job.setAttempts(attempts);
     job.setCompletedNotes(existingDerivedNotes.size());
     job.setTotalNotes(notes.size());
