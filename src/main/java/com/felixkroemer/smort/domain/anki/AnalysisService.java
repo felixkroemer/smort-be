@@ -83,7 +83,7 @@ public class AnalysisService {
       Files.createDirectories(dbPath.getParent());
       Files.write(dbPath, bytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
     } catch (IOException e) {
-      throw new SmortException(e);
+      throw new SmortException("Failed to write db. id={}, path={}", analysisId, dbPath);
     }
 
     try {

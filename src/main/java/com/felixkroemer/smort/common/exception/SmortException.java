@@ -11,7 +11,17 @@ public class SmortException extends RuntimeException {
   private final HttpStatus httpStatus;
   private LogSeverity severity;
 
-  public SmortException(String msg, HttpStatus status, LogSeverity severity) {
+  private SmortException(HttpStatus status, LogSeverity severity, String msg, Throwable cause) {
+    super(msg, cause);
+    this.httpStatus = status;
+    this.severity = severity;
+  }
+
+  private SmortException(FormattingTuple ft) {
+    this(HttpStatus.INTERNAL_SERVER_ERROR, LogSeverity.ERROR, ft.getMessage(), ft.getThrowable());
+  }
+
+  public SmortException(HttpStatus status, LogSeverity severity, String msg) {
     super(msg);
     this.httpStatus = status;
     this.severity = severity;
@@ -21,22 +31,13 @@ public class SmortException extends RuntimeException {
     this(msg, HttpStatus.INTERNAL_SERVER_ERROR, LogSeverity.ERROR);
   }
 
-  public SmortException(Exception e) {
-    this(e.getMessage(), e, HttpStatus.INTERNAL_SERVER_ERROR, LogSeverity.ERROR);
-  }
-
-  private SmortException(FormattingTuple ft) {
-    this(ft.getMessage(), ft.getThrowable(), HttpStatus.INTERNAL_SERVER_ERROR, LogSeverity.ERROR);
-  }
-
   public SmortException(String pattern, Object... args) {
     this(MessageFormatter.arrayFormat(pattern, args));
   }
 
-  private SmortException(String msg, Throwable cause, HttpStatus status, LogSeverity severity) {
-    super(msg, cause);
-    this.httpStatus = status;
-    this.severity = severity;
+  public SmortException(HttpStatus status, LogSeverity severity, String pattern, Object... args) {
+    var ft = MessageFormatter.arrayFormat(pattern, args);
+    this(status, severity, ft.getMessage(), ft.getThrowable());
   }
 
   public SmortException withSeverity(LogSeverity severity) {

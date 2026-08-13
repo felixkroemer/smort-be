@@ -4,11 +4,12 @@ import org.springframework.http.HttpStatus;
 
 public abstract class NotFoundSmortException extends SmortException {
 
-  protected NotFoundSmortException(String msg) {
-    super(msg, HttpStatus.NOT_FOUND, LogSeverity.INFO);
+  public NotFoundSmortException(String pattern, Object... args) {
+    super(HttpStatus.NOT_FOUND, LogSeverity.INFO, pattern, args);
   }
 
-  protected NotFoundSmortException(String msg, HttpStatus status, LogSeverity severity) {
-    super(msg, status, severity);
+  protected NotFoundSmortException(
+      HttpStatus status, LogSeverity severity, String pattern, Object... args) {
+    super(status, severity, pattern, args);
   }
 }
