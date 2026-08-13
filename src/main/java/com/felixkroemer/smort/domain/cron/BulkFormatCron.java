@@ -30,7 +30,7 @@ public class BulkFormatCron {
             job.getLastUpdatedAt(),
             job.getAttempts());
         try {
-          bulkFormatService.resumeBulkFormat(job.getAnalysisId());
+          bulkFormatService.resumeBulkFormat(job);
         } catch (Exception e) {
           log.error("Failed to resume bulk format. analysisId={}", job.getAnalysisId(), e);
         }

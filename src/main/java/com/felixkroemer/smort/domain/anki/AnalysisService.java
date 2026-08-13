@@ -1,6 +1,7 @@
 package com.felixkroemer.smort.domain.anki;
 
 import com.felixkroemer.smort.common.config.SmortProperties;
+import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.mapping.AnalysisEntityMapper;
 import com.felixkroemer.smort.domain.anki.mapping.BulkFormatEntityMapper;
@@ -121,7 +122,9 @@ public class AnalysisService {
             .filter(d -> d.getId().equals(deckId))
             .findAny()
             .orElseThrow(
-                () -> new SmortException("Deck not found. id={}, deckId={}", analysisId, deckId));
+                () ->
+                    new NotFoundException(
+                        "Deck not found. id={}, deckId={}", analysisId, deckId));
 
     analysis.setStatus(AnalysisStatus.DECK_SELECTED);
     analysis.setDeckId(deckId);
@@ -197,6 +200,7 @@ public class AnalysisService {
   private AnalysisMetaEntity getMeta(UUID analysisId) {
     return analysisMetaRepository
         .findAnalysisMetaByAnalysisId(analysisId)
-        .orElseThrow(() -> new SmortException("Could not find analysis by id. id={}", analysisId));
+        .orElseThrow(
+            () -> new NotFoundException("Could not find analysis by id. id={}", analysisId));
   }
 }

@@ -8,6 +8,7 @@ import com.felixkroemer.smort.application.deck.dto.ImportAnalysisRequest;
 import com.felixkroemer.smort.application.deck.dto.NoteResponse;
 import com.felixkroemer.smort.application.deck.mapping.DeckRestMapper;
 import com.felixkroemer.smort.application.deck.mapping.NoteRestMapper;
+import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.domain.deck.DeckService;
 import com.felixkroemer.smort.domain.deck.NoteService;
@@ -15,9 +16,7 @@ import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequiredArgsConstructor
@@ -48,7 +47,7 @@ public class DeckController {
       @PathVariable("deckId") UUID deckId, @PathVariable("noteId") UUID noteId) {
     var note = noteService.getNote(deckId, noteId);
     return noteRestMapper.toNoteResponse(
-        note.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)));
+        note.orElseThrow(() -> new NotFoundException("Could not find note. id={}", noteId)));
   }
 
   @GetMapping("/{deckId}/notes")

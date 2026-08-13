@@ -1,6 +1,7 @@
 package com.felixkroemer.smort.domain.deck;
 
 import com.felixkroemer.smort.application.deck.dto.NoteTypeTemplate;
+import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.AnalysisService;
 import com.felixkroemer.smort.domain.anki.AnkiNote;
@@ -135,7 +136,7 @@ public class DeckService {
     var deck =
         deckRepository
             .findDeckMetaByDeckId(deckId)
-            .orElseThrow(() -> new SmortException("Could not find deck. deckId={}", deckId));
+            .orElseThrow(() -> new NotFoundException("Could not find deck. deckId={}", deckId));
     deck.setStatus(DeckStatus.MARKED_FOR_DELETION);
     deckRepository.saveDeckMeta(deck);
   }

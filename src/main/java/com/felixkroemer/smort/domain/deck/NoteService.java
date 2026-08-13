@@ -1,5 +1,6 @@
 package com.felixkroemer.smort.domain.deck;
 
+import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.domain.chat.ChatService;
@@ -36,7 +37,7 @@ public class NoteService {
     var note =
         deckRepository
             .findNoteByDeckIdAndNoteId(deckId, noteId)
-            .orElseThrow(() -> new SmortException("Note not found. id={}", noteId));
+            .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
 
     var noteSchema = chatService.formatNote(note.getFront(), note.getBack());
 
@@ -52,7 +53,7 @@ public class NoteService {
     var note =
         deckRepository
             .findNoteByDeckIdAndNoteId(deckId, noteId)
-            .orElseThrow(() -> new SmortException("Note not found. id={}", noteId));
+            .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
 
     return chatOrchestrationService.chat(
         Map.of("front", note.getFront(), "back", note.getBack()),

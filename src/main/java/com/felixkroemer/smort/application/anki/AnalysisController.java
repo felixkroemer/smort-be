@@ -7,6 +7,7 @@ import com.felixkroemer.smort.application.anki.mapping.BulkFormatRestMapper;
 import com.felixkroemer.smort.application.chat.dto.ChatMessageRequest;
 import com.felixkroemer.smort.application.chat.dto.ChatMessageResponse;
 import com.felixkroemer.smort.application.chat.mapping.ChatMessageRestMapper;
+import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.AnalysisService;
 import com.felixkroemer.smort.domain.anki.AnkiNoteService;
@@ -29,7 +30,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequiredArgsConstructor
@@ -110,7 +110,8 @@ public class AnalysisController {
     return ankiNoteRestMapper.toDerivedNoteResponse(
         ankiNoteService
             .getDerivedNote(analysisId, noteId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)));
+            .orElseThrow(
+                () -> new NotFoundException("Could not find derived note. id={}", noteId)));
   }
 
   @GetMapping("/{analysisId}/derivedNotes")

@@ -1,5 +1,6 @@
 package com.felixkroemer.smort.infrastructure.sqlite.anki;
 
+import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.AnalysisMetaRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.AnalysisStatus;
@@ -47,7 +48,7 @@ public class EntityManagerFactoryCache {
         analysisMetaRepository
             .findAnalysisMetaByAnalysisId(analysisId)
             .orElseThrow(
-                () -> new SmortException("Could not find analysis by id. id={}", analysisId));
+                () -> new NotFoundException("Could not find analysis by id. id={}", analysisId));
 
     if (analysis.getStatus() == AnalysisStatus.NEW) {
       throw new SmortException("Analysis is not ready. id={}", analysisId);

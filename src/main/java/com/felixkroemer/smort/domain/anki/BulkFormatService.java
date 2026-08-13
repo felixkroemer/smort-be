@@ -1,5 +1,7 @@
 package com.felixkroemer.smort.domain.anki;
 
+import com.felixkroemer.smort.common.exception.LogSeverity;
+import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.mapping.BulkFormatEntityMapper;
 import com.felixkroemer.smort.domain.chat.ChatService;
@@ -48,32 +50,35 @@ public class BulkFormatService {
     }
     var job = new BulkFormatEntity(analysisId);
     bulkFormatRepository.save(job);
-    dispatch(analysisId, job);
+    dispatch(job);
   }
 
-  public void resumeBulkFormat(UUID analysisId) {
-    var job =
-        bulkFormatRepository
-            .findBulkFormatByAnalysisId(analysisId)
-            .orElseThrow(
-                () -> new SmortException("No bulk format job found. analysisId={}", analysisId));
-    dispatch(analysisId, job);
+  public void resumeBulkFormat(BulkFormatEntity bulkFormatEntity) {
+    dispatch(bulkFormatEntity);
   }
 
-  private void dispatch(UUID analysisId, BulkFormatEntity job) {
+  private void dispatch(BulkFormatEntity job) {
     bulkFormatTaskExecutor.execute(
         () -> {
           try {
-            processNotes(analysisId, job);
+            processNotes(job);
           } catch (Exception e) {
             log.error(
-                "Unexpected error during bulk format processing. analysisId={}", analysisId, e);
+                "Unexpected error during bulk format processing. analysisId={}",
+                job.getAnalysisId(),
+                e);
           }
         });
   }
 
-  private void processNotes(UUID analysisId, BulkFormatEntity job) {
-    var analysis = analysisService.getAnalysis(analysisId);
+  private void processNotes(BulkFormatEntity job) {
+    var analysisId = job.getAnalysisId();
+    Analysis analysis;
+    try {
+      analysis = analysisService.getAnalysis(analysisId);
+    } catch (NotFoundException e) {
+      throw e.withSeverity(LogSeverity.ERROR);
+    }
     var notes = ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, analysis.getDeckId());
     var noteTypes = noteTypeService.getNoteTypesByAnalysisId(analysisId);
 
@@ -180,6 +185,6 @@ public class BulkFormatService {
         .findBulkFormatByAnalysisId(analysisId)
         .map(bulkFormatEntityMapper::toBulkFormat)
         .orElseThrow(
-            () -> new SmortException("No bulk format job found. analysisId={}", analysisId));
+            () -> new NotFoundException("No bulk format job found. analysisId={}", analysisId));
   }
 }
