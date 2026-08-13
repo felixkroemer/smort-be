@@ -15,47 +15,47 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
 @NoArgsConstructor
 public class BulkFormatEntity {
 
-    @Getter(onMethod_ = @DynamoDbPartitionKey)
-    private String pk;
+  @Getter(onMethod_ = @DynamoDbPartitionKey)
+  private String pk;
 
-    @Getter(onMethod_ = @DynamoDbSortKey)
-    private String sk;
+  @Getter(onMethod_ = @DynamoDbSortKey)
+  private String sk;
 
-    @Getter(onMethod_ = @DynamoDbSecondaryPartitionKey(indexNames = "StatusBulkFormatIndex"))
-    private String statusBulkFormatIndexGsiPk;
+  @Getter(onMethod_ = @DynamoDbSecondaryPartitionKey(indexNames = "StatusBulkFormatIndex"))
+  private String statusBulkFormatIndexGsiPk;
 
-    @Getter(onMethod_ = @DynamoDbSecondarySortKey(indexNames = "StatusBulkFormatIndex"))
-    private String statusBulkFormatIndexGsiSk;
+  @Getter(onMethod_ = @DynamoDbSecondarySortKey(indexNames = "StatusBulkFormatIndex"))
+  private String statusBulkFormatIndexGsiSk;
 
-    private BulkFormatStatus status;
-    private Instant createdAt;
-    private Instant lastUpdatedAt;
-    private int totalNotes;
-    private int completedNotes;
-    private int attempts;
-    private int failedCount;
+  private BulkFormatStatus status;
+  private Instant createdAt;
+  private Instant lastUpdatedAt;
+  private int totalNotes;
+  private int completedNotes;
+  private int attempts;
+  private int failedCount;
 
-    public BulkFormatEntity(UUID analysisId) {
-        this.pk = AnalysisKeys.analysisPk(analysisId);
-        this.sk = BulkFormatKeys.bulkFormatSk();
-        this.status = BulkFormatStatus.PENDING;
-        this.createdAt = Instant.now();
-        this.lastUpdatedAt = Instant.now();
-        this.attempts = 0;
-        updateGsiKeys();
-    }
+  public BulkFormatEntity(UUID analysisId) {
+    this.pk = AnalysisKeys.analysisPk(analysisId);
+    this.sk = BulkFormatKeys.bulkFormatSk();
+    this.status = BulkFormatStatus.PENDING;
+    this.createdAt = Instant.now();
+    this.lastUpdatedAt = Instant.now();
+    this.attempts = 0;
+    updateGsiKeys();
+  }
 
-    public void setStatus(BulkFormatStatus status) {
-        this.status = status;
-        updateGsiKeys();
-    }
+  public void setStatus(BulkFormatStatus status) {
+    this.status = status;
+    updateGsiKeys();
+  }
 
-    private void updateGsiKeys() {
-        this.statusBulkFormatIndexGsiPk = status.name();
-        this.statusBulkFormatIndexGsiSk = Instant.now().toString();
-    }
+  private void updateGsiKeys() {
+    this.statusBulkFormatIndexGsiPk = status.name();
+    this.statusBulkFormatIndexGsiSk = Instant.now().toString();
+  }
 
-    public UUID getAnalysisId() {
-        return UUID.fromString(pk.substring("ANALYSIS#".length()));
-    }
+  public UUID getAnalysisId() {
+    return UUID.fromString(pk.substring("ANALYSIS#".length()));
+  }
 }

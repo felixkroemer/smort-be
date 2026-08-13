@@ -1,7 +1,7 @@
 package com.felixkroemer.smort.domain.anki;
 
 import com.felixkroemer.smort.common.exception.SmortException;
-import com.felixkroemer.smort.domain.anki.mapping.BulkFormatMapper;
+import com.felixkroemer.smort.domain.anki.mapping.BulkFormatEntityMapper;
 import com.felixkroemer.smort.domain.chat.ChatService;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
@@ -28,7 +28,7 @@ public class BulkFormatService {
   private final AnkiNoteTypeService noteTypeService;
   private final AnalysisService analysisService;
   private final ChatService chatService;
-  private final BulkFormatMapper bulkFormatMapper;
+  private final BulkFormatEntityMapper bulkFormatEntityMapper;
   private final TaskExecutor bulkFormatTaskExecutor;
 
   public void startBulkFormat(UUID analysisId) {
@@ -66,7 +66,8 @@ public class BulkFormatService {
           try {
             processNotes(analysisId, job);
           } catch (Exception e) {
-            log.error("Unexpected error during bulk format processing. analysisId={}", analysisId, e);
+            log.error(
+                "Unexpected error during bulk format processing. analysisId={}", analysisId, e);
           }
         });
   }
@@ -177,7 +178,7 @@ public class BulkFormatService {
   public BulkFormat getJobStatus(UUID analysisId) {
     return bulkFormatRepository
         .findBulkFormatByAnalysisId(analysisId)
-        .map(bulkFormatMapper::toBulkFormat)
+        .map(bulkFormatEntityMapper::toBulkFormat)
         .orElseThrow(
             () -> new SmortException("No bulk format job found. analysisId={}", analysisId));
   }

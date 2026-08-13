@@ -9,7 +9,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
-public interface AnalysisDtoMapper {
+public interface AnalysisRestMapper {
 
   @Mapping(source = "analysisId", target = "id")
   AnalysisResponse toAnalysisResponse(Analysis analysis);

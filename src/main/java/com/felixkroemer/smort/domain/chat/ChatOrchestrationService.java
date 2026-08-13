@@ -2,7 +2,7 @@ package com.felixkroemer.smort.domain.chat;
 
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.AbstractChatMessageEntity;
-import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageResponseEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatRepository;
 import java.util.List;
 import java.util.Map;
@@ -22,11 +22,11 @@ public class ChatOrchestrationService {
   private final ChatRepository chatRepository;
   private final DynamoDbEnhancedClient enhancedClient;
 
-  public <T> List<ChatMessageResponseEntity> getChat(String pk, T noteId) {
+  public <T> List<ChatMessageEntity> getChat(String pk, T noteId) {
     return chatRepository.findAll(pk, noteId);
   }
 
-  public <T> List<ChatMessageResponseEntity> chat(
+  public <T> List<ChatMessageEntity> chat(
       Map<String, String> fields,
       String pk,
       T noteId,
@@ -43,53 +43,56 @@ public class ChatOrchestrationService {
         chatMessageResponse, pk, noteId, message, latestChatMessageResponseId, storeNoteHandler);
   }
 
-  public <T> List<ChatMessageResponseEntity> handleChatMessageResponse(
-      ChatMessageResponse chatMessageResponse,
+  public <T> List<ChatMessageEntity> handleChatMessageResponse(
+      ChatMessage chatMessage,
       String pk,
       T noteId,
       String message,
       Optional<String> latestChatMessageResponseId,
       TriConsumer<TransactWriteItemsEnhancedRequest.Builder, String, String> storeNoteHandler) {
-    switch (chatMessageResponse) {
-      case ChatMessageTextResponse r -> {
+    switch (chatMessage) {
+      case TextChatMessage r -> {
         return handleChatMessageTextResponse(pk, noteId, message, r, latestChatMessageResponseId);
       }
-      case StoreNoteToolResponse r -> {
+      case StoreNoteToolChatMessage r -> {
         return handleStoreNoteToolResponse(
             pk, noteId, message, r, latestChatMessageResponseId, storeNoteHandler);
       }
     }
   }
 
-  private @NonNull <T> List<ChatMessageResponseEntity> handleStoreNoteToolResponse(
+  private @NonNull <T> List<ChatMessageEntity> handleStoreNoteToolResponse(
       String pk,
       T noteId,
       String message,
-      StoreNoteToolResponse storeNoteToolResponse,
+      StoreNoteToolChatMessage storeNoteToolChatMessageResponse,
       Optional<String> latestChatMessageResponseId,
       TriConsumer<TransactWriteItemsEnhancedRequest.Builder, String, String> storeNoteHandler) {
     var toolCallChatMessageEntity =
-        ChatMessageResponseEntity.toolCall(
+        ChatMessageEntity.toolCall(
             pk,
             noteId,
             message,
-            storeNoteToolResponse.meta().responseId(),
+            storeNoteToolChatMessageResponse.meta().responseId(),
             latestChatMessageResponseId,
-            storeNoteToolResponse.callId(),
-            storeNoteToolResponse.toolName());
+            storeNoteToolChatMessageResponse.callId(),
+            storeNoteToolChatMessageResponse.toolName());
     var ackResponse =
         chatService.acknowledgeStoreNoteToolCall(
-            storeNoteToolResponse.callId(), storeNoteToolResponse.meta().responseId());
-    if (ackResponse instanceof ChatMessageTextResponse(String text, ChatMessageResponseMeta meta)) {
+            storeNoteToolChatMessageResponse.callId(),
+            storeNoteToolChatMessageResponse.meta().responseId());
+    if (ackResponse instanceof TextChatMessage(String text, ChatMessageMeta meta)) {
       var chatMessageEntity =
-          ChatMessageResponseEntity.text(
+          ChatMessageEntity.text(
               pk, noteId, Optional.empty(), meta.responseId(), latestChatMessageResponseId, text);
       enhancedClient.transactWriteItems(
           tx -> {
             chatRepository.saveInTx(tx, toolCallChatMessageEntity);
             chatRepository.saveInTx(tx, chatMessageEntity);
             storeNoteHandler.accept(
-                tx, storeNoteToolResponse.front(), storeNoteToolResponse.back());
+                tx,
+                storeNoteToolChatMessageResponse.front(),
+                storeNoteToolChatMessageResponse.back());
           });
       return List.of(toolCallChatMessageEntity, chatMessageEntity);
     } else {
@@ -97,14 +100,14 @@ public class ChatOrchestrationService {
     }
   }
 
-  private @NonNull <T> List<ChatMessageResponseEntity> handleChatMessageTextResponse(
+  private @NonNull <T> List<ChatMessageEntity> handleChatMessageTextResponse(
       String pk,
       T noteId,
       String message,
-      ChatMessageTextResponse r,
+      TextChatMessage r,
       Optional<String> latestChatMessageResponseId) {
     var chatMessageEntity =
-        ChatMessageResponseEntity.text(
+        ChatMessageEntity.text(
             pk,
             noteId,
             Optional.of(message),

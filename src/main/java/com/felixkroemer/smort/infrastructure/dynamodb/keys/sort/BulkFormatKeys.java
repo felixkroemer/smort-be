@@ -9,5 +9,4 @@ public final class BulkFormatKeys {
   public static String bulkFormatPrefix() {
     return "META#BULKFORMAT#";
   }
-
 }

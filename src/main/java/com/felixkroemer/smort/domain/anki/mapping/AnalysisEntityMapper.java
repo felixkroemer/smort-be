@@ -9,7 +9,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
-public interface AnalysisMapper {
+public interface AnalysisEntityMapper {
 
   Analysis toAnalysis(AnalysisMetaEntity meta, Optional<BulkFormat> bulkFormat);
 

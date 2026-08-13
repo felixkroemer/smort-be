@@ -15,9 +15,9 @@ import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhanced
 @RequiredArgsConstructor
 public class ChatRepository {
 
-  private final DynamoDbTable<ChatMessageResponseEntity> table;
+  private final DynamoDbTable<ChatMessageEntity> table;
 
-  public <T> Optional<ChatMessageResponseEntity> findLatestChatMessage(String pk, T noteId) {
+  public <T> Optional<ChatMessageEntity> findLatestChatMessage(String pk, T noteId) {
 
     QueryEnhancedRequest request =
         QueryEnhancedRequest.builder()
@@ -34,7 +34,7 @@ public class ChatRepository {
     return table.query(request).items().stream().findFirst();
   }
 
-  public <T> List<ChatMessageResponseEntity> findAll(String pk, T noteId) {
+  public <T> List<ChatMessageEntity> findAll(String pk, T noteId) {
     QueryEnhancedRequest request =
         QueryEnhancedRequest.builder()
             .queryConditional(
@@ -50,12 +50,12 @@ public class ChatRepository {
     return table.query(request).items().stream().toList();
   }
 
-  public void save(ChatMessageResponseEntity chatMessage) {
+  public void save(ChatMessageEntity chatMessage) {
     table.putItem(chatMessage);
   }
 
   public void saveInTx(
-      TransactWriteItemsEnhancedRequest.Builder txBuilder, ChatMessageResponseEntity chatMessage) {
+      TransactWriteItemsEnhancedRequest.Builder txBuilder, ChatMessageEntity chatMessage) {
     txBuilder.addPutItem(table, chatMessage);
   }
 }

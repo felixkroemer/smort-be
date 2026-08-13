@@ -3,7 +3,7 @@ package com.felixkroemer.smort.infrastructure.dynamodb;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.AnalysisMetaEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.BulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
-import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageResponseEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckMetaEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
 import java.net.URI;
@@ -75,9 +75,7 @@ public class DynamoDbClientConfig {
   }
 
   @Bean
-  public DynamoDbTable<ChatMessageResponseEntity> chatMessageResponseTable(
-      DynamoDbEnhancedClient enhancedClient) {
-    return enhancedClient.table(
-        COMMON_TABLE_NAME, TableSchema.fromBean(ChatMessageResponseEntity.class));
+  public DynamoDbTable<ChatMessageEntity> chatMessageTable(DynamoDbEnhancedClient enhancedClient) {
+    return enhancedClient.table(COMMON_TABLE_NAME, TableSchema.fromBean(ChatMessageEntity.class));
   }
 }

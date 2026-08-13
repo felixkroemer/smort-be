@@ -1,8 +1,12 @@
 package com.felixkroemer.smort.application.anki;
 
 import com.felixkroemer.smort.application.anki.dto.*;
-import com.felixkroemer.smort.application.anki.mapping.AnalysisDtoMapper;
-import com.felixkroemer.smort.application.anki.mapping.AnkiNoteMapper;
+import com.felixkroemer.smort.application.anki.mapping.AnalysisRestMapper;
+import com.felixkroemer.smort.application.anki.mapping.AnkiNoteRestMapper;
+import com.felixkroemer.smort.application.anki.mapping.BulkFormatRestMapper;
+import com.felixkroemer.smort.application.chat.dto.ChatMessageRequest;
+import com.felixkroemer.smort.application.chat.dto.ChatMessageResponse;
+import com.felixkroemer.smort.application.chat.mapping.ChatMessageRestMapper;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.AnalysisService;
 import com.felixkroemer.smort.domain.anki.AnkiNoteService;
@@ -38,9 +42,10 @@ public class AnalysisController {
   private final AnkiNoteTypeService ankiNoteTypeService;
   private final BulkFormatService bulkFormatService;
 
-  private final AnalysisDtoMapper analysisDtoMapper;
-  private final AnkiNoteMapper ankiNoteMapper;
-  private final ChatMessageMapper chatMessageMapper;
+  private final AnalysisRestMapper analysisRestMapper;
+  private final AnkiNoteRestMapper ankiNoteRestMapper;
+  private final BulkFormatRestMapper bulkFormatRestMapper;
+  private final ChatMessageRestMapper chatMessageRestMapper;
 
   @PostMapping()
   public StartAnalysisResponse startAnalysis() {
@@ -60,9 +65,9 @@ public class AnalysisController {
   }
 
   @GetMapping("/{analysisId}/decks")
-  public List<DeckResponse> getDecks(@PathVariable("analysisId") UUID analysisId) {
+  public List<AnkiDeckResponse> getDecks(@PathVariable("analysisId") UUID analysisId) {
     var decks = analysisService.getDecks(analysisId);
-    return ankiNoteMapper.toDeckResponseDto(decks);
+    return ankiNoteRestMapper.toAnkiDeckResponse(decks);
   }
 
   @PostMapping("/{analysisId}/setDeck")
@@ -73,7 +78,7 @@ public class AnalysisController {
 
   @GetMapping("/{analysisId}")
   public AnalysisResponse getAnalysis(@PathVariable("analysisId") UUID analysisId) {
-    return analysisDtoMapper.toAnalysisResponse(analysisService.getAnalysis(analysisId));
+    return analysisRestMapper.toAnalysisResponse(analysisService.getAnalysis(analysisId));
   }
 
   @DeleteMapping("/{analysisId}")
@@ -83,26 +88,26 @@ public class AnalysisController {
 
   @GetMapping
   public List<AnalysisResponse> getAnalyses() {
-    return analysisDtoMapper.toAnalysisResponse(analysisService.getAnalyses());
+    return analysisRestMapper.toAnalysisResponse(analysisService.getAnalyses());
   }
 
   @GetMapping("/{analysisId}/notes/{noteId}")
   public AnkiNoteResponse getNote(
       @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
     var note = ankiNoteService.getNote(analysisId, noteId);
-    return ankiNoteMapper.toNoteResponseDto(note);
+    return ankiNoteRestMapper.toAnkiNoteResponse(note);
   }
 
   @GetMapping("/{analysisId}/notes")
   public List<AnkiNoteResponse> getNotes(@PathVariable("analysisId") UUID analysisId) {
     var notes = analysisService.getNotes(analysisId);
-    return ankiNoteMapper.toNoteResponseDto(notes);
+    return ankiNoteRestMapper.toAnkiNoteResponse(notes);
   }
 
   @GetMapping("/{analysisId}/notes/{noteId}/derivedNote")
   public DerivedNoteResponse getDerivedNote(
       @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
-    return ankiNoteMapper.toDerivedNoteResponseDto(
+    return ankiNoteRestMapper.toDerivedNoteResponse(
         ankiNoteService
             .getDerivedNote(analysisId, noteId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)));
@@ -111,7 +116,7 @@ public class AnalysisController {
   @GetMapping("/{analysisId}/derivedNotes")
   public List<DerivedNoteResponse> getDerivedNotes(@PathVariable("analysisId") UUID analysisId) {
     return analysisService.getDerivedNotes(analysisId).stream()
-        .map(ankiNoteMapper::toDerivedNoteResponseDto)
+        .map(ankiNoteRestMapper::toDerivedNoteResponse)
         .toList();
   }
 
@@ -162,7 +167,7 @@ public class AnalysisController {
   public DerivedNoteResponse formatNote(
       @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
     var derivedNote = ankiNoteService.formatNote(analysisId, noteId);
-    return ankiNoteMapper.toDerivedNoteResponseDto(derivedNote);
+    return ankiNoteRestMapper.toDerivedNoteResponse(derivedNote);
   }
 
   @PostMapping("/{analysisId}/notes/{noteId}/chat")
@@ -172,7 +177,7 @@ public class AnalysisController {
       @RequestBody ChatMessageRequest chatMessageRequest) {
     var chatMessageResponses =
         ankiNoteService.chat(analysisId, noteId, chatMessageRequest.message());
-    return chatMessageMapper.toDto(chatMessageResponses);
+    return chatMessageRestMapper.toChatMessageResponse(chatMessageResponses);
   }
 
   @GetMapping("/{analysisId}/notes/{noteId}/chat")
@@ -180,7 +185,7 @@ public class AnalysisController {
       @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
     var chatMessageResponses =
         chatOrchestrationService.getChat(AnalysisKeys.analysisPk(analysisId), noteId);
-    return chatMessageMapper.toDto(chatMessageResponses);
+    return chatMessageRestMapper.toChatMessageResponse(chatMessageResponses);
   }
 
   @PostMapping("/{analysisId}/format")
@@ -190,10 +195,7 @@ public class AnalysisController {
   }
 
   @GetMapping("/{analysisId}/format/status")
-  public BulkFormatStatusResponse getBulkFormatStatus(@PathVariable UUID analysisId) {
-    var job = bulkFormatService.getJobStatus(analysisId);
-    return new BulkFormatStatusResponse(
-        job.getStatus().name(), job.getCreatedAt(), job.getLastUpdatedAt(),
-        job.getTotalNotes(), job.getCompletedNotes(), job.getFailedCount(), job.getAttempts());
+  public BulkFormatResponse getBulkFormatStatus(@PathVariable UUID analysisId) {
+    return bulkFormatRestMapper.toBulkFormatResponse(bulkFormatService.getJobStatus(analysisId));
   }
 }

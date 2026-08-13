@@ -2,8 +2,8 @@ package com.felixkroemer.smort.domain.anki;
 
 import com.felixkroemer.smort.common.config.SmortProperties;
 import com.felixkroemer.smort.common.exception.SmortException;
-import com.felixkroemer.smort.domain.anki.mapping.AnalysisMapper;
-import com.felixkroemer.smort.domain.anki.mapping.BulkFormatMapper;
+import com.felixkroemer.smort.domain.anki.mapping.AnalysisEntityMapper;
+import com.felixkroemer.smort.domain.anki.mapping.BulkFormatEntityMapper;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.*;
 import java.io.IOException;
@@ -33,8 +33,8 @@ public class AnalysisService {
 
   private final SmortProperties smortProperties;
 
-  private final AnalysisMapper analysisMapper;
-  private final BulkFormatMapper bulkFormatMapper;
+  private final AnalysisEntityMapper analysisEntityMapper;
+  private final BulkFormatEntityMapper bulkFormatEntityMapper;
 
   public UUID createAnalysis() {
     var analysis = new AnalysisMetaEntity(UUID.randomUUID(), AnalysisStatus.NEW);
@@ -47,19 +47,19 @@ public class AnalysisService {
     var bulkFormat =
         bulkFormatRepository
             .findBulkFormatByAnalysisId(analysisId)
-            .map(bulkFormatMapper::toBulkFormat);
-    return analysisMapper.toAnalysis(getMeta(analysisId), bulkFormat);
+            .map(bulkFormatEntityMapper::toBulkFormat);
+    return analysisEntityMapper.toAnalysis(getMeta(analysisId), bulkFormat);
   }
 
   public List<Analysis> getAnalyses() {
     return analysisMetaRepository.findAllAnalysisMetas().stream()
         .map(
             entity ->
-                analysisMapper.toAnalysis(
+                analysisEntityMapper.toAnalysis(
                     entity,
                     bulkFormatRepository
                         .findBulkFormatByAnalysisId(entity.getAnalysisId())
-                        .map(bulkFormatMapper::toBulkFormat)))
+                        .map(bulkFormatEntityMapper::toBulkFormat)))
         .toList();
   }
 
@@ -92,7 +92,10 @@ public class AnalysisService {
       analysisMetaRepository.save(analysis);
     } catch (Exception e) {
       try {
-        log.warn("Failed to persist analysis meta, deleting uploaded db. id={}, db={}", analysisId, dbPath);
+        log.warn(
+            "Failed to persist analysis meta, deleting uploaded db. id={}, db={}",
+            analysisId,
+            dbPath);
         Files.deleteIfExists(dbPath);
       } catch (Exception cleanupException) {
         log.error("Failed to delete db after save failure. id={}", analysisId, cleanupException);
@@ -100,8 +103,7 @@ public class AnalysisService {
       throw e;
     }
 
-    log.info(
-        "Upload complete for analysis. id={}, size={}KB", analysisId, bytes.length / 1024.0);
+    log.info("Upload complete for analysis. id={}, size={}KB", analysisId, bytes.length / 1024.0);
   }
 
   public void setDeck(UUID analysisId, Long deckId) {

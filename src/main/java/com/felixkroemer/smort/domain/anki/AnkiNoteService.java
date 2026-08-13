@@ -2,7 +2,7 @@ package com.felixkroemer.smort.domain.anki;
 
 import com.felixkroemer.smort.domain.chat.*;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
-import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageResponseEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
 import java.time.Instant;
@@ -81,7 +81,7 @@ public class AnkiNoteService {
     return derivedNote;
   }
 
-  public List<ChatMessageResponseEntity> chat(UUID analysisId, Long noteId, String message) {
+  public List<ChatMessageEntity> chat(UUID analysisId, Long noteId, String message) {
     var content = getContent(analysisId, noteId);
 
     return chatOrchestrationService.chat(

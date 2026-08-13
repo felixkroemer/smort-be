@@ -21,7 +21,8 @@ public class DeckCron {
         deckRepository.deleteDeckNotes(deckMeta.getDeckId());
         deckRepository.deleteDeckMeta(deckMeta.getDeckId());
       } catch (Exception e) {
-        log.error("Could not fully delete deck marked for deletion. deckId={}", deckMeta.getDeckId());
+        log.error(
+            "Could not fully delete deck marked for deletion. deckId={}", deckMeta.getDeckId());
       }
     }
   }

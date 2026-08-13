@@ -1,4 +1,4 @@
-package com.felixkroemer.smort.application.anki.dto;
+package com.felixkroemer.smort.application.chat.dto;
 
 import java.time.Instant;
 import java.util.Optional;

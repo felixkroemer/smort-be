@@ -3,7 +3,7 @@ package com.felixkroemer.smort.domain.deck;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.domain.chat.ChatService;
-import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageResponseEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
@@ -48,7 +48,7 @@ public class NoteService {
     return note;
   }
 
-  public List<ChatMessageResponseEntity> chat(UUID deckId, UUID noteId, String message) {
+  public List<ChatMessageEntity> chat(UUID deckId, UUID noteId, String message) {
     var note =
         deckRepository
             .findNoteByDeckIdAndNoteId(deckId, noteId)

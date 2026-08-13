@@ -94,8 +94,7 @@ public class ChatService {
     public String back;
   }
 
-  public ChatMessageResponse acknowledgeStoreNoteToolCall(
-      String callId, String previousResponseId) {
+  public ChatMessage acknowledgeStoreNoteToolCall(String callId, String previousResponseId) {
     ResponseCreateParams params =
         ResponseCreateParams.builder()
             .instructions(
@@ -123,19 +122,18 @@ public class ChatService {
                 })
             .orElseThrow(() -> new SmortException("Received no output items"));
 
-    var meta =
-        new ChatMessageResponseMeta(response.id(), response.previousResponseId(), Instant.now());
+    var meta = new ChatMessageMeta(response.id(), response.previousResponseId(), Instant.now());
     ResponseOutputText outputText = getResponseOutputText(responseOutputItem.asMessage());
-    return new ChatMessageTextResponse(outputText.text(), meta);
+    return new TextChatMessage(outputText.text(), meta);
   }
 
-  public ChatMessageResponse chat(
+  public ChatMessage chat(
       String front, String back, String message, Optional<String> previousResponseId) {
     var content = Map.of("front", front, "back", back);
     return chat(content, message, previousResponseId);
   }
 
-  public ChatMessageResponse chat(
+  public ChatMessage chat(
       Map<String, String> fields, String message, Optional<String> previousResponseId) {
     String fullInput =
         "Fields:\n"
@@ -166,13 +164,12 @@ public class ChatService {
                 })
             .orElseThrow(() -> new SmortException("Received no output items"));
 
-    var meta =
-        new ChatMessageResponseMeta(response.id(), response.previousResponseId(), Instant.now());
+    var meta = new ChatMessageMeta(response.id(), response.previousResponseId(), Instant.now());
 
     if (responseOutputItem.isFunctionCall()) {
       var responseFunctionToolCall = responseOutputItem.asFunctionCall();
       var storeNoteToolCall = responseFunctionToolCall.arguments(StoreNoteTool.class);
-      return new StoreNoteToolResponse(
+      return new StoreNoteToolChatMessage(
           StoreNoteTool.class.getName(),
           responseFunctionToolCall.callId(),
           storeNoteToolCall.front,
@@ -180,7 +177,7 @@ public class ChatService {
           meta);
     } else if (responseOutputItem.isMessage()) {
       ResponseOutputText outputText = getResponseOutputText(responseOutputItem.asMessage());
-      return new ChatMessageTextResponse(outputText.text(), meta);
+      return new TextChatMessage(outputText.text(), meta);
     } else {
       throw new SmortException("Unexpected response output item type");
     }

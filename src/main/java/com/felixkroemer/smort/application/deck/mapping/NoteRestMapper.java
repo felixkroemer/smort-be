@@ -7,9 +7,9 @@ import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
-public interface NoteMapper {
+public interface NoteRestMapper {
 
-  NoteResponse toDto(NoteEntity noteEntity);
+  NoteResponse toNoteResponse(NoteEntity noteEntity);
 
-  List<NoteResponse> toDto(List<NoteEntity> noteEntities);
+  List<NoteResponse> toNoteResponse(List<NoteEntity> noteEntities);
 }

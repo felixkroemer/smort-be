@@ -14,7 +14,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 @Getter
 @Setter
 @NoArgsConstructor
-public class ChatMessageResponseEntity extends AbstractChatMessageEntity {
+public class ChatMessageEntity extends AbstractChatMessageEntity {
 
   @Getter(onMethod_ = @DynamoDbPartitionKey)
   private String pk;
@@ -24,14 +24,14 @@ public class ChatMessageResponseEntity extends AbstractChatMessageEntity {
 
   private String noteId;
 
-  public ChatMessageResponseEntity(
+  public ChatMessageEntity(
       String pk,
       String noteId,
       Optional<String> message,
       String responseId,
       Optional<String> previousResponseId,
       Instant createdAt,
-      AbstractChatMessageEntityType type,
+      ChatMessageType type,
       Optional<String> response,
       Optional<String> callId,
       Optional<String> toolName) {
@@ -41,27 +41,27 @@ public class ChatMessageResponseEntity extends AbstractChatMessageEntity {
     this.sk = ChatKeys.chatMessageSk(noteId, createdAt, responseId);
   }
 
-  public static <T> ChatMessageResponseEntity text(
+  public static <T> ChatMessageEntity text(
       String pk,
       T noteId,
       Optional<String> message,
       String responseId,
       Optional<String> previousResponseId,
       String text) {
-    return new ChatMessageResponseEntity(
+    return new ChatMessageEntity(
         pk,
         String.valueOf(noteId),
         message,
         responseId,
         previousResponseId,
         Instant.now(),
-        AbstractChatMessageEntityType.TEXT,
+        ChatMessageType.TEXT,
         Optional.of(text),
         Optional.empty(),
         Optional.empty());
   }
 
-  public static <T> ChatMessageResponseEntity toolCall(
+  public static <T> ChatMessageEntity toolCall(
       String pk,
       T noteId,
       String message,
@@ -69,14 +69,14 @@ public class ChatMessageResponseEntity extends AbstractChatMessageEntity {
       Optional<String> previousResponseId,
       String callId,
       String toolName) {
-    return new ChatMessageResponseEntity(
+    return new ChatMessageEntity(
         pk,
         String.valueOf(noteId),
         Optional.of(message),
         responseId,
         previousResponseId,
         Instant.now(),
-        AbstractChatMessageEntityType.TOOL_CALL,
+        ChatMessageType.TOOL_CALL,
         Optional.empty(),
         Optional.of(callId),
         Optional.of(toolName));

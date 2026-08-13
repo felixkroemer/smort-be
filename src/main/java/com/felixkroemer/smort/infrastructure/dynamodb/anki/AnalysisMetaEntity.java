@@ -15,28 +15,28 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
 @NoArgsConstructor
 public class AnalysisMetaEntity {
 
-    @Getter(onMethod_ = @DynamoDbPartitionKey)
-    private String pk;
+  @Getter(onMethod_ = @DynamoDbPartitionKey)
+  private String pk;
 
-    @Getter(onMethod_ = @DynamoDbSortKey)
-    private String sk;
+  @Getter(onMethod_ = @DynamoDbSortKey)
+  private String sk;
 
-    private String dbPath;
-    private Long deckId;
-    private String deckName;
-    private AnalysisStatus status;
-    private Instant createdAt;
-    private Instant updatedAt;
+  private String dbPath;
+  private Long deckId;
+  private String deckName;
+  private AnalysisStatus status;
+  private Instant createdAt;
+  private Instant updatedAt;
 
-    public AnalysisMetaEntity(UUID analysisId, AnalysisStatus status) {
-        this.pk = AnalysisKeys.analysisPk(analysisId);
-        this.sk = MetaKeys.metaSk();
-        this.status = status;
-        this.createdAt = Instant.now();
-        this.updatedAt = Instant.now();
-    }
+  public AnalysisMetaEntity(UUID analysisId, AnalysisStatus status) {
+    this.pk = AnalysisKeys.analysisPk(analysisId);
+    this.sk = MetaKeys.metaSk();
+    this.status = status;
+    this.createdAt = Instant.now();
+    this.updatedAt = Instant.now();
+  }
 
-    public UUID getAnalysisId() {
-        return UUID.fromString(pk.substring("ANALYSIS#".length()));
-    }
+  public UUID getAnalysisId() {
+    return UUID.fromString(pk.substring("ANALYSIS#".length()));
+  }
 }

@@ -1,6 +1,6 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.chat;
 
-public enum AbstractChatMessageEntityType {
+public enum ChatMessageType {
   TEXT,
   TOOL_CALL
 }

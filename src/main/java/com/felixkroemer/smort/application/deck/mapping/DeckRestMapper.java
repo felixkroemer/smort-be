@@ -7,9 +7,9 @@ import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
-public interface DeckMapper {
+public interface DeckRestMapper {
 
-  DeckResponse toDto(DeckMetaEntity deckMetaEntity);
+  DeckResponse toDeckResponse(DeckMetaEntity deckMetaEntity);
 
-  List<DeckResponse> toDto(List<DeckMetaEntity> deckMetaEntity);
+  List<DeckResponse> toDeckResponse(List<DeckMetaEntity> deckMetaEntity);
 }

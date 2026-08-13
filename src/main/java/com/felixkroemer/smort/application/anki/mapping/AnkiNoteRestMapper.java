@@ -1,7 +1,7 @@
 package com.felixkroemer.smort.application.anki.mapping;
 
+import com.felixkroemer.smort.application.anki.dto.AnkiDeckResponse;
 import com.felixkroemer.smort.application.anki.dto.AnkiNoteResponse;
-import com.felixkroemer.smort.application.anki.dto.DeckResponse;
 import com.felixkroemer.smort.application.anki.dto.DerivedNoteResponse;
 import com.felixkroemer.smort.domain.anki.AnkiNote;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
@@ -12,18 +12,18 @@ import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
-public interface AnkiNoteMapper {
+public interface AnkiNoteRestMapper {
 
-  List<DerivedNoteResponse> toDerivedNoteResponseDto(List<DerivedNoteEntity> entities);
+  List<DerivedNoteResponse> toDerivedNoteResponse(List<DerivedNoteEntity> entities);
 
   @Mapping(source = "noteId", target = "id")
-  DerivedNoteResponse toDerivedNoteResponseDto(DerivedNoteEntity derivedNoteEntity);
+  DerivedNoteResponse toDerivedNoteResponse(DerivedNoteEntity derivedNoteEntity);
 
-  List<AnkiNoteResponse> toNoteResponseDto(List<AnkiNote> entity);
+  List<AnkiNoteResponse> toAnkiNoteResponse(List<AnkiNote> entity);
 
-  AnkiNoteResponse toNoteResponseDto(AnkiNote entity);
+  AnkiNoteResponse toAnkiNoteResponse(AnkiNote entity);
 
-  List<DeckResponse> toDeckResponseDto(List<AnkiDeckEntity> entities);
+  List<AnkiDeckResponse> toAnkiDeckResponse(List<AnkiDeckEntity> entities);
 
-  DeckResponse toDeckResponseDto(AnkiDeckEntity entity);
+  AnkiDeckResponse toAnkiDeckResponse(AnkiDeckEntity entity);
 }

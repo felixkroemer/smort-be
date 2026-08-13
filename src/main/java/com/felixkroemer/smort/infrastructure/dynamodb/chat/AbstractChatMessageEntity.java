@@ -17,7 +17,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConve
 @AllArgsConstructor
 public abstract class AbstractChatMessageEntity {
 
-  private AbstractChatMessageEntityType type; // "TEXT" or "TOOL_CALL"
+  private ChatMessageType type; // "TEXT" or "TOOL_CALL"
 
   @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalStringConverter.class))
   private Optional<String> response; // only populated for TEXT
