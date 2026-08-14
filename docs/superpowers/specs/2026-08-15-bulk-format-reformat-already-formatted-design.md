@@ -39,20 +39,32 @@ No migration is needed; the DynamoDB data will be cleared.
 4. If `notesToProcess` is empty, throw a `SmortException` with `LogSeverity.INFO` and a message
    indicating there are no notes to format for the analysis. No job is persisted in this case.
 5. `job.setTotalNotes(notesToProcess.size())`, save the job.
-6. `dispatch(job, notesToProcess, existingDerivedNotes)`.
+6. `dispatch(job, notesToProcess)`.
+
+`notesToProcess` is a `List<NoteToProcess>` where `NoteToProcess` pairs each eligible `AnkiNoteEntity`
+with its existing `DerivedNoteEntity` (null when the note is not yet formatted). The filter itself is
+unchanged (see Behavior); the derived note travels with the anki note so the processing loop knows
+what content to format.
 
 New overloads so the first attempt does not recompute the filter:
 
-- `dispatch(BulkFormatEntity job, List<AnkiNoteEntity> notesToProcess, Map<Long, DerivedNoteEntity> existingDerivedNotes)`
-  → `processNotes(job, notesToProcess, existingDerivedNotes)`.
-- `processNotes(BulkFormatEntity job, List<AnkiNoteEntity> notesToProcess, Map<Long, DerivedNoteEntity> existingDerivedNotes)`:
+- `dispatch(BulkFormatEntity job, List<NoteToProcess> notesToProcess)`
+  → `processNotes(job, notesToProcess)`.
+- `processNotes(BulkFormatEntity job, List<NoteToProcess> notesToProcess)`:
   the existing processing loop, but **removes** `setCompletedNotes(existingDerivedNotes.size())` and
   `setTotalNotes(notes.size())`; keeps the `setCompletedNotes(getCompletedNotes() + 1)` increment
-  per successfully formatted note. Still fetches `analysis` and `noteTypes` inside.
+  per successfully formatted note. Still fetches `analysis` and `noteTypes` inside. The loop mirrors
+  `AnkiNoteService.formatNote`:
+  - When the note already has a derived note, the content sent to `chatService.formatNote` is that
+    derived note's `front`/`back` (not the anki fields), and the result **updates** the existing
+    derived note (`setFront`/`setBack`/`setLastFormattedAt`).
+  - When the note is not yet formatted, the content is the anki note's fields (as before) and a new
+    `DerivedNoteEntity` is created.
 - `resumeBulkFormat(BulkFormatEntity job)` → `dispatch(job)` → `processNotes(job)`, which computes
   analysis/notes/derived and the filter itself, then delegates to the overloaded `processNotes`.
   Uses the persisted `totalNotes`; does not touch it.
-- A small helper computes the filter (shared between the start and resume paths).
+- `getNotesToProcess(List<AnkiNoteEntity>, Map<Long, DerivedNoteEntity>, BulkFormatEntity)` is the
+  shared filter helper; it maps each surviving note to a `NoteToProcess`.
 
 ### `AnalysisController`
 
