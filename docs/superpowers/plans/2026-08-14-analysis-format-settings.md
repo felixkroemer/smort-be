@@ -16,6 +16,7 @@
 - Entity field must use `@Getter(onMethod_ = @DynamoDbConvertedBy(OptionalStringConverter.class))` exactly like `AbstractChatMessageEntity` (`src/main/java/com/felixkroemer/smort/infrastructure/dynamodb/chat/AbstractChatMessageEntity.java:22-37`).
 - PATCH semantics (must hold): absent key in body = leave unchanged; explicit JSON `null` = clear; non-null string = overwrite.
 - Not wired into OpenAI formatting.
+- Build environment note (2026-08-14): `./mvnw compile` fails in this environment on `main` too (Lombok annotation processing not working under the installed JDK toolchain; 196 unrelated "cannot find symbol" errors). This is pre-existing and NOT caused by this feature. The user will verify compilation later. Implementers must SKIP the `./mvnw compile` verification steps (Steps 3 in Tasks 1-3); do the code edits and commits only, and report the compile step as skipped per user instruction.
 
 ---
 
