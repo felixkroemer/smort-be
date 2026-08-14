@@ -11,7 +11,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
@@ -62,6 +64,17 @@ public class AnalysisService {
                         .findBulkFormatByAnalysisId(entity.getAnalysisId())
                         .map(bulkFormatEntityMapper::toBulkFormat)))
         .toList();
+  }
+
+  public Optional<String> getFormatSettings(UUID analysisId) {
+    return Optional.ofNullable(getMeta(analysisId).getFormatInstructions());
+  }
+
+  public void updateFormatSettings(UUID analysisId, Optional<String> formatInstructions) {
+    var analysis = getMeta(analysisId);
+    analysis.setFormatInstructions(formatInstructions);
+    analysis.setUpdatedAt(Instant.now());
+    analysisMetaRepository.save(analysis);
   }
 
   public void uploadDB(UUID analysisId, byte[] bytes) {
