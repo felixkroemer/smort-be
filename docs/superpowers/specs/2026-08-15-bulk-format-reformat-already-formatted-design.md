@@ -32,7 +32,9 @@ No migration is needed; the DynamoDB data will be cleared.
 
 `startBulkFormat(UUID analysisId, boolean reformatAlreadyFormatted)`:
 
-1. Run the existing no-active-job validation.
+1. Run the existing no-active-job validation. The guard only rejects PENDING/IN_PROGRESS/WAITING_RETRY
+   jobs; a COMPLETED job does not block a new run (re-running a finished analysis is the point of the
+   reformat flag) — the new job replaces the old row.
 2. Fetch `analysis`, the deck's notes, and the existing derived notes (keyed by noteId).
 3. Create the job (not yet saved), then compute `notesToProcess` using the filter above with
    `job.getCreatedAt()`.
@@ -42,9 +44,9 @@ No migration is needed; the DynamoDB data will be cleared.
 6. `dispatch(job, notesToProcess)`.
 
 `notesToProcess` is a `List<NoteToProcess>` where `NoteToProcess` pairs each eligible `AnkiNoteEntity`
-with its existing `DerivedNoteEntity` (null when the note is not yet formatted). The filter itself is
-unchanged (see Behavior); the derived note travels with the anki note so the processing loop knows
-what content to format.
+with its existing `DerivedNoteEntity` as an `Optional` (empty when the note is not yet formatted). The
+filter itself is unchanged (see Behavior); the derived note travels with the anki note so the
+processing loop knows what content to format.
 
 New overloads so the first attempt does not recompute the filter:
 
@@ -53,8 +55,10 @@ New overloads so the first attempt does not recompute the filter:
 - `processNotes(BulkFormatEntity job, List<NoteToProcess> notesToProcess)`:
   the existing processing loop, but **removes** `setCompletedNotes(existingDerivedNotes.size())` and
   `setTotalNotes(notes.size())`; keeps the `setCompletedNotes(getCompletedNotes() + 1)` increment
-  per successfully formatted note. Still fetches `analysis` and `noteTypes` inside. The loop mirrors
-  `AnkiNoteService.formatNote`:
+  per successfully formatted note. Still fetches `analysis` and `noteTypes` inside. The completion /
+  failure tail is extracted into a private `handleProcessNotesResult(job, processed, failed, analysisId)`.
+  The loop mirrors `AnkiNoteService.getContent`/`formatNote`, consuming the `Optional` with
+  `map`/`orElseGet`:
   - When the note already has a derived note, the content sent to `chatService.formatNote` is that
     derived note's `front`/`back` (not the anki fields), and the result **updates** the existing
     derived note (`setFront`/`setBack`/`setLastFormattedAt`).
@@ -64,7 +68,7 @@ New overloads so the first attempt does not recompute the filter:
   analysis/notes/derived and the filter itself, then delegates to the overloaded `processNotes`.
   Uses the persisted `totalNotes`; does not touch it.
 - `getNotesToProcess(List<AnkiNoteEntity>, Map<Long, DerivedNoteEntity>, BulkFormatEntity)` is the
-  shared filter helper; it maps each surviving note to a `NoteToProcess`.
+  shared filter helper; it maps each surviving note to a `NoteToProcess` via `Optional.ofNullable`.
 
 ### `AnalysisController`
 

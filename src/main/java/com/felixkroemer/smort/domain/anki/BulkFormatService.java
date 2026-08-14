@@ -48,17 +48,15 @@ public class BulkFormatService {
         throw new SmortException(
             "Bulk format already in progress for analysis. analysisId={}", analysisId);
       }
-      if (job.getStatus() == BulkFormatStatus.COMPLETED) {
-        throw new SmortException(
-            "Bulk format already completed for analysis. analysisId={}", analysisId);
-      }
     }
 
     var analysis = analysisService.getAnalysis(analysisId);
     var notes = ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, analysis.getDeckId());
     var existingDerivedNotes =
         derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId).stream()
-            .collect(Collectors.toMap(DerivedNoteEntity::getNoteId, Function.identity(), (first, second) -> first));
+            .collect(
+                Collectors.toMap(
+                    DerivedNoteEntity::getNoteId, Function.identity(), (first, second) -> first));
 
     var job = new BulkFormatEntity(analysisId, reformatAlreadyFormatted);
     var notesToProcess = getNotesToProcess(notes, existingDerivedNotes, job);
@@ -110,18 +108,30 @@ public class BulkFormatService {
 
   private void processNotes(BulkFormatEntity job) {
     var analysisId = job.getAnalysisId();
-    var analysis = loadAnalysisOrError(analysisId);
+    Analysis analysis;
+    try {
+      analysis = analysisService.getAnalysis(analysisId);
+    } catch (NotFoundException e) {
+      throw e.withSeverity(LogSeverity.ERROR);
+    }
     var notes = ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, analysis.getDeckId());
     var existingDerivedNotes =
         derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId).stream()
-            .collect(Collectors.toMap(DerivedNoteEntity::getNoteId, Function.identity(), (first, second) -> first));
+            .collect(
+                Collectors.toMap(
+                    DerivedNoteEntity::getNoteId, Function.identity(), (first, second) -> first));
     var notesToProcess = getNotesToProcess(notes, existingDerivedNotes, job);
     processNotes(job, notesToProcess);
   }
 
   private void processNotes(BulkFormatEntity job, List<NoteToProcess> notesToProcess) {
     var analysisId = job.getAnalysisId();
-    var analysis = loadAnalysisOrError(analysisId);
+    Analysis analysis;
+    try {
+      analysis = analysisService.getAnalysis(analysisId);
+    } catch (NotFoundException e) {
+      throw e.withSeverity(LogSeverity.ERROR);
+    }
     var noteTypes = noteTypeService.getNoteTypesByAnalysisId(analysisId);
 
     int processed = 0;
@@ -139,26 +149,37 @@ public class BulkFormatService {
       try {
         var noteType = noteTypes.get(noteEntity.getNoteTypeId());
         var typeFieldNames = noteType.getFields();
-        Map<String, String> content;
-        if (existingDerivedNote != null) {
-          content =
-              Map.of("front", existingDerivedNote.getFront(), "back", existingDerivedNote.getBack());
-        } else {
-          content =
-              IntStream.range(0, typeFieldNames.size())
-                  .boxed()
-                  .collect(Collectors.toMap(typeFieldNames::get, noteEntity.getFlds()::get));
-        }
+        var content =
+            existingDerivedNote
+                .map(d -> Map.of("front", d.getFront(), "back", d.getBack()))
+                .orElseGet(
+                    () ->
+                        IntStream.range(0, typeFieldNames.size())
+                            .boxed()
+                            .collect(
+                                Collectors.toMap(typeFieldNames::get, noteEntity.getFlds()::get)));
 
         var noteSchema = chatService.formatNote(content, analysis.getFormatInstructions());
         var derivedNote =
-            existingDerivedNote != null
-                ? existingDerivedNote
-                : new DerivedNoteEntity(
-                    analysisId, noteEntity.getId(), noteSchema.getFront(), noteSchema.getBack());
-        derivedNote.setFront(noteSchema.getFront());
-        derivedNote.setBack(noteSchema.getBack());
-        derivedNote.setLastFormattedAt(Optional.of(Instant.now()));
+            existingDerivedNote
+                .map(
+                    d -> {
+                      d.setFront(noteSchema.getFront());
+                      d.setBack(noteSchema.getBack());
+                      d.setLastFormattedAt(Optional.of(Instant.now()));
+                      return d;
+                    })
+                .orElseGet(
+                    () -> {
+                      var newNote =
+                          new DerivedNoteEntity(
+                              analysisId,
+                              noteEntity.getId(),
+                              noteSchema.getFront(),
+                              noteSchema.getBack());
+                      newNote.setLastFormattedAt(Optional.of(Instant.now()));
+                      return newNote;
+                    });
         derivedNoteRepository.save(derivedNote);
 
         processed++;
@@ -184,6 +205,11 @@ public class BulkFormatService {
       }
     }
 
+    handleProcessNotesResult(job, processed, failed, analysisId);
+  }
+
+  private void handleProcessNotesResult(
+      BulkFormatEntity job, int processed, int failed, UUID analysisId) {
     if (failed == 0) {
       job.setStatus(BulkFormatStatus.COMPLETED);
       job.setLastUpdatedAt(Instant.now());
@@ -215,16 +241,8 @@ public class BulkFormatService {
             analysisId,
             processed,
             failed,
-            attempts);
+            job.getAttempts());
       }
-    }
-  }
-
-  private Analysis loadAnalysisOrError(UUID analysisId) {
-    try {
-      return analysisService.getAnalysis(analysisId);
-    } catch (NotFoundException e) {
-      throw e.withSeverity(LogSeverity.ERROR);
     }
   }
 
@@ -247,11 +265,11 @@ public class BulkFormatService {
                   .map(lastFormattedAt -> lastFormattedAt.isBefore(job.getCreatedAt()))
                   .orElse(true);
             })
-        .map(note -> new NoteToProcess(note, existingDerivedNotes.get(note.getId())))
+        .map(note -> new NoteToProcess(note, Optional.ofNullable(existingDerivedNotes.get(note.getId()))))
         .toList();
   }
 
-  private record NoteToProcess(AnkiNoteEntity ankiNote, DerivedNoteEntity existingDerivedNote) {}
+  private record NoteToProcess(AnkiNoteEntity ankiNote, Optional<DerivedNoteEntity> existingDerivedNote) {}
 
   public BulkFormat getJobStatus(UUID analysisId) {
     return bulkFormatRepository

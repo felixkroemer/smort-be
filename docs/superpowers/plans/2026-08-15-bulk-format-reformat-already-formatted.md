@@ -107,17 +107,15 @@ Change the method signature and body of `startBulkFormat` (replace the `var job 
         throw new SmortException(
             "Bulk format already in progress for analysis. analysisId={}", analysisId);
       }
-      if (job.getStatus() == BulkFormatStatus.COMPLETED) {
-        throw new SmortException(
-            "Bulk format already completed for analysis. analysisId={}", analysisId);
-      }
     }
 
     var analysis = analysisService.getAnalysis(analysisId);
     var notes = ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, analysis.getDeckId());
     var existingDerivedNotes =
         derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId).stream()
-            .collect(Collectors.toMap(DerivedNoteEntity::getNoteId, Function.identity()));
+            .collect(
+                Collectors.toMap(
+                    DerivedNoteEntity::getNoteId, Function.identity(), (first, second) -> first));
 
     var job = new BulkFormatEntity(analysisId, reformatAlreadyFormatted);
     var notesToProcess = getNotesToProcess(notes, existingDerivedNotes, job);
@@ -165,7 +163,12 @@ Replace the existing method header line `private void processNotes(BulkFormatEnt
 ```java
   private void processNotes(BulkFormatEntity job) {
     var analysisId = job.getAnalysisId();
-    var analysis = loadAnalysisOrError(analysisId);
+    Analysis analysis;
+    try {
+      analysis = analysisService.getAnalysis(analysisId);
+    } catch (NotFoundException e) {
+      throw e.withSeverity(LogSeverity.ERROR);
+    }
     var notes = ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, analysis.getDeckId());
     var existingDerivedNotes =
         derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId).stream()
@@ -176,19 +179,25 @@ Replace the existing method header line `private void processNotes(BulkFormatEnt
 
   private void processNotes(BulkFormatEntity job, List<NoteToProcess> notesToProcess) {
     var analysisId = job.getAnalysisId();
-    var analysis = loadAnalysisOrError(analysisId);
+    Analysis analysis;
+    try {
+      analysis = analysisService.getAnalysis(analysisId);
+    } catch (NotFoundException e) {
+      throw e.withSeverity(LogSeverity.ERROR);
+    }
     var noteTypes = noteTypeService.getNoteTypesByAnalysisId(analysisId);
 ```
 
-Both overloads fetch the analysis via the existing `loadAnalysisOrError` helper (adds `LogSeverity.ERROR` on `NotFoundException`).
+Both overloads fetch the analysis with an inline try/catch that rethrows `NotFoundException` at `LogSeverity.ERROR` (user decision: keep inlined rather than a shared helper).
 
-Keep the rest of the original `processNotes` body (attempts/status, completion/failure handling) unchanged, EXCEPT:
+Keep the rest of the original `processNotes` body (attempts/status, the `for` loop) unchanged, EXCEPT:
 
 - Remove the line `job.setCompletedNotes(existingDerivedNotes.size());`
 - Remove the line `job.setTotalNotes(notes.size());`
 - Keep `job.setCompletedNotes(job.getCompletedNotes() + 1);` inside the loop as-is.
+- Move the completion/failure tail (the `if (failed == 0) ... else ...` block) into a new private method `handleProcessNotesResult(BulkFormatEntity job, int processed, int failed, UUID analysisId)`; the processing overload calls it with `handleProcessNotesResult(job, processed, failed, analysisId)`.
 
-The processing overload takes `(BulkFormatEntity, List<NoteToProcess>)`. This supersedes the earlier "drop the derived-notes map" decision: the map is genuinely needed by the loop to know what content to format, so it now travels inside each `NoteToProcess`. Rework the `for` loop to mirror `AnkiNoteService.formatNote`:
+The processing overload takes `(BulkFormatEntity, List<NoteToProcess>)`. This supersedes the earlier "drop the derived-notes map" decision: the map is genuinely needed by the loop to know what content to format, so it now travels inside each `NoteToProcess` as an `Optional<DerivedNoteEntity>` (empty when not yet formatted). Rework the `for` loop to mirror `AnkiNoteService.getContent`/`formatNote`:
 
 ```java
 for (var noteToProcess : notesToProcess) {
@@ -197,22 +206,33 @@ for (var noteToProcess : notesToProcess) {
   try {
     var noteType = noteTypes.get(noteEntity.getNoteTypeId());
     var typeFieldNames = noteType.getFields();
-    Map<String, String> content;
-    if (existingDerivedNote != null) {
-      content = Map.of("front", existingDerivedNote.getFront(), "back", existingDerivedNote.getBack());
-    } else {
-      content = IntStream.range(0, typeFieldNames.size())
-          .boxed()
-          .collect(Collectors.toMap(typeFieldNames::get, noteEntity.getFlds()::get));
-    }
+    var content =
+        existingDerivedNote
+            .map(d -> Map.of("front", d.getFront(), "back", d.getBack()))
+            .orElseGet(
+                () ->
+                    IntStream.range(0, typeFieldNames.size())
+                        .boxed()
+                        .collect(Collectors.toMap(typeFieldNames::get, noteEntity.getFlds()::get)));
 
     var noteSchema = chatService.formatNote(content, analysis.getFormatInstructions());
-    var derivedNote = existingDerivedNote != null
-        ? existingDerivedNote
-        : new DerivedNoteEntity(analysisId, noteEntity.getId(), noteSchema.getFront(), noteSchema.getBack());
-    derivedNote.setFront(noteSchema.getFront());
-    derivedNote.setBack(noteSchema.getBack());
-    derivedNote.setLastFormattedAt(Optional.of(Instant.now()));
+    var derivedNote =
+        existingDerivedNote
+            .map(
+                d -> {
+                  d.setFront(noteSchema.getFront());
+                  d.setBack(noteSchema.getBack());
+                  d.setLastFormattedAt(Optional.of(Instant.now()));
+                  return d;
+                })
+            .orElseGet(
+                () -> {
+                  var newNote =
+                      new DerivedNoteEntity(
+                          analysisId, noteEntity.getId(), noteSchema.getFront(), noteSchema.getBack());
+                  newNote.setLastFormattedAt(Optional.of(Instant.now()));
+                  return newNote;
+                });
     derivedNoteRepository.save(derivedNote);
 ```
 
@@ -220,7 +240,7 @@ When the note already has a derived note, the content sent to the LLM is that de
 
 - [ ] **Step 4: Add the shared filter helper and the `NoteToProcess` record**
 
-Add these methods to the class (e.g. after the `processNotes` overloads). The record carries each surviving anki note together with its existing derived note (null when not yet formatted):
+Add these methods to the class (e.g. after the `processNotes` overloads). The record carries each surviving anki note together with its existing derived note as an `Optional` (empty when not yet formatted):
 
 ```java
   private List<NoteToProcess> getNotesToProcess(
@@ -242,22 +262,24 @@ Add these methods to the class (e.g. after the `processNotes` overloads). The re
                   .map(lastFormattedAt -> lastFormattedAt.isBefore(job.getCreatedAt()))
                   .orElse(true);
             })
-        .map(note -> new NoteToProcess(note, existingDerivedNotes.get(note.getId())))
+        .map(note -> new NoteToProcess(note, Optional.ofNullable(existingDerivedNotes.get(note.getId()))))
         .toList();
   }
 
-  private record NoteToProcess(AnkiNoteEntity ankiNote, DerivedNoteEntity existingDerivedNote) {}
+  private record NoteToProcess(AnkiNoteEntity ankiNote, Optional<DerivedNoteEntity> existingDerivedNote) {}
 ```
 
-The filter itself is unchanged; the `.map(...)` step pairs each surviving note with its existing derived note.
+The filter itself is unchanged; the `.map(...)` step pairs each surviving note with its existing derived note (via `Optional.ofNullable`, empty when the note is not yet formatted).
 
 - [ ] **Step 5: Verify logic consistency**
 
 Re-read the final `BulkFormatService.java` and confirm:
 - `startBulkFormat` throws INFO-severity `SmortException` with HTTP 400 when `notesToProcess` is empty, before any job is saved.
+- The no-active-job validation only guards PENDING/IN_PROGRESS/WAITING_RETRY; a COMPLETED job does not block a new run (the reformat feature allows re-running a finished analysis; the new job replaces the old row).
 - `totalNotes` is set exactly once (in `startBulkFormat`); `processNotes` overloads never set it.
 - `setCompletedNotes(...)` is only invoked as `job.setCompletedNotes(job.getCompletedNotes() + 1)` inside the success branch of the loop.
-- The loop formats the existing derived note's `front`/`back` when a derived note exists (and updates it), and the anki note's fields otherwise (and creates a new derived note).
+- The loop consumes `NoteToProcess.existingDerivedNote()` (an `Optional`): it formats the existing derived note's `front`/`back` and updates it when present, and the anki note's fields otherwise (creating a new derived note) — mirroring `AnkiNoteService.getContent`/`formatNote`.
+- The completion/failure tail lives in `handleProcessNotesResult(job, processed, failed, analysisId)`.
 - Resume path (`resumeBulkFormat` → `dispatch(job)` → `processNotes(job)`) recomputes the filter with `job.getCreatedAt()` and delegates to the two-arg overload.
 - No test code added; compilation skipped (human verifies).
 
@@ -312,7 +334,8 @@ git commit -m "feat: accept reformatAlreadyFormatted query param on bulk format 
 
 - `BulkFormatEntity` has `reformatAlreadyFormatted` and a two-arg constructor; `totalNotes` is still stored.
 - `startBulkFormat(UUID, boolean)` computes `notesToProcess` and `totalNotes` once, throws INFO/BAD_REQUEST `SmortException` when there are no notes, and dispatches the precomputed set of anki/derived pairs.
-- The processing loop formats an existing derived note's `front`/`back` and updates it when one exists; otherwise it formats the anki fields and creates a new derived note.
+- A COMPLETED job does not block a new run (re-running a finished analysis is supported; the new job replaces the old row).
+- The processing loop consumes `NoteToProcess.existingDerivedNote()` (an `Optional`): it formats an existing derived note's `front`/`back` and updates it when one exists; otherwise it formats the anki fields and creates a new derived note.
 - Resume path recomputes the set and delegates to the same processing overload.
 - `completedNotes` is only incremented per successfully formatted note.
 - Endpoint accepts `reformatAlreadyFormatted` with default `true`.
