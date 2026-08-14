@@ -66,18 +66,19 @@ public class AnalysisService {
         .toList();
   }
 
-  public Optional<String> getFormatSettings(UUID analysisId) {
-    return Optional.ofNullable(getMeta(analysisId).getFormatInstructions());
+  public AnalysisSettings getAnalysisSettings(UUID analysisId) {
+    return new AnalysisSettings(Optional.ofNullable(getMeta(analysisId).getFormatInstructions()));
   }
 
-  public void updateFormatSettings(UUID analysisId, Optional<String> formatInstructions) {
-    if (formatInstructions == null) {
-      return;
-    }
+  public AnalysisSettings updateAnalysisSettings(
+      UUID analysisId, Optional<String> formatInstructions) {
     var analysis = getMeta(analysisId);
-    analysis.setFormatInstructions(formatInstructions);
-    analysis.setUpdatedAt(Instant.now());
-    analysisMetaRepository.save(analysis);
+    if (formatInstructions != null) {
+      analysis.setFormatInstructions(formatInstructions);
+      analysis.setUpdatedAt(Instant.now());
+      analysisMetaRepository.save(analysis);
+    }
+    return new AnalysisSettings(Optional.ofNullable(analysis.getFormatInstructions()));
   }
 
   public void uploadDB(UUID analysisId, byte[] bytes) {

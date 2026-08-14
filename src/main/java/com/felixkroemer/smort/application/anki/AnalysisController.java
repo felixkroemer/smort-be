@@ -85,17 +85,16 @@ public class AnalysisController {
   public AnalysisSettingsResponse getAnalysisSettings(
       @PathVariable("analysisId") UUID analysisId) {
     return analysisRestMapper.toAnalysisSettingsResponse(
-        analysisService.getFormatSettings(analysisId));
+        analysisService.getAnalysisSettings(analysisId));
   }
 
   @PatchMapping("/{analysisId}/settings")
   public AnalysisSettingsResponse updateAnalysisSettings(
       @PathVariable("analysisId") UUID analysisId,
       @RequestBody UpdateAnalysisSettingsRequest updateAnalysisSettingsRequest) {
-    analysisService.updateFormatSettings(
-        analysisId, updateAnalysisSettingsRequest.formatInstructions());
     return analysisRestMapper.toAnalysisSettingsResponse(
-        analysisService.getFormatSettings(analysisId));
+        analysisService.updateAnalysisSettings(
+            analysisId, updateAnalysisSettingsRequest.formatInstructions()));
   }
 
   @DeleteMapping("/{analysisId}")

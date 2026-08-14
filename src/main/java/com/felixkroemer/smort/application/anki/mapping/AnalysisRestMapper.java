@@ -3,6 +3,7 @@ package com.felixkroemer.smort.application.anki.mapping;
 import com.felixkroemer.smort.application.anki.dto.AnalysisResponse;
 import com.felixkroemer.smort.application.anki.dto.AnalysisSettingsResponse;
 import com.felixkroemer.smort.domain.anki.Analysis;
+import com.felixkroemer.smort.domain.anki.AnalysisSettings;
 import java.util.List;
 import java.util.Optional;
 import org.mapstruct.Mapper;
@@ -17,7 +18,7 @@ public interface AnalysisRestMapper {
 
   List<AnalysisResponse> toAnalysisResponse(List<Analysis> analysis);
 
-  AnalysisSettingsResponse toAnalysisSettingsResponse(Optional<String> formatInstructions);
+  AnalysisSettingsResponse toAnalysisSettingsResponse(AnalysisSettings settings);
 
   default Optional<String> longToOptionalString(Long value) {
     return Optional.ofNullable(value).map(String::valueOf);
