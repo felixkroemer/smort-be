@@ -81,6 +81,22 @@ public class AnalysisController {
     return analysisRestMapper.toAnalysisResponse(analysisService.getAnalysis(analysisId));
   }
 
+  @GetMapping("/{analysisId}/settings")
+  public FormatSettingsResponse getFormatSettings(@PathVariable("analysisId") UUID analysisId) {
+    return analysisRestMapper.toFormatSettingsResponse(analysisService.getFormatSettings(analysisId));
+  }
+
+  @PatchMapping("/{analysisId}/settings")
+  public FormatSettingsResponse updateFormatSettings(
+      @PathVariable("analysisId") UUID analysisId,
+      @RequestBody UpdateFormatSettingsRequest updateFormatSettingsRequest) {
+    var formatInstructions = updateFormatSettingsRequest.formatInstructions();
+    if (formatInstructions != null) {
+      analysisService.updateFormatSettings(analysisId, formatInstructions);
+    }
+    return analysisRestMapper.toFormatSettingsResponse(analysisService.getFormatSettings(analysisId));
+  }
+
   @DeleteMapping("/{analysisId}")
   public void deleteAnalysis(@PathVariable("analysisId") UUID analysisId) {
     analysisService.deleteAnalysis(analysisId);
