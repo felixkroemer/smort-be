@@ -33,14 +33,16 @@ public class BulkFormatEntity {
   private int totalNotes;
   private int completedNotes;
   private int attempts;
+  private boolean reformatAlreadyFormatted;
 
-  public BulkFormatEntity(UUID analysisId) {
+  public BulkFormatEntity(UUID analysisId, boolean reformatAlreadyFormatted) {
     this.pk = AnalysisKeys.analysisPk(analysisId);
     this.sk = BulkFormatKeys.bulkFormatSk();
     this.status = BulkFormatStatus.PENDING;
     this.createdAt = Instant.now();
     this.lastUpdatedAt = Instant.now();
     this.attempts = 0;
+    this.reformatAlreadyFormatted = reformatAlreadyFormatted;
     updateGsiKeys();
   }
 
