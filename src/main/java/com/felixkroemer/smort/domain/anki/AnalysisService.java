@@ -67,7 +67,7 @@ public class AnalysisService {
   }
 
   public AnalysisSettings getAnalysisSettings(UUID analysisId) {
-    return new AnalysisSettings(Optional.ofNullable(getMeta(analysisId).getFormatInstructions()));
+    return new AnalysisSettings(getMeta(analysisId).getFormatInstructions());
   }
 
   public AnalysisSettings updateAnalysisSettings(
@@ -78,7 +78,7 @@ public class AnalysisService {
       analysis.setUpdatedAt(Instant.now());
       analysisMetaRepository.save(analysis);
     }
-    return new AnalysisSettings(Optional.ofNullable(analysis.getFormatInstructions()));
+    return new AnalysisSettings(analysis.getFormatInstructions());
   }
 
   public void uploadDB(UUID analysisId, byte[] bytes) {
