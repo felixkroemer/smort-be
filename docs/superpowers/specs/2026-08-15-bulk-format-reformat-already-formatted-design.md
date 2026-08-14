@@ -1,0 +1,67 @@
+# Bulk Format: Reformat Already Formatted Notes
+
+Date: 2026-08-15
+
+## Problem
+
+The bulk format flow only formats notes that do not yet have a derived note. There is no way to
+re-run formatting on notes that were already formatted (e.g. because the format instructions
+changed). This spec adds an optional `reformatAlreadyFormatted` flag that lets the user reformat
+already-formatted notes whose derived note is older than the bulk format job.
+
+## Behavior
+
+`processNotes` selects a note for formatting when:
+
+- the note has **no** derived note, **or**
+- `reformatAlreadyFormatted == true` **and** the derived note's `lastFormattedAt` is before the
+  bulk format job's `createdAt` (a missing `lastFormattedAt` is treated as "formatted before
+  createdAt", i.e. it is reformatted).
+
+## Changes
+
+### `BulkFormatEntity`
+
+- Keep `totalNotes` (set once at job start, see service below).
+- Add `boolean reformatAlreadyFormatted`.
+- Constructor becomes `BulkFormatEntity(UUID analysisId, boolean reformatAlreadyFormatted)`.
+
+No migration is needed; the DynamoDB data will be cleared.
+
+### `BulkFormatService`
+
+`startBulkFormat(UUID analysisId, boolean reformatAlreadyFormatted)`:
+
+1. Run the existing no-active-job validation.
+2. Fetch `analysis`, the deck's notes, and the existing derived notes (keyed by noteId).
+3. Create the job, then compute `notesToProcess` using the filter above with `job.getCreatedAt()`.
+4. `job.setTotalNotes(notesToProcess.size())`, save the job.
+5. `dispatch(job, notesToProcess, existingDerivedNotes)`.
+
+New overloads so the first attempt does not recompute the filter:
+
+- `dispatch(BulkFormatEntity job, List<AnkiNoteEntity> notesToProcess, Map<Long, DerivedNoteEntity> existingDerivedNotes)`
+  → `processNotes(job, notesToProcess, existingDerivedNotes)`.
+- `processNotes(BulkFormatEntity job, List<AnkiNoteEntity> notesToProcess, Map<Long, DerivedNoteEntity> existingDerivedNotes)`:
+  the existing processing loop, but **removes** `setCompletedNotes(existingDerivedNotes.size())` and
+  `setTotalNotes(notes.size())`; keeps the `setCompletedNotes(getCompletedNotes() + 1)` increment
+  per successfully formatted note. Still fetches `analysis` and `noteTypes` inside.
+- `resumeBulkFormat(BulkFormatEntity job)` → `dispatch(job)` → `processNotes(job)`, which computes
+  analysis/notes/derived and the filter itself, then delegates to the overloaded `processNotes`.
+  Uses the persisted `totalNotes`; does not touch it.
+- A small helper computes the filter (shared between the start and resume paths).
+
+### `AnalysisController`
+
+`POST /analysis/{analysisId}/format` accepts a query parameter:
+`@RequestParam(defaultValue = "true") boolean reformatAlreadyFormatted`. Default is `true`.
+
+### `BulkFormat` and `BulkFormatResponse`
+
+Keep `totalNotes`. `reformatAlreadyFormatted` is not exposed in the status response.
+
+## Out of Scope
+
+- Frontend changes (separate repository).
+- DynamoDB data migration (database will be cleared).
+- New tests (none exist for this service; compilation is skipped per AGENTS.md).
