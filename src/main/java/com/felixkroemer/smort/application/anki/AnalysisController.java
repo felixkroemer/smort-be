@@ -82,19 +82,22 @@ public class AnalysisController {
   }
 
   @GetMapping("/{analysisId}/settings")
-  public FormatSettingsResponse getFormatSettings(@PathVariable("analysisId") UUID analysisId) {
-    return analysisRestMapper.toFormatSettingsResponse(analysisService.getFormatSettings(analysisId));
+  public AnalysisSettingsResponse getAnalysisSettings(
+      @PathVariable("analysisId") UUID analysisId) {
+    return analysisRestMapper.toAnalysisSettingsResponse(
+        analysisService.getFormatSettings(analysisId));
   }
 
   @PatchMapping("/{analysisId}/settings")
-  public FormatSettingsResponse updateFormatSettings(
+  public AnalysisSettingsResponse updateAnalysisSettings(
       @PathVariable("analysisId") UUID analysisId,
-      @RequestBody UpdateFormatSettingsRequest updateFormatSettingsRequest) {
-    var formatInstructions = updateFormatSettingsRequest.formatInstructions();
+      @RequestBody UpdateAnalysisSettingsRequest updateAnalysisSettingsRequest) {
+    var formatInstructions = updateAnalysisSettingsRequest.formatInstructions();
     if (formatInstructions != null) {
       analysisService.updateFormatSettings(analysisId, formatInstructions);
     }
-    return analysisRestMapper.toFormatSettingsResponse(analysisService.getFormatSettings(analysisId));
+    return analysisRestMapper.toAnalysisSettingsResponse(
+        analysisService.getFormatSettings(analysisId));
   }
 
   @DeleteMapping("/{analysisId}")
