@@ -13,9 +13,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler(SmortException.class)
   public ResponseEntity<ErrorResponse> handle(SmortException ex) {
     switch (ex.getSeverity()) {
-      case ERROR -> log.error("Unhandled: {}", ex.getMessage(), ex);
-      case WARN -> log.warn("Warning: {}", ex.getMessage(), ex);
-      case INFO -> log.info("Handled: {}", ex.getMessage());
+      case ERROR -> log.error(ex.getMessage(), ex);
+      case WARN -> log.warn(ex.getMessage(), ex);
+      case INFO -> log.info(ex.getMessage());
     }
     return ResponseEntity.status(ex.getHttpStatus()).body(new ErrorResponse(ex));
   }

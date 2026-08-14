@@ -37,8 +37,8 @@ public class BulkFormatService {
     var existing = bulkFormatRepository.findBulkFormatByAnalysisId(analysisId);
     if (existing.isPresent()) {
       var job = existing.get();
-      if (job.getStatus() == BulkFormatStatus.IN_PROGRESS
-          || job.getStatus() == BulkFormatStatus.PENDING
+      if (job.getStatus() == BulkFormatStatus.PENDING
+          || job.getStatus() == BulkFormatStatus.IN_PROGRESS
           || job.getStatus() == BulkFormatStatus.WAITING_RETRY) {
         throw new SmortException(
             "Bulk format already in progress for analysis. analysisId={}", analysisId);
@@ -99,7 +99,6 @@ public class BulkFormatService {
     job.setAttempts(attempts);
     job.setCompletedNotes(existingDerivedNotes.size());
     job.setTotalNotes(notes.size());
-    job.setFailedCount(0);
     bulkFormatRepository.save(job);
 
     for (var noteEntity : notesToProcess) {
@@ -122,13 +121,11 @@ public class BulkFormatService {
         consecutiveFailed = 0;
         job.setCompletedNotes(job.getCompletedNotes() + 1);
         job.setLastUpdatedAt(Instant.now());
-        job.setFailedCount(failed);
         bulkFormatRepository.save(job);
 
       } catch (Exception e) {
         failed++;
         consecutiveFailed++;
-        job.setFailedCount(failed);
         log.warn(
             "Failed to format note during bulk format. analysisId={}, noteId={}",
             analysisId,
@@ -146,7 +143,6 @@ public class BulkFormatService {
     if (failed == 0) {
       job.setStatus(BulkFormatStatus.COMPLETED);
       job.setLastUpdatedAt(Instant.now());
-      job.setFailedCount(0);
       bulkFormatRepository.save(job);
 
       log.info(

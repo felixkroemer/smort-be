@@ -8,5 +8,4 @@ public record BulkFormatResponse(
     Instant lastUpdatedAt,
     int totalNotes,
     int completedNotes,
-    int failedCount,
     int attempts) {}

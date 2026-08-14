@@ -33,7 +33,6 @@ public class BulkFormatEntity {
   private int totalNotes;
   private int completedNotes;
   private int attempts;
-  private int failedCount;
 
   public BulkFormatEntity(UUID analysisId) {
     this.pk = AnalysisKeys.analysisPk(analysisId);
