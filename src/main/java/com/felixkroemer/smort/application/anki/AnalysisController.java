@@ -207,8 +207,10 @@ public class AnalysisController {
 
   @PostMapping("/{analysisId}/format")
   @ResponseStatus(HttpStatus.ACCEPTED)
-  public void startBulkFormat(@PathVariable UUID analysisId) {
-    bulkFormatService.startBulkFormat(analysisId);
+  public void startBulkFormat(
+      @PathVariable UUID analysisId,
+      @RequestParam(defaultValue = "true") boolean reformatAlreadyFormatted) {
+    bulkFormatService.startBulkFormat(analysisId, reformatAlreadyFormatted);
   }
 
   @GetMapping("/{analysisId}/format/status")
