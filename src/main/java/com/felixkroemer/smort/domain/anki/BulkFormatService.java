@@ -101,7 +101,7 @@ public class BulkFormatService {
     bulkFormatTaskExecutor.execute(
         () -> {
           try {
-            processNotes(job, notesToProcess, existingDerivedNotes);
+            processNotes(job, notesToProcess);
           } catch (Exception e) {
             log.error(
                 "Unexpected error during bulk format processing. analysisId={}",
@@ -124,13 +124,12 @@ public class BulkFormatService {
         derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId).stream()
             .collect(Collectors.toMap(DerivedNoteEntity::getNoteId, Function.identity()));
     var notesToProcess = getNotesToProcess(notes, existingDerivedNotes, job);
-    processNotes(job, notesToProcess, existingDerivedNotes);
+    processNotes(job, notesToProcess);
   }
 
   private void processNotes(
       BulkFormatEntity job,
-      List<AnkiNoteEntity> notesToProcess,
-      Map<Long, DerivedNoteEntity> existingDerivedNotes) {
+      List<AnkiNoteEntity> notesToProcess) {
     var analysisId = job.getAnalysisId();
     Analysis analysis;
     try {
