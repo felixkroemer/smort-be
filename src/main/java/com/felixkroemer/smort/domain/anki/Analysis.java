@@ -23,4 +23,5 @@ public class Analysis {
   private Instant createdAt;
   private Instant updatedAt;
   private Optional<BulkFormat> bulkFormat = Optional.empty();
+  private Optional<String> formatInstructions = Optional.empty();
 }

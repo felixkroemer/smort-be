@@ -1,8 +1,10 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.anki;
 
+import com.felixkroemer.smort.infrastructure.dynamodb.OptionalStringConverter;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.MetaKeys;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,6 +29,9 @@ public class AnalysisMetaEntity {
   private AnalysisStatus status;
   private Instant createdAt;
   private Instant updatedAt;
+
+  @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalStringConverter.class))
+  private Optional<String> formatInstructions;
 
   public AnalysisMetaEntity(UUID analysisId, AnalysisStatus status) {
     this.pk = AnalysisKeys.analysisPk(analysisId);
