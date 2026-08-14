@@ -7,4 +7,8 @@ public final class AnalysisKeys {
   public static String analysisPk(UUID analysisId) {
     return "ANALYSIS#" + analysisId;
   }
+
+  public static String analysisPkPrefix() {
+    return "ANALYSIS#";
+  }
 }

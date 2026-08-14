@@ -34,9 +34,12 @@ public class AnalysisMetaRepository {
   public List<AnalysisMetaEntity> findAllAnalysisMetas() {
     Expression filter =
         Expression.builder()
-            .expression("#sk = :sk")
-            .expressionNames(Map.of("#sk", "sk"))
-            .expressionValues(Map.of(":sk", AttributeValue.fromS(MetaKeys.metaSk())))
+            .expression("#sk = :sk AND begins_with(#pk, :pkPrefix)")
+            .expressionNames(Map.of("#sk", "sk", "#pk", "pk"))
+            .expressionValues(
+                Map.of(
+                    ":sk", AttributeValue.fromS(MetaKeys.metaSk()),
+                    ":pkPrefix", AttributeValue.fromS(AnalysisKeys.analysisPkPrefix())))
             .build();
 
     return analysisMetaTable
