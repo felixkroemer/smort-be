@@ -165,30 +165,22 @@ Replace the existing method header line `private void processNotes(BulkFormatEnt
 ```java
   private void processNotes(BulkFormatEntity job) {
     var analysisId = job.getAnalysisId();
-    Analysis analysis;
-    try {
-      analysis = analysisService.getAnalysis(analysisId);
-    } catch (NotFoundException e) {
-      throw e.withSeverity(LogSeverity.ERROR);
-    }
+    var analysis = loadAnalysisOrError(analysisId);
     var notes = ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, analysis.getDeckId());
     var existingDerivedNotes =
         derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId).stream()
-            .collect(Collectors.toMap(DerivedNoteEntity::getNoteId, Function.identity()));
+            .collect(Collectors.toMap(DerivedNoteEntity::getNoteId, Function.identity(), (first, second) -> first));
     var notesToProcess = getNotesToProcess(notes, existingDerivedNotes, job);
     processNotes(job, notesToProcess);
   }
 
   private void processNotes(BulkFormatEntity job, List<NoteToProcess> notesToProcess) {
     var analysisId = job.getAnalysisId();
-    Analysis analysis;
-    try {
-      analysis = analysisService.getAnalysis(analysisId);
-    } catch (NotFoundException e) {
-      throw e.withSeverity(LogSeverity.ERROR);
-    }
+    var analysis = loadAnalysisOrError(analysisId);
     var noteTypes = noteTypeService.getNoteTypesByAnalysisId(analysisId);
 ```
+
+Both overloads fetch the analysis via the existing `loadAnalysisOrError` helper (adds `LogSeverity.ERROR` on `NotFoundException`).
 
 Keep the rest of the original `processNotes` body (attempts/status, completion/failure handling) unchanged, EXCEPT:
 
