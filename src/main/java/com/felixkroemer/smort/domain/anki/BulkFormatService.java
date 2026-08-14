@@ -6,15 +6,20 @@ import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.mapping.BulkFormatEntityMapper;
 import com.felixkroemer.smort.domain.chat.ChatService;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
+import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteEntity;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -33,7 +38,7 @@ public class BulkFormatService {
   private final BulkFormatEntityMapper bulkFormatEntityMapper;
   private final TaskExecutor bulkFormatTaskExecutor;
 
-  public void startBulkFormat(UUID analysisId) {
+  public void startBulkFormat(UUID analysisId, boolean reformatAlreadyFormatted) {
     var existing = bulkFormatRepository.findBulkFormatByAnalysisId(analysisId);
     if (existing.isPresent()) {
       var job = existing.get();
@@ -48,9 +53,27 @@ public class BulkFormatService {
             "Bulk format already completed for analysis. analysisId={}", analysisId);
       }
     }
-    var job = new BulkFormatEntity(analysisId);
+
+    var analysis = analysisService.getAnalysis(analysisId);
+    var notes = ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, analysis.getDeckId());
+    var existingDerivedNotes =
+        derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId).stream()
+            .collect(Collectors.toMap(DerivedNoteEntity::getNoteId, Function.identity()));
+
+    var job = new BulkFormatEntity(analysisId, reformatAlreadyFormatted);
+    var notesToProcess = getNotesToProcess(notes, existingDerivedNotes, job);
+
+    if (notesToProcess.isEmpty()) {
+      throw new SmortException(
+          HttpStatus.BAD_REQUEST,
+          LogSeverity.INFO,
+          "No notes to format for analysis. analysisId={}",
+          analysisId);
+    }
+
+    job.setTotalNotes(notesToProcess.size());
     bulkFormatRepository.save(job);
-    dispatch(job);
+    dispatch(job, notesToProcess, existingDerivedNotes);
   }
 
   public void resumeBulkFormat(BulkFormatEntity bulkFormatEntity) {
@@ -71,6 +94,23 @@ public class BulkFormatService {
         });
   }
 
+  private void dispatch(
+      BulkFormatEntity job,
+      List<AnkiNoteEntity> notesToProcess,
+      Map<Long, DerivedNoteEntity> existingDerivedNotes) {
+    bulkFormatTaskExecutor.execute(
+        () -> {
+          try {
+            processNotes(job, notesToProcess, existingDerivedNotes);
+          } catch (Exception e) {
+            log.error(
+                "Unexpected error during bulk format processing. analysisId={}",
+                job.getAnalysisId(),
+                e);
+          }
+        });
+  }
+
   private void processNotes(BulkFormatEntity job) {
     var analysisId = job.getAnalysisId();
     Analysis analysis;
@@ -80,15 +120,25 @@ public class BulkFormatService {
       throw e.withSeverity(LogSeverity.ERROR);
     }
     var notes = ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, analysis.getDeckId());
-    var noteTypes = noteTypeService.getNoteTypesByAnalysisId(analysisId);
-
     var existingDerivedNotes =
         derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId).stream()
-            .map(DerivedNoteEntity::getNoteId)
-            .collect(Collectors.toSet());
+            .collect(Collectors.toMap(DerivedNoteEntity::getNoteId, Function.identity()));
+    var notesToProcess = getNotesToProcess(notes, existingDerivedNotes, job);
+    processNotes(job, notesToProcess, existingDerivedNotes);
+  }
 
-    var notesToProcess =
-        notes.stream().filter(note -> !existingDerivedNotes.contains(note.getId())).toList();
+  private void processNotes(
+      BulkFormatEntity job,
+      List<AnkiNoteEntity> notesToProcess,
+      Map<Long, DerivedNoteEntity> existingDerivedNotes) {
+    var analysisId = job.getAnalysisId();
+    Analysis analysis;
+    try {
+      analysis = analysisService.getAnalysis(analysisId);
+    } catch (NotFoundException e) {
+      throw e.withSeverity(LogSeverity.ERROR);
+    }
+    var noteTypes = noteTypeService.getNoteTypesByAnalysisId(analysisId);
 
     int processed = 0;
     int failed = 0;
@@ -97,8 +147,6 @@ public class BulkFormatService {
 
     job.setStatus(BulkFormatStatus.IN_PROGRESS);
     job.setAttempts(attempts);
-    job.setCompletedNotes(existingDerivedNotes.size());
-    job.setTotalNotes(notes.size());
     bulkFormatRepository.save(job);
 
     for (var noteEntity : notesToProcess) {
@@ -174,6 +222,28 @@ public class BulkFormatService {
             attempts);
       }
     }
+  }
+
+  private List<AnkiNoteEntity> getNotesToProcess(
+      List<AnkiNoteEntity> notes,
+      Map<Long, DerivedNoteEntity> existingDerivedNotes,
+      BulkFormatEntity job) {
+    return notes.stream()
+        .filter(
+            note -> {
+              var derivedNote = existingDerivedNotes.get(note.getId());
+              if (derivedNote == null) {
+                return true;
+              }
+              if (!job.isReformatAlreadyFormatted()) {
+                return false;
+              }
+              return derivedNote
+                  .getLastFormattedAt()
+                  .map(lastFormattedAt -> lastFormattedAt.isBefore(job.getCreatedAt()))
+                  .orElse(true);
+            })
+        .toList();
   }
 
   public BulkFormat getJobStatus(UUID analysisId) {
