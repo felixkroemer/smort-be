@@ -31,7 +31,7 @@ public class AnalysisMetaEntity {
   private Instant updatedAt;
 
   @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalStringConverter.class))
-  private Optional<String> formatInstructions;
+  private Optional<String> formatInstructions = Optional.empty();
 
   public AnalysisMetaEntity(UUID analysisId, AnalysisStatus status) {
     this.pk = AnalysisKeys.analysisPk(analysisId);

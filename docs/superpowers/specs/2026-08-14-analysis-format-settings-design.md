@@ -66,7 +66,8 @@ Follows the existing layered pattern (application → domain → infrastructure)
 - `public void updateFormatSettings(UUID analysisId, Optional<String> formatInstructions)` —
   loads meta, sets the field, bumps `updatedAt`, saves via `analysisMetaRepository.save`.
   `Optional.empty()` clears; the existing `OptionalStringConverter` persists it as
-  absent. Only called when the request actually carries the key (see controller).
+  a DynamoDB NULL attribute. Only called when the request actually carries the key
+  (see controller).
 
 ### application/anki/AnalysisController.java
 
