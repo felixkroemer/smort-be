@@ -34,9 +34,12 @@ No migration is needed; the DynamoDB data will be cleared.
 
 1. Run the existing no-active-job validation.
 2. Fetch `analysis`, the deck's notes, and the existing derived notes (keyed by noteId).
-3. Create the job, then compute `notesToProcess` using the filter above with `job.getCreatedAt()`.
-4. `job.setTotalNotes(notesToProcess.size())`, save the job.
-5. `dispatch(job, notesToProcess, existingDerivedNotes)`.
+3. Create the job (not yet saved), then compute `notesToProcess` using the filter above with
+   `job.getCreatedAt()`.
+4. If `notesToProcess` is empty, throw a `SmortException` with `LogSeverity.INFO` and a message
+   indicating there are no notes to format for the analysis. No job is persisted in this case.
+5. `job.setTotalNotes(notesToProcess.size())`, save the job.
+6. `dispatch(job, notesToProcess, existingDerivedNotes)`.
 
 New overloads so the first attempt does not recompute the filter:
 
