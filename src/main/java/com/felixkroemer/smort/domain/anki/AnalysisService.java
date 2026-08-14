@@ -71,6 +71,9 @@ public class AnalysisService {
   }
 
   public void updateFormatSettings(UUID analysisId, Optional<String> formatInstructions) {
+    if (formatInstructions == null) {
+      return;
+    }
     var analysis = getMeta(analysisId);
     analysis.setFormatInstructions(formatInstructions);
     analysis.setUpdatedAt(Instant.now());

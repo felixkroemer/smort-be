@@ -92,10 +92,8 @@ public class AnalysisController {
   public AnalysisSettingsResponse updateAnalysisSettings(
       @PathVariable("analysisId") UUID analysisId,
       @RequestBody UpdateAnalysisSettingsRequest updateAnalysisSettingsRequest) {
-    var formatInstructions = updateAnalysisSettingsRequest.formatInstructions();
-    if (formatInstructions != null) {
-      analysisService.updateFormatSettings(analysisId, formatInstructions);
-    }
+    analysisService.updateFormatSettings(
+        analysisId, updateAnalysisSettingsRequest.formatInstructions());
     return analysisRestMapper.toAnalysisSettingsResponse(
         analysisService.getFormatSettings(analysisId));
   }
