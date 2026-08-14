@@ -148,7 +148,7 @@ Add this overload immediately after the existing one-arg `dispatch`:
     bulkFormatTaskExecutor.execute(
         () -> {
           try {
-            processNotes(job, notesToProcess, existingDerivedNotes);
+            processNotes(job, notesToProcess);
           } catch (Exception e) {
             log.error(
                 "Unexpected error during bulk format processing. analysisId={}",
@@ -179,13 +179,10 @@ Replace the existing method header line `private void processNotes(BulkFormatEnt
         derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId).stream()
             .collect(Collectors.toMap(DerivedNoteEntity::getNoteId, Function.identity()));
     var notesToProcess = getNotesToProcess(notes, existingDerivedNotes, job);
-    processNotes(job, notesToProcess, existingDerivedNotes);
+    processNotes(job, notesToProcess);
   }
 
-  private void processNotes(
-      BulkFormatEntity job,
-      List<AnkiNoteEntity> notesToProcess,
-      Map<Long, DerivedNoteEntity> existingDerivedNotes) {
+  private void processNotes(BulkFormatEntity job, List<AnkiNoteEntity> notesToProcess) {
     var analysisId = job.getAnalysisId();
     Analysis analysis;
     try {
@@ -202,7 +199,7 @@ Keep the rest of the original `processNotes` body (attempts/status, the `for` lo
 - Remove the line `job.setTotalNotes(notes.size());`
 - Keep `job.setCompletedNotes(job.getCompletedNotes() + 1);` inside the loop as-is.
 
-The `existingDerivedNotes` parameter is intentionally unused by the processing overload's loop; it exists so the first attempt and the resume path share one method shape.
+The processing overload takes only `(BulkFormatEntity, List<AnkiNoteEntity>)`. User decision during review: the derived-notes map was originally passed to the processing overload to share a method shape, but it is unused by the loop, so it was dropped. The `dispatch` overload keeps both sets (it is the async handoff boundary from `startBulkFormat`).
 
 - [ ] **Step 4: Add the shared filter helper**
 
@@ -238,7 +235,7 @@ Re-read the final `BulkFormatService.java` and confirm:
 - `startBulkFormat` throws INFO-severity `SmortException` with HTTP 400 when `notesToProcess` is empty, before any job is saved.
 - `totalNotes` is set exactly once (in `startBulkFormat`); `processNotes` overloads never set it.
 - `setCompletedNotes(...)` is only invoked as `job.setCompletedNotes(job.getCompletedNotes() + 1)` inside the success branch of the loop.
-- Resume path (`resumeBulkFormat` → `dispatch(job)` → `processNotes(job)`) recomputes the filter with `job.getCreatedAt()` and delegates to the three-arg overload.
+- Resume path (`resumeBulkFormat` → `dispatch(job)` → `processNotes(job)`) recomputes the filter with `job.getCreatedAt()` and delegates to the two-arg overload.
 - No test code added; compilation skipped (human verifies).
 
 - [ ] **Step 6: Commit**
