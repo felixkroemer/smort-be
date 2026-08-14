@@ -58,7 +58,7 @@ public class BulkFormatService {
     var notes = ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, analysis.getDeckId());
     var existingDerivedNotes =
         derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId).stream()
-            .collect(Collectors.toMap(DerivedNoteEntity::getNoteId, Function.identity()));
+            .collect(Collectors.toMap(DerivedNoteEntity::getNoteId, Function.identity(), (first, second) -> first));
 
     var job = new BulkFormatEntity(analysisId, reformatAlreadyFormatted);
     var notesToProcess = getNotesToProcess(notes, existingDerivedNotes, job);
@@ -73,7 +73,7 @@ public class BulkFormatService {
 
     job.setTotalNotes(notesToProcess.size());
     bulkFormatRepository.save(job);
-    dispatch(job, notesToProcess, existingDerivedNotes);
+    dispatch(job, notesToProcess);
   }
 
   public void resumeBulkFormat(BulkFormatEntity bulkFormatEntity) {
@@ -94,10 +94,7 @@ public class BulkFormatService {
         });
   }
 
-  private void dispatch(
-      BulkFormatEntity job,
-      List<AnkiNoteEntity> notesToProcess,
-      Map<Long, DerivedNoteEntity> existingDerivedNotes) {
+  private void dispatch(BulkFormatEntity job, List<AnkiNoteEntity> notesToProcess) {
     bulkFormatTaskExecutor.execute(
         () -> {
           try {
@@ -113,16 +110,11 @@ public class BulkFormatService {
 
   private void processNotes(BulkFormatEntity job) {
     var analysisId = job.getAnalysisId();
-    Analysis analysis;
-    try {
-      analysis = analysisService.getAnalysis(analysisId);
-    } catch (NotFoundException e) {
-      throw e.withSeverity(LogSeverity.ERROR);
-    }
+    var analysis = loadAnalysisOrError(analysisId);
     var notes = ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, analysis.getDeckId());
     var existingDerivedNotes =
         derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId).stream()
-            .collect(Collectors.toMap(DerivedNoteEntity::getNoteId, Function.identity()));
+            .collect(Collectors.toMap(DerivedNoteEntity::getNoteId, Function.identity(), (first, second) -> first));
     var notesToProcess = getNotesToProcess(notes, existingDerivedNotes, job);
     processNotes(job, notesToProcess);
   }
@@ -131,12 +123,7 @@ public class BulkFormatService {
       BulkFormatEntity job,
       List<AnkiNoteEntity> notesToProcess) {
     var analysisId = job.getAnalysisId();
-    Analysis analysis;
-    try {
-      analysis = analysisService.getAnalysis(analysisId);
-    } catch (NotFoundException e) {
-      throw e.withSeverity(LogSeverity.ERROR);
-    }
+    var analysis = loadAnalysisOrError(analysisId);
     var noteTypes = noteTypeService.getNoteTypesByAnalysisId(analysisId);
 
     int processed = 0;
@@ -220,6 +207,14 @@ public class BulkFormatService {
             failed,
             attempts);
       }
+    }
+  }
+
+  private Analysis loadAnalysisOrError(UUID analysisId) {
+    try {
+      return analysisService.getAnalysis(analysisId);
+    } catch (NotFoundException e) {
+      throw e.withSeverity(LogSeverity.ERROR);
     }
   }
 
