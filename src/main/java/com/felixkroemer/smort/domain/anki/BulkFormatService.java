@@ -265,11 +265,15 @@ public class BulkFormatService {
                   .map(lastFormattedAt -> lastFormattedAt.isBefore(job.getCreatedAt()))
                   .orElse(true);
             })
-        .map(note -> new NoteToProcess(note, Optional.ofNullable(existingDerivedNotes.get(note.getId()))))
+        .map(
+            note ->
+                new NoteToProcess(
+                    note, Optional.ofNullable(existingDerivedNotes.get(note.getId()))))
         .toList();
   }
 
-  private record NoteToProcess(AnkiNoteEntity ankiNote, Optional<DerivedNoteEntity> existingDerivedNote) {}
+  private record NoteToProcess(
+      AnkiNoteEntity ankiNote, Optional<DerivedNoteEntity> existingDerivedNote) {}
 
   public BulkFormat getJobStatus(UUID analysisId) {
     return bulkFormatRepository
