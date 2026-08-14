@@ -63,15 +63,15 @@ public class ChatService {
   private final OpenAIClient openAIClient;
   private final ObjectMapper mapper;
 
-  public NoteSchema formatNote(String front, String back) {
-    return formatNote(Map.of("front", front, "back", back));
+  public NoteSchema formatNote(String front, String back, Optional<String> formatInstructions) {
+    return formatNote(Map.of("front", front, "back", back), formatInstructions);
   }
 
-  public NoteSchema formatNote(Map<String, String> fields) {
+  public NoteSchema formatNote(Map<String, String> fields, Optional<String> formatInstructions) {
     try {
       StructuredResponseCreateParams<NoteSchema> params =
           ResponseCreateParams.builder()
-              .instructions(FORMATTING_INSTRUCTION.formatted(FORMATTING_RULES))
+              .instructions(FORMATTING_INSTRUCTION.formatted(formatInstructions.orElse(FORMATTING_RULES)))
               .input(mapper.writeValueAsString(fields))
               .text(NoteSchema.class)
               .model(model)

@@ -26,6 +26,7 @@ public class AnkiNoteService {
   private final ChatOrchestrationService chatOrchestrationService;
   private final ChatService chatService;
   private final AnkiNoteTypeService noteTypeService;
+  private final AnalysisService analysisService;
 
   public AnkiNote getNote(UUID analysisId, Long noteId) {
     var note = ankiNoteRepository.findNoteByAnalysisIdAndNoteId(analysisId, noteId);
@@ -54,8 +55,9 @@ public class AnkiNoteService {
   }
 
   public DerivedNoteEntity formatNote(UUID analysisId, Long noteId) {
+    var analysis = analysisService.getAnalysis(analysisId);
     var content = getContent(analysisId, noteId);
-    var noteSchema = chatService.formatNote(content);
+    var noteSchema = chatService.formatNote(content, analysis.getFormatInstructions());
 
     var derivedNote =
         getDerivedNote(analysisId, noteId)

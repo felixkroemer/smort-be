@@ -110,7 +110,7 @@ public class BulkFormatService {
                 .boxed()
                 .collect(Collectors.toMap(typeFieldNames::get, noteEntity.getFlds()::get));
 
-        var noteSchema = chatService.formatNote(content);
+        var noteSchema = chatService.formatNote(content, analysis.getFormatInstructions());
         var derivedNote =
             new DerivedNoteEntity(
                 analysisId, noteEntity.getId(), noteSchema.getFront(), noteSchema.getBack());

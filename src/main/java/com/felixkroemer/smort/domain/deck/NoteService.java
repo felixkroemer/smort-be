@@ -39,7 +39,7 @@ public class NoteService {
             .findNoteByDeckIdAndNoteId(deckId, noteId)
             .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
 
-    var noteSchema = chatService.formatNote(note.getFront(), note.getBack());
+    var noteSchema = chatService.formatNote(note.getFront(), note.getBack(), Optional.empty());
 
     note.setFront(noteSchema.getFront());
     note.setBack(noteSchema.getBack());
