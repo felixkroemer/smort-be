@@ -13,12 +13,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.task.TaskExecutor;
+import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -36,7 +39,8 @@ public class BulkFormatService {
   private final AnalysisService analysisService;
   private final ChatService chatService;
   private final BulkFormatEntityMapper bulkFormatEntityMapper;
-  private final TaskExecutor bulkFormatTaskExecutor;
+  private final AsyncTaskExecutor bulkFormatTaskExecutor;
+  private final ConcurrentHashMap<UUID, Future<?>> bulkFormatFutures = new ConcurrentHashMap<>();
 
   public void startBulkFormat(UUID analysisId, boolean reformatAlreadyFormatted) {
     var existing = bulkFormatRepository.findBulkFormatByAnalysisId(analysisId);
@@ -78,32 +82,57 @@ public class BulkFormatService {
     dispatch(bulkFormatEntity);
   }
 
+  public void cancelBulkFormat(UUID analysisId) {
+    var job =
+        bulkFormatRepository
+            .findBulkFormatByAnalysisId(analysisId)
+            .orElseThrow(
+                () ->
+                    new NotFoundException(
+                        "No bulk format job found. analysisId={}", analysisId));
+    if (job.getStatus() == BulkFormatStatus.PENDING
+        || job.getStatus() == BulkFormatStatus.IN_PROGRESS
+        || job.getStatus() == BulkFormatStatus.WAITING_RETRY) {
+      job.setStatus(BulkFormatStatus.CANCELLED);
+      bulkFormatRepository.save(job);
+    }
+    var future = bulkFormatFutures.remove(analysisId);
+    if (future != null) {
+      future.cancel(true);
+    }
+  }
+
+  private boolean isCancelled(UUID analysisId) {
+    return bulkFormatRepository
+        .findBulkFormatByAnalysisId(analysisId)
+        .map(job -> job.getStatus() == BulkFormatStatus.CANCELLED)
+        .orElse(false);
+  }
+
   private void dispatch(BulkFormatEntity job) {
-    bulkFormatTaskExecutor.execute(
-        () -> {
-          try {
-            processNotes(job);
-          } catch (Exception e) {
-            log.error(
-                "Unexpected error during bulk format processing. analysisId={}",
-                job.getAnalysisId(),
-                e);
-          }
-        });
+    submitAndTrack(job.getAnalysisId(), () -> processNotes(job));
   }
 
   private void dispatch(BulkFormatEntity job, List<NoteToProcess> notesToProcess) {
-    bulkFormatTaskExecutor.execute(
-        () -> {
-          try {
-            processNotes(job, notesToProcess);
-          } catch (Exception e) {
-            log.error(
-                "Unexpected error during bulk format processing. analysisId={}",
-                job.getAnalysisId(),
-                e);
-          }
-        });
+    submitAndTrack(job.getAnalysisId(), () -> processNotes(job, notesToProcess));
+  }
+
+  private void submitAndTrack(UUID analysisId, Runnable task) {
+    var futureRef = new AtomicReference<Future<?>>();
+    var future =
+        bulkFormatTaskExecutor.submit(
+            () -> {
+              try {
+                task.run();
+              } catch (Exception e) {
+                log.error(
+                    "Unexpected error during bulk format processing. analysisId={}", analysisId, e);
+              } finally {
+                bulkFormatFutures.remove(analysisId, futureRef.get());
+              }
+            });
+    futureRef.set(future);
+    bulkFormatFutures.put(analysisId, future);
   }
 
   private void processNotes(BulkFormatEntity job) {
