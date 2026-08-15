@@ -1,7 +1,9 @@
 package com.felixkroemer.smort.domain.anki;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.argThat;
@@ -25,7 +27,9 @@ import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteTypeEntity;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -199,5 +204,96 @@ class BulkFormatServiceTest {
                     job.getStatus() == BulkFormatStatus.COMPLETED
                         || job.getStatus() == BulkFormatStatus.FAILED
                         || job.getStatus() == BulkFormatStatus.WAITING_RETRY));
+  }
+
+  @Test
+  void realExecutorInterruptBreaksConsecutiveFailLoopWithoutWritingTerminalStatus()
+      throws InterruptedException {
+    var executor = new ThreadPoolTaskExecutor();
+    executor.setCorePoolSize(1);
+    executor.setMaxPoolSize(1);
+    executor.setQueueCapacity(Integer.MAX_VALUE);
+    executor.setThreadNamePrefix("bulk-format-test-");
+    executor.afterPropertiesSet();
+    var service =
+        new BulkFormatService(
+            bulkFormatRepository,
+            derivedNoteRepository,
+            ankiNoteRepository,
+            noteTypeService,
+            analysisService,
+            chatService,
+            bulkFormatEntityMapper,
+            executor);
+
+    var analysisId = UUID.randomUUID();
+    when(bulkFormatRepository.findBulkFormatByAnalysisId(analysisId))
+        .thenReturn(Optional.empty(), Optional.of(new BulkFormatEntity(analysisId, true)));
+    when(analysisService.getAnalysis(analysisId)).thenReturn(analysis());
+    when(ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, 1L))
+        .thenReturn(List.of(note(1L, 100L), note(2L, 100L), note(3L, 100L)));
+    when(derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId)).thenReturn(List.of());
+    var noteType = mock(AnkiNoteTypeEntity.class);
+    when(noteType.getFields()).thenReturn(List.of("front", "back"));
+    when(noteTypeService.getNoteTypesByAnalysisId(analysisId))
+        .thenReturn(java.util.Map.of(100L, noteType));
+    var started = new CountDownLatch(1);
+    when(chatService.formatNote(any(), any()))
+        .thenAnswer(
+            inv -> {
+              started.countDown();
+              try {
+                new CountDownLatch(1).await();
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw e;
+              }
+              throw new AssertionError("formatNote should have been interrupted");
+            });
+
+    try {
+      service.startBulkFormat(analysisId, true);
+      assertTrue(started.await(5, TimeUnit.SECONDS));
+      service.cancelBulkFormat(analysisId);
+
+      var threadPool = executor.getThreadPoolExecutor();
+      var deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+      int activeCount;
+      do {
+        activeCount = threadPool.getActiveCount();
+        if (activeCount == 0) {
+          break;
+        }
+        Thread.sleep(50);
+      } while (System.nanoTime() < deadline);
+      assertEquals(0, activeCount);
+    } finally {
+      executor.shutdown();
+    }
+
+    verify(bulkFormatRepository)
+        .save(argThat(job -> job.getStatus() == BulkFormatStatus.CANCELLED));
+    verify(bulkFormatRepository, never())
+        .save(
+            argThat(
+                job ->
+                    job.getStatus() == BulkFormatStatus.COMPLETED
+                        || job.getStatus() == BulkFormatStatus.FAILED
+                        || job.getStatus() == BulkFormatStatus.WAITING_RETRY));
+  }
+
+  @Test
+  void cancelBulkFormatOnWaitingRetryJobPersistsCancelled() {
+    var analysisId = UUID.randomUUID();
+    var waitingJob = new BulkFormatEntity(analysisId, true);
+    waitingJob.setStatus(BulkFormatStatus.WAITING_RETRY);
+    when(bulkFormatRepository.findBulkFormatByAnalysisId(analysisId))
+        .thenReturn(Optional.of(waitingJob));
+
+    bulkFormatService.cancelBulkFormat(analysisId);
+
+    verify(bulkFormatRepository).findBulkFormatByAnalysisId(analysisId);
+    verify(bulkFormatRepository)
+        .save(argThat(job -> job.getStatus() == BulkFormatStatus.CANCELLED));
   }
 }

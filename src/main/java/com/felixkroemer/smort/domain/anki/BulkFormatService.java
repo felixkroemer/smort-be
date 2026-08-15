@@ -248,6 +248,11 @@ public class BulkFormatService {
       bulkFormatRepository.save(job);
     }
 
+    if (Thread.currentThread().isInterrupted()) {
+      log.info("Bulk format cancelled. analysisId={}", analysisId);
+      return;
+    }
+
     handleProcessNotesResult(job, processed, failed, analysisId);
   }
 
