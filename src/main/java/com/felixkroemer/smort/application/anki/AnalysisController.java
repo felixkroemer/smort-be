@@ -217,4 +217,10 @@ public class AnalysisController {
   public BulkFormatResponse getBulkFormatStatus(@PathVariable UUID analysisId) {
     return bulkFormatRestMapper.toBulkFormatResponse(bulkFormatService.getJobStatus(analysisId));
   }
+
+  @PostMapping("/{analysisId}/format/cancel")
+  @ResponseStatus(HttpStatus.ACCEPTED)
+  public void cancelBulkFormat(@PathVariable UUID analysisId) {
+    bulkFormatService.cancelBulkFormat(analysisId);
+  }
 }
