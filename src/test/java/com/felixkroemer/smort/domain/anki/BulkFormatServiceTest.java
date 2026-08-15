@@ -2,14 +2,14 @@ package com.felixkroemer.smort.domain.anki;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -28,8 +28,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -85,20 +86,27 @@ class BulkFormatServiceTest {
   }
 
   private void stubInlineExecutor() {
-    when(bulkFormatTaskExecutor.submit(any(Runnable.class)))
-        .thenAnswer(
+    doAnswer(
             inv -> {
               Runnable r = inv.getArgument(0);
               r.run();
-              return mock(Future.class);
-            });
+              return null;
+            })
+        .when(bulkFormatTaskExecutor)
+        .execute(any(Runnable.class));
   }
 
   @Test
   void cancelBulkFormatWritesCancelledAndCancelsTrackedFuture() {
     var analysisId = UUID.randomUUID();
-    var future = mock(Future.class);
-    when(bulkFormatTaskExecutor.submit(any(Runnable.class))).thenReturn(future);
+    var futureTaskRef = new AtomicReference<FutureTask<?>>();
+    doAnswer(
+            inv -> {
+              futureTaskRef.set((FutureTask<?>) inv.getArgument(0));
+              return null;
+            })
+        .when(bulkFormatTaskExecutor)
+        .execute(any(Runnable.class));
     var inProgressJob = new BulkFormatEntity(analysisId, true);
     inProgressJob.setStatus(BulkFormatStatus.IN_PROGRESS);
     when(bulkFormatRepository.findBulkFormatByAnalysisId(analysisId))
@@ -109,12 +117,17 @@ class BulkFormatServiceTest {
     when(derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId)).thenReturn(List.of());
 
     bulkFormatService.startBulkFormat(analysisId, true);
+    var futureTask = futureTaskRef.get();
+    assertNotNull(futureTask);
     bulkFormatService.cancelBulkFormat(analysisId);
     bulkFormatService.cancelBulkFormat(analysisId);
 
+    assertTrue(futureTask.isCancelled());
+    assertTrue(futureTask.isDone());
+    futureTask.run();
+    verify(chatService, never()).formatNote(any(), any());
     verify(bulkFormatRepository)
         .save(argThat(job -> job.getStatus() == BulkFormatStatus.CANCELLED));
-    verify(future, times(1)).cancel(anyBoolean());
   }
 
   @Test
@@ -140,7 +153,6 @@ class BulkFormatServiceTest {
 
   @Test
   void canRestartAfterCancel() {
-    when(bulkFormatTaskExecutor.submit(any(Runnable.class))).thenReturn(mock(Future.class));
     var analysisId = UUID.randomUUID();
     var cancelledJob = new BulkFormatEntity(analysisId, true);
     cancelledJob.setStatus(BulkFormatStatus.CANCELLED);
@@ -195,8 +207,8 @@ class BulkFormatServiceTest {
       Thread.interrupted();
     }
 
-    verify(chatService, times(1)).formatNote(any(), any());
-    verify(derivedNoteRepository, times(1)).save(any());
+    verify(chatService, never()).formatNote(any(), any());
+    verify(derivedNoteRepository, never()).save(any());
     verify(bulkFormatRepository, never())
         .save(
             argThat(

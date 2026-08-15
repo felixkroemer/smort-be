@@ -15,7 +15,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.FutureTask;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -110,9 +110,8 @@ public class BulkFormatService {
   }
 
   private void dispatch(UUID analysisId, Runnable task) {
-    var futureRef = new AtomicReference<Future<?>>();
-    var future =
-        bulkFormatTaskExecutor.submit(
+    var futureTask =
+        new FutureTask<Void>(
             () -> {
               try {
                 task.run();
@@ -120,11 +119,12 @@ public class BulkFormatService {
                 log.error(
                     "Unexpected error during bulk format processing. analysisId={}", analysisId, e);
               } finally {
-                bulkFormatFutures.remove(analysisId, futureRef.get());
+                bulkFormatFutures.remove(analysisId, futureTask);
               }
-            });
-    futureRef.set(future);
-    bulkFormatFutures.put(analysisId, future);
+            },
+            null);
+    bulkFormatFutures.put(analysisId, futureTask);
+    bulkFormatTaskExecutor.execute(futureTask);
   }
 
   private void processNotes(BulkFormatEntity job) {
@@ -173,6 +173,10 @@ public class BulkFormatService {
     bulkFormatRepository.save(job);
 
     for (var noteToProcess : notesToProcess) {
+      if (Thread.currentThread().isInterrupted()) {
+        log.info("Bulk format cancelled. analysisId={}", analysisId);
+        return;
+      }
       var noteEntity = noteToProcess.ankiNote();
       var existingDerivedNote = noteToProcess.existingDerivedNote();
       try {
@@ -232,13 +236,8 @@ public class BulkFormatService {
         continue;
       }
 
-      if (Thread.currentThread().isInterrupted()) {
-        log.info("Bulk format cancelled. analysisId={}", analysisId);
-        return;
-      } else {
-        job.setLastUpdatedAt(Instant.now());
-        bulkFormatRepository.save(job);
-      }
+      job.setLastUpdatedAt(Instant.now());
+      bulkFormatRepository.save(job);
     }
 
     if (Thread.currentThread().isInterrupted()) {
