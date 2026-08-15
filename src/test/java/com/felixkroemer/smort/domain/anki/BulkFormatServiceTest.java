@@ -308,4 +308,41 @@ class BulkFormatServiceTest {
     verify(bulkFormatRepository)
         .save(argThat(job -> job.getStatus() == BulkFormatStatus.CANCELLED));
   }
+
+  @Test
+  void interruptSetDuringConsecutiveFailuresDoesNotWriteWaitingRetry() {
+    stubInlineExecutor();
+    var analysisId = UUID.randomUUID();
+    when(bulkFormatRepository.findBulkFormatByAnalysisId(analysisId))
+        .thenReturn(Optional.empty(), Optional.of(new BulkFormatEntity(analysisId, true)));
+    when(analysisService.getAnalysis(analysisId)).thenReturn(analysis());
+    when(ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, 1L))
+        .thenReturn(List.of(note(1L, 100L), note(2L, 100L)));
+    when(derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId)).thenReturn(List.of());
+    var noteType = mock(AnkiNoteTypeEntity.class);
+    when(noteType.getFields()).thenReturn(List.of("front", "back"));
+    when(noteTypeService.getNoteTypesByAnalysisId(analysisId))
+        .thenReturn(java.util.Map.of(100L, noteType));
+    when(chatService.formatNote(any(), any()))
+        .thenThrow(new RuntimeException("boom"))
+        .thenAnswer(
+            inv -> {
+              Thread.currentThread().interrupt();
+              throw new RuntimeException("boom");
+            });
+
+    try {
+      bulkFormatService.startBulkFormat(analysisId, true);
+    } finally {
+      Thread.interrupted();
+    }
+
+    verify(bulkFormatRepository, never())
+        .save(
+            argThat(
+                job ->
+                    job.getStatus() == BulkFormatStatus.WAITING_RETRY
+                        || job.getStatus() == BulkFormatStatus.COMPLETED
+                        || job.getStatus() == BulkFormatStatus.FAILED));
+  }
 }

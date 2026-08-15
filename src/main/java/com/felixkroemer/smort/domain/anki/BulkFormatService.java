@@ -240,11 +240,6 @@ public class BulkFormatService {
       bulkFormatRepository.save(job);
     }
 
-    if (Thread.currentThread().isInterrupted()) {
-      log.info("Bulk format cancelled. analysisId={}", analysisId);
-      return;
-    }
-
     handleProcessNotesResult(job, processed, failed, analysisId);
   }
 
@@ -272,6 +267,10 @@ public class BulkFormatService {
             processed,
             failed);
       } else {
+        if (Thread.currentThread().isInterrupted()) {
+          log.info("Bulk format cancelled. analysisId={}", analysisId);
+          return;
+        }
         job.setStatus(BulkFormatStatus.WAITING_RETRY);
         job.setLastUpdatedAt(Instant.now());
         bulkFormatRepository.save(job);
