@@ -137,6 +137,10 @@ public class BulkFormatService {
 
   private void processNotes(BulkFormatEntity job) {
     var analysisId = job.getAnalysisId();
+    if (isCancelled(analysisId)) {
+      log.info("Bulk format skipped, already cancelled. analysisId={}", analysisId);
+      return;
+    }
     Analysis analysis;
     try {
       analysis = analysisService.getAnalysis(analysisId);
@@ -155,6 +159,10 @@ public class BulkFormatService {
 
   private void processNotes(BulkFormatEntity job, List<NoteToProcess> notesToProcess) {
     var analysisId = job.getAnalysisId();
+    if (isCancelled(analysisId)) {
+      log.info("Bulk format skipped, already cancelled. analysisId={}", analysisId);
+      return;
+    }
     Analysis analysis;
     try {
       analysis = analysisService.getAnalysis(analysisId);
@@ -214,8 +222,6 @@ public class BulkFormatService {
         processed++;
         consecutiveFailed = 0;
         job.setCompletedNotes(job.getCompletedNotes() + 1);
-        job.setLastUpdatedAt(Instant.now());
-        bulkFormatRepository.save(job);
 
       } catch (Exception e) {
         failed++;
@@ -231,7 +237,15 @@ public class BulkFormatService {
               analysisId);
           break;
         }
+        continue;
       }
+
+      if (Thread.currentThread().isInterrupted()) {
+        log.info("Bulk format cancelled. analysisId={}", analysisId);
+        return;
+      }
+      job.setLastUpdatedAt(Instant.now());
+      bulkFormatRepository.save(job);
     }
 
     handleProcessNotesResult(job, processed, failed, analysisId);

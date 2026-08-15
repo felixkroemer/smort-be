@@ -14,12 +14,14 @@ import static org.mockito.Mockito.when;
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.domain.anki.mapping.BulkFormatEntityMapper;
 import com.felixkroemer.smort.domain.chat.ChatService;
+import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.BulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.BulkFormatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.BulkFormatStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteRepository;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteEntity;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
+import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteTypeEntity;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -65,6 +67,7 @@ class BulkFormatServiceTest {
   private Analysis analysis() {
     var analysis = new Analysis();
     analysis.setDeckId(1L);
+    analysis.setFormatInstructions(Optional.of("instructions"));
     return analysis;
   }
 
@@ -146,5 +149,55 @@ class BulkFormatServiceTest {
     assertDoesNotThrow(() -> bulkFormatService.startBulkFormat(analysisId, true));
 
     verify(bulkFormatRepository).save(argThat(job -> job.getStatus() == BulkFormatStatus.PENDING));
+  }
+
+  @Test
+  void taskStartGuardAbortsCancelledJob() {
+    stubInlineExecutor();
+    var analysisId = UUID.randomUUID();
+    var cancelledJob = new BulkFormatEntity(analysisId, true);
+    cancelledJob.setStatus(BulkFormatStatus.CANCELLED);
+    when(bulkFormatRepository.findBulkFormatByAnalysisId(analysisId))
+        .thenReturn(Optional.of(cancelledJob));
+
+    bulkFormatService.resumeBulkFormat(cancelledJob);
+
+    verify(analysisService, never()).getAnalysis(any());
+    verify(noteTypeService, never()).getNoteTypesByAnalysisId(any());
+    verify(chatService, never()).formatNote(any(), any());
+    verify(bulkFormatRepository, never()).save(any());
+  }
+
+  @Test
+  void interruptStopsLoopWithoutWritingTerminalStatus() {
+    stubInlineExecutor();
+    var analysisId = UUID.randomUUID();
+    when(bulkFormatRepository.findBulkFormatByAnalysisId(analysisId))
+        .thenReturn(Optional.empty(), Optional.of(new BulkFormatEntity(analysisId, true)));
+    when(analysisService.getAnalysis(analysisId)).thenReturn(analysis());
+    when(ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, 1L))
+        .thenReturn(List.of(note(1L, 100L), note(2L, 100L)));
+    when(derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId)).thenReturn(List.of());
+    var noteType = mock(AnkiNoteTypeEntity.class);
+    when(noteType.getFields()).thenReturn(List.of("front", "back"));
+    when(noteTypeService.getNoteTypesByAnalysisId(analysisId)).thenReturn(java.util.Map.of(100L, noteType));
+    when(chatService.formatNote(any(), any())).thenReturn(new NoteSchema("f2", "b2"));
+
+    Thread.currentThread().interrupt();
+    try {
+      bulkFormatService.startBulkFormat(analysisId, true);
+    } finally {
+      Thread.interrupted();
+    }
+
+    verify(chatService, times(1)).formatNote(any(), any());
+    verify(derivedNoteRepository, times(1)).save(any());
+    verify(bulkFormatRepository, never())
+        .save(
+            argThat(
+                job ->
+                    job.getStatus() == BulkFormatStatus.COMPLETED
+                        || job.getStatus() == BulkFormatStatus.FAILED
+                        || job.getStatus() == BulkFormatStatus.WAITING_RETRY));
   }
 }
