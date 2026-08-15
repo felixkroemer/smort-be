@@ -75,11 +75,11 @@ public class BulkFormatService {
 
     job.setTotalNotes(notesToProcess.size());
     bulkFormatRepository.save(job);
-    dispatch(job, notesToProcess);
+    dispatch(job.getAnalysisId(), () -> processNotes(job, notesToProcess));
   }
 
   public void resumeBulkFormat(BulkFormatEntity bulkFormatEntity) {
-    dispatch(bulkFormatEntity);
+    dispatch(bulkFormatEntity.getAnalysisId(), () -> processNotes(bulkFormatEntity));
   }
 
   public void cancelBulkFormat(UUID analysisId) {
@@ -109,15 +109,7 @@ public class BulkFormatService {
         .orElse(false);
   }
 
-  private void dispatch(BulkFormatEntity job) {
-    submitAndTrack(job.getAnalysisId(), () -> processNotes(job));
-  }
-
-  private void dispatch(BulkFormatEntity job, List<NoteToProcess> notesToProcess) {
-    submitAndTrack(job.getAnalysisId(), () -> processNotes(job, notesToProcess));
-  }
-
-  private void submitAndTrack(UUID analysisId, Runnable task) {
+  private void dispatch(UUID analysisId, Runnable task) {
     var futureRef = new AtomicReference<Future<?>>();
     var future =
         bulkFormatTaskExecutor.submit(
