@@ -235,9 +235,10 @@ public class BulkFormatService {
       if (Thread.currentThread().isInterrupted()) {
         log.info("Bulk format cancelled. analysisId={}", analysisId);
         return;
+      } else {
+        job.setLastUpdatedAt(Instant.now());
+        bulkFormatRepository.save(job);
       }
-      job.setLastUpdatedAt(Instant.now());
-      bulkFormatRepository.save(job);
     }
 
     if (Thread.currentThread().isInterrupted()) {
