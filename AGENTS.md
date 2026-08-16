@@ -8,7 +8,8 @@
 - When a task or plan is complete, push the feature branch to origin. Do not
   present the finishing-a-development-branch menu; pushing to origin is the
   expected completion flow.
-- Remove implementation plans and spec documents (in docs/superpowers/) once their work is complete.
+- Implementation plans and spec documents (in docs/superpowers/) live on the
+  feature branch only; do not merge them into main.
 
 ## Working preferences
 - Write tests only when explicitly asked (in the plan, or by the human).
