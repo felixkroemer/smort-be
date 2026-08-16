@@ -33,16 +33,8 @@ public class NoteEntity {
   private String back;
 
   @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalInstantConverter.class))
-  private Optional<Instant> lastFormattedAt = Optional.empty();
+  private Optional<Instant> lastFormattedAt;
 
-  public NoteEntity(UUID deckId, UUID noteId, String front, String back) {
-    this.front = front;
-    this.back = back;
-    this.id = noteId;
-    this.pk = DeckKeys.deckPk(deckId);
-    this.sk = NoteKeys.noteSk(noteId);
-  }
-  
   public Map<String, String> getContent() {
     return Map.of("front", front, "back", back);
   }

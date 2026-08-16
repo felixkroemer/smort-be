@@ -85,7 +85,10 @@ public class DeckService {
 
   private void handleDerivedNotes(UUID deckId, List<DerivedNoteEntity> derivedNotes) {
     derivedNotes.stream()
-        .map(d -> new NoteEntity(deckId, UUID.randomUUID(), d.getFront(), d.getBack()))
+        .map(
+            d ->
+                noteEntityMapper.toNoteEntity(
+                    deckId, UUID.randomUUID(), new NoteSchema(d.getFront(), d.getBack())))
         .forEach(deckRepository::saveNote);
   }
 

@@ -57,8 +57,14 @@ public class BulkFormatRepository {
         .flatMap(
             status ->
                 Stream.concat(
-                    queryIndex(statusAnalysisBulkFormatIndex, status, BulkFormatKeys.analysisBulkFormatSk()),
-                    queryIndex(statusDeckBulkFormatIndex, status, BulkFormatKeys.deckBulkFormatSk())))
+                    queryIndex(
+                        statusAnalysisBulkFormatIndex,
+                        status,
+                        BulkFormatKeys.analysisBulkFormatSk()),
+                    queryIndex(
+                        statusDeckBulkFormatIndex,
+                        status,
+                        BulkFormatKeys.deckBulkFormatSk())))
         .toList();
   }
 
