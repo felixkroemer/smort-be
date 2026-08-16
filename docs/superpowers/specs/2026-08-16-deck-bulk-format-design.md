@@ -10,7 +10,7 @@ Bulk format currently exists only for analyses: it LLM-formats `AnkiNote`s (sqli
 same capability to imported decks, where the target is the `NoteEntity` itself, mutated in
 place.
 
-Approach chosen: **Option B** — two domain services (`BulkFormatService` for analyses,
+Approach chosen: **Option B** — two domain services (`AnalysisBulkFormatService` for analyses,
 `DeckBulkFormatService` for decks) sharing one generic `BulkFormatEngine` that holds the
 loop/retry/status machinery common to both.
 
@@ -48,7 +48,7 @@ loop/retry/status machinery common to both.
 
 - `BulkFormatEngine` (new, `@Service`). Depends only on `BulkFormatRepository` and
   `bulkFormatTaskExecutor`; never references Anki/Deck/ChatService.
-  - Constants `MAX_ATTEMPTS`, `MAX_RECENT_FAILED` (moved from `BulkFormatService`).
+  - Constants `MAX_ATTEMPTS`, `MAX_RECENT_FAILED` (moved from `AnalysisBulkFormatService`).
   - `dispatch(BulkFormatEntity job, Runnable task)` — async execution plus
     `BulkFormatCancelledException`/error logging, keyed off `job.getOwnerId()`.
   - `<T> void process(BulkFormatEntity job, List<T> items, ItemProcessor<T> processor)` —
@@ -99,7 +99,7 @@ loop/retry/status machinery common to both.
 - `NoteEntity`: add `Optional<Instant> lastFormattedAt`
   (`@DynamoDbConvertedBy(OptionalInstantConverter.class)`, default `Optional.empty()`).
 
-### `domain/anki` — `BulkFormatService` refactor
+### `domain/anki` — `AnalysisBulkFormatService` (renamed from `BulkFormatService`) refactor
 
 - Public API unchanged: `startBulkFormat`, `resumeBulkFormat`, `cancelBulkFormat`,
   `getJobStatus`.
@@ -132,7 +132,7 @@ loop/retry/status machinery common to both.
 ### `domain/cron` — `BulkFormatCron`
 
 - `findAllActive()` returns both job types. For each job past `CRASH_TIMEOUT`, route by
-  `sk`: `bulkFormatSk()` → `BulkFormatService.resumeBulkFormat((AnalysisBulkFormatEntity))`;
+  `sk`: `bulkFormatSk()` → `AnalysisBulkFormatService.resumeBulkFormat((AnalysisBulkFormatEntity))`;
   `deckBulkFormatSk()` → `DeckBulkFormatService.resumeBulkFormat((DeckBulkFormatEntity))`.
 
 ## Data flow (deck)

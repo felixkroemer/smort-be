@@ -1,6 +1,6 @@
 package com.felixkroemer.smort.domain.cron;
 
-import com.felixkroemer.smort.domain.anki.BulkFormatService;
+import com.felixkroemer.smort.domain.anki.AnalysisBulkFormatService;
 import com.felixkroemer.smort.domain.deck.DeckBulkFormatService;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
@@ -22,7 +22,7 @@ public class BulkFormatCron {
   private static final Duration CRASH_TIMEOUT = Duration.ofMinutes(2);
 
   private final BulkFormatRepository bulkFormatRepository;
-  private final BulkFormatService bulkFormatService;
+  private final AnalysisBulkFormatService analysisBulkFormatService;
   private final DeckBulkFormatService deckBulkFormatService;
 
   @Scheduled(fixedDelayString = "${app.scheduling.bulk-format-delay}")
@@ -46,7 +46,7 @@ public class BulkFormatCron {
 
   private void resume(BulkFormatEntity job) {
     if (BulkFormatKeys.bulkFormatSk().equals(job.getSk())) {
-      bulkFormatService.resumeBulkFormat((AnalysisBulkFormatEntity) job);
+      analysisBulkFormatService.resumeBulkFormat((AnalysisBulkFormatEntity) job);
     } else if (BulkFormatKeys.deckBulkFormatSk().equals(job.getSk())) {
       deckBulkFormatService.resumeBulkFormat((DeckBulkFormatEntity) job);
     } else {

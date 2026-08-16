@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class BulkFormatService {
+public class AnalysisBulkFormatService {
 
   private final BulkFormatRepository bulkFormatRepository;
   private final DerivedNoteRepository derivedNoteRepository;
