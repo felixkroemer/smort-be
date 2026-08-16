@@ -7,6 +7,7 @@ import com.felixkroemer.smort.domain.anki.AnalysisService;
 import com.felixkroemer.smort.domain.anki.AnkiNote;
 import com.felixkroemer.smort.domain.anki.AnkiNoteTypeService;
 import com.felixkroemer.smort.domain.common.NoteSchema;
+import com.felixkroemer.smort.domain.deck.mapping.NoteEntityMapper;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.BulkFormatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.BulkFormatStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
@@ -36,6 +37,11 @@ public class DeckService {
   private final AnkiNoteTypeService ankiNoteTypeService;
   private final DeckRepository deckRepository;
   private final BulkFormatRepository bulkFormatRepository;
+  private final NoteEntityMapper noteEntityMapper;
+
+  public List<NoteEntity> getNotes(UUID deckId) {
+    return deckRepository.findNotesByDeckId(deckId);
+  }
 
   // TODO: clean up possible failed imports based on status and time passed
   public void importDeck(UUID analysisId, Map<String, NoteTypeTemplate> templates) {
@@ -106,8 +112,8 @@ public class DeckService {
           "No template provided for note type. noteType={}", noteType.getName());
     }
     var schema =
-        getNoteSchema(ankiNote.getFlds(), template.frontTemplate(), template.backTemplate());
-    return new NoteEntity(deckId, UUID.randomUUID(), schema.front(), schema.back());
+        getNoteSchema(ankiNote.getContent(), template.frontTemplate(), template.backTemplate());
+    return noteEntityMapper.toNoteEntity(deckId, UUID.randomUUID(), schema);
   }
 
   private NoteSchema getNoteSchema(

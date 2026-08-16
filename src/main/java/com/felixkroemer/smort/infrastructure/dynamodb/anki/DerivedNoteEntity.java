@@ -4,6 +4,7 @@ import com.felixkroemer.smort.infrastructure.dynamodb.OptionalInstantConverter;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.NoteKeys;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.Getter;
@@ -39,5 +40,9 @@ public class DerivedNoteEntity {
     this.back = back;
     this.pk = AnalysisKeys.analysisPk(analysisId);
     this.sk = NoteKeys.noteSk(noteId);
+  }
+  
+  public Map<String, String> getContent() {
+    return Map.of("front", front, "back", back);
   }
 }

@@ -1,10 +1,14 @@
 package com.felixkroemer.smort.domain.anki;
 
+import com.felixkroemer.smort.domain.anki.mapping.DerivedNoteEntityMapper;
 import com.felixkroemer.smort.domain.chat.*;
+import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
+import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteEntity;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
+import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteTypeEntity;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -27,31 +31,33 @@ public class AnkiNoteService {
   private final ChatService chatService;
   private final AnkiNoteTypeService noteTypeService;
   private final AnalysisService analysisService;
+  private final DerivedNoteEntityMapper derivedNoteEntityMapper;
 
   public AnkiNote getNote(UUID analysisId, Long noteId) {
     var note = ankiNoteRepository.findNoteByAnalysisIdAndNoteId(analysisId, noteId);
     var noteTypes = noteTypeService.getNoteTypesByAnalysisId(analysisId);
-    var noteType = noteTypes.get(note.getNoteTypeId());
-    var noteTypeFieldNames = noteType.getFields();
-    var fields =
-        IntStream.range(0, noteTypeFieldNames.size())
-            .boxed()
-            .collect(Collectors.toMap(noteTypeFieldNames::get, note.getFlds()::get));
-    return new AnkiNote(note.getId(), fields, note.getGuid(), note.getNoteTypeId());
+    return new AnkiNote(
+        note.getId(), getFields(note, noteTypes), note.getGuid(), note.getNoteTypeId());
   }
 
   public Optional<DerivedNoteEntity> getDerivedNote(UUID analysisId, Long noteId) {
     return derivedNoteRepository.findDerivedNotedByAnalysisIdAndNoteId(analysisId, noteId);
   }
 
+  public static Map<String, String> getFields(
+      AnkiNoteEntity note, Map<Long, AnkiNoteTypeEntity> noteTypes) {
+    var noteType = noteTypes.get(note.getNoteTypeId());
+    var noteTypeFieldNames = noteType.getFields();
+    return IntStream.range(0, noteTypeFieldNames.size())
+        .boxed()
+        .collect(Collectors.toMap(noteTypeFieldNames::get, note.getFlds()::get));
+  }
+
   public Map<String, String> getContent(UUID analysisId, Long noteId) {
+    var note = getNote(analysisId, noteId);
     return getDerivedNote(analysisId, noteId)
-        .map(derivedNote -> Map.of("front", derivedNote.getFront(), "back", derivedNote.getBack()))
-        .orElseGet(
-            () -> {
-              var note = this.getNote(analysisId, noteId);
-              return note.getFlds();
-            });
+        .map(DerivedNoteEntity::getContent)
+        .orElseGet(note::getContent);
   }
 
   public DerivedNoteEntity formatNote(UUID analysisId, Long noteId) {
@@ -63,19 +69,13 @@ public class AnkiNoteService {
         getDerivedNote(analysisId, noteId)
             .map(
                 d -> {
-                  d.setFront(noteSchema.getFront());
-                  d.setBack(noteSchema.getBack());
+                  d.setFront(noteSchema.front());
+                  d.setBack(noteSchema.back());
                   d.setLastFormattedAt(Optional.of(Instant.now()));
                   return d;
                 })
             .orElseGet(
-                () -> {
-                  var newNote =
-                      new DerivedNoteEntity(
-                          analysisId, noteId, noteSchema.getFront(), noteSchema.getBack());
-                  newNote.setLastFormattedAt(Optional.of(Instant.now()));
-                  return newNote;
-                });
+                () -> derivedNoteEntityMapper.toDerivedNoteEntity(analysisId, noteId, noteSchema));
     derivedNoteRepository.save(derivedNote);
 
     log.info("Formatted note. analysisId={}, noteId={}", analysisId, noteId);
@@ -93,7 +93,9 @@ public class AnkiNoteService {
         message,
         (tx, front, back) -> {
           derivedNoteRepository.saveInTx(
-              tx, new DerivedNoteEntity(analysisId, noteId, front, back));
+              tx,
+              derivedNoteEntityMapper.toDerivedNoteEntity(
+                  analysisId, noteId, new NoteSchema(front, back)));
         });
   }
 }

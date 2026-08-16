@@ -21,6 +21,7 @@ public interface AnkiNoteRestMapper {
 
   List<AnkiNoteResponse> toAnkiNoteResponse(List<AnkiNote> entity);
 
+  @Mapping(source = "content", target = "flds")
   AnkiNoteResponse toAnkiNoteResponse(AnkiNote entity);
 
   List<AnkiDeckResponse> toAnkiDeckResponse(List<AnkiDeckEntity> entities);

@@ -3,6 +3,7 @@ package com.felixkroemer.smort.domain.chat;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.felixkroemer.smort.common.exception.SmortException;
+import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.openai.client.OpenAIClient;
 import com.openai.models.responses.*;
 import java.time.Instant;
@@ -20,12 +21,6 @@ public class ChatService {
 
   @Value("${openai.model}")
   private String model;
-
-  @Getter
-  public static class NoteSchema {
-    public String front;
-    public String back;
-  }
 
   private final String FORMATTING_INSTRUCTION =
       """
@@ -126,12 +121,6 @@ public class ChatService {
     var meta = new ChatMessageMeta(response.id(), response.previousResponseId(), Instant.now());
     ResponseOutputText outputText = getResponseOutputText(responseOutputItem.asMessage());
     return new TextChatMessage(outputText.text(), meta);
-  }
-
-  public ChatMessage chat(
-      String front, String back, String message, Optional<String> previousResponseId) {
-    var content = Map.of("front", front, "back", back);
-    return chat(content, message, previousResponseId);
   }
 
   public ChatMessage chat(

@@ -52,7 +52,7 @@ public class DeckController {
 
   @GetMapping("/{deckId}/notes")
   public List<NoteResponse> getNotes(@PathVariable("deckId") UUID deckId) {
-    var notes = noteService.getNotes(deckId);
+    var notes = deckService.getNotes(deckId);
     return noteRestMapper.toNoteResponse(notes);
   }
 

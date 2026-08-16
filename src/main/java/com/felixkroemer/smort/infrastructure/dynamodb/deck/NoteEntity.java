@@ -2,6 +2,8 @@ package com.felixkroemer.smort.infrastructure.dynamodb.deck;
 
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.NoteKeys;
+
+import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -32,5 +34,9 @@ public class NoteEntity {
     this.id = noteId;
     this.pk = DeckKeys.deckPk(deckId);
     this.sk = NoteKeys.noteSk(noteId);
+  }
+  
+  public Map<String, String> getContent() {
+    return Map.of("front", front, "back", back);
   }
 }

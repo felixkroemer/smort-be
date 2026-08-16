@@ -9,7 +9,7 @@ import lombok.Getter;
 public class AnkiNote {
   private Long id;
 
-  private Map<String, String> flds;
+  private Map<String, String> content;
 
   private String guid;
 

@@ -18,7 +18,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -150,20 +149,16 @@ public class AnalysisService {
 
   public List<AnkiNote> getNotes(UUID analysisId) {
     var analysis = getAnalysis(analysisId);
-
     var noteTypes = noteTypeService.getNoteTypesByAnalysisId(analysisId);
     var notes = ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, analysis.getDeckId());
     return notes.stream()
         .map(
-            n -> {
-              var noteType = noteTypes.get(n.getNoteTypeId());
-              var noteTypeFieldNames = noteType.getFields();
-              var fields =
-                  IntStream.range(0, noteTypeFieldNames.size())
-                      .boxed()
-                      .collect(Collectors.toMap(noteTypeFieldNames::get, n.getFlds()::get));
-              return new AnkiNote(n.getId(), fields, n.getGuid(), n.getNoteTypeId());
-            })
+            n ->
+                new AnkiNote(
+                    n.getId(),
+                    AnkiNoteService.getFields(n, noteTypes),
+                    n.getGuid(),
+                    n.getNoteTypeId()))
         .toList();
   }
 

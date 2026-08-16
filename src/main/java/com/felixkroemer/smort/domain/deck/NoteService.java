@@ -8,7 +8,6 @@ import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -28,10 +27,6 @@ public class NoteService {
     return deckRepository.findNoteByDeckIdAndNoteId(deckId, noteId);
   }
 
-  public List<NoteEntity> getNotes(UUID deckId) {
-    return deckRepository.findNotesByDeckId(deckId);
-  }
-
   public NoteEntity formatNote(UUID deckId, UUID noteId) {
     var note =
         deckRepository
@@ -40,8 +35,8 @@ public class NoteService {
 
     var noteSchema = chatService.formatNote(note.getFront(), note.getBack(), Optional.empty());
 
-    note.setFront(noteSchema.getFront());
-    note.setBack(noteSchema.getBack());
+    note.setFront(noteSchema.front());
+    note.setBack(noteSchema.back());
 
     log.info("Formatted note. deckId={}, noteId={}", deckId, noteId);
 
@@ -55,7 +50,7 @@ public class NoteService {
             .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
 
     return chatOrchestrationService.chat(
-        Map.of("front", note.getFront(), "back", note.getBack()),
+        note.getContent(),
         DeckKeys.deckPk(deckId),
         noteId,
         message,
