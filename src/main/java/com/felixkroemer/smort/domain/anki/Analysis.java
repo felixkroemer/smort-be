@@ -1,5 +1,6 @@
 package com.felixkroemer.smort.domain.anki;
 
+import com.felixkroemer.smort.domain.common.BulkFormat;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.AnalysisStatus;
 import java.nio.file.Path;
 import java.time.Instant;
