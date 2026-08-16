@@ -9,7 +9,6 @@ import com.felixkroemer.smort.domain.common.BulkFormat;
 import com.felixkroemer.smort.domain.common.BulkFormatEngine;
 import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatEntity;
-import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
 import java.time.Instant;
 import java.util.List;
