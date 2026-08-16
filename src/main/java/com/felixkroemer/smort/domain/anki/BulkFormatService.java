@@ -93,13 +93,6 @@ public class BulkFormatService {
     }
   }
 
-  private boolean isCancelled(UUID analysisId) {
-    return bulkFormatRepository
-        .findBulkFormatByAnalysisId(analysisId)
-        .map(job -> job.getStatus() == BulkFormatStatus.CANCELLED)
-        .orElse(false);
-  }
-
   private void dispatch(UUID analysisId, Runnable task) {
     bulkFormatTaskExecutor.execute(
         () -> {
@@ -116,10 +109,6 @@ public class BulkFormatService {
 
   private void processNotes(BulkFormatEntity job) {
     var analysisId = job.getAnalysisId();
-    if (isCancelled(analysisId)) {
-      log.info("Bulk format skipped, already cancelled. analysisId={}", analysisId);
-      return;
-    }
     Analysis analysis;
     try {
       analysis = analysisService.getAnalysis(analysisId);
@@ -138,10 +127,6 @@ public class BulkFormatService {
 
   private void processNotes(BulkFormatEntity job, List<NoteToProcess> notesToProcess) {
     var analysisId = job.getAnalysisId();
-    if (isCancelled(analysisId)) {
-      log.info("Bulk format skipped, already cancelled. analysisId={}", analysisId);
-      return;
-    }
     Analysis analysis;
     try {
       analysis = analysisService.getAnalysis(analysisId);

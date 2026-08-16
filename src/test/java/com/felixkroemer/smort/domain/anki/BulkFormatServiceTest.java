@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.argThat;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -19,7 +18,6 @@ import com.felixkroemer.smort.infrastructure.dynamodb.anki.BulkFormatStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteRepository;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteEntity;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
-import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteTypeEntity;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -76,17 +74,6 @@ class BulkFormatServiceTest {
     return note;
   }
 
-  private void stubInlineExecutor() {
-    doAnswer(
-            inv -> {
-              Runnable r = inv.getArgument(0);
-              r.run();
-              return null;
-            })
-        .when(bulkFormatTaskExecutor)
-        .execute(any(Runnable.class));
-  }
-
   @Test
   void cancelBulkFormatOnInProgressJobPersistsCancelled() {
     var analysisId = UUID.randomUUID();
@@ -137,23 +124,6 @@ class BulkFormatServiceTest {
     assertDoesNotThrow(() -> bulkFormatService.startBulkFormat(analysisId, true));
 
     verify(bulkFormatRepository).save(argThat(job -> job.getStatus() == BulkFormatStatus.PENDING));
-  }
-
-  @Test
-  void taskStartGuardAbortsCancelledJob() {
-    stubInlineExecutor();
-    var analysisId = UUID.randomUUID();
-    var cancelledJob = new BulkFormatEntity(analysisId, true);
-    cancelledJob.setStatus(BulkFormatStatus.CANCELLED);
-    when(bulkFormatRepository.findBulkFormatByAnalysisId(analysisId))
-        .thenReturn(Optional.of(cancelledJob));
-
-    bulkFormatService.resumeBulkFormat(cancelledJob);
-
-    verify(analysisService, never()).getAnalysis(any());
-    verify(noteTypeService, never()).getNoteTypesByAnalysisId(any());
-    verify(chatService, never()).formatNote(any(), any());
-    verify(bulkFormatRepository, never()).save(any());
   }
 
   @Test
