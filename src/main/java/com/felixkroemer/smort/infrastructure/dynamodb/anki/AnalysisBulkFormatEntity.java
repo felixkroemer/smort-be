@@ -1,8 +1,10 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.anki;
 
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.BulkFormatKeys;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,7 +22,13 @@ public class AnalysisBulkFormatEntity extends BulkFormatEntity {
 
   public AnalysisBulkFormatEntity(UUID analysisId, boolean reformatAlreadyFormatted) {
     this.pk = AnalysisKeys.analysisPk(analysisId);
-    initialize(BulkFormatKeys.bulkFormatSk(), reformatAlreadyFormatted);
+    this.sk = BulkFormatKeys.analysisBulkFormatSk();
+    this.status = BulkFormatStatus.PENDING;
+    this.createdAt = Instant.now();
+    this.lastUpdatedAt = Instant.now();
+    this.attempts = 0;
+    this.reformatAlreadyFormatted = reformatAlreadyFormatted;
+    updateGsiKeys();
   }
 
   public UUID getAnalysisId() {

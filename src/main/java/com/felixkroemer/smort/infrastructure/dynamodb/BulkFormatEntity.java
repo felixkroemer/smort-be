@@ -15,7 +15,7 @@ public abstract class BulkFormatEntity {
   public abstract String getPk();
 
   @Getter(onMethod_ = @DynamoDbSortKey)
-  private String sk;
+  protected String sk;
 
   @Getter(onMethod_ = @DynamoDbSecondaryPartitionKey(indexNames = "StatusBulkFormatIndex"))
   private String statusBulkFormatIndexGsiPk;
@@ -23,30 +23,20 @@ public abstract class BulkFormatEntity {
   @Getter(onMethod_ = @DynamoDbSecondarySortKey(indexNames = "StatusBulkFormatIndex"))
   private String statusBulkFormatIndexGsiSk;
 
-  private BulkFormatStatus status;
-  private Instant createdAt;
-  private Instant lastUpdatedAt;
+  protected BulkFormatStatus status;
+  protected Instant createdAt;
+  protected Instant lastUpdatedAt;
   private int totalNotes;
   private int completedNotes;
-  private int attempts;
-  private boolean reformatAlreadyFormatted;
-
-  protected void initialize(String sk, boolean reformatAlreadyFormatted) {
-    this.sk = sk;
-    this.status = BulkFormatStatus.PENDING;
-    this.createdAt = Instant.now();
-    this.lastUpdatedAt = Instant.now();
-    this.attempts = 0;
-    this.reformatAlreadyFormatted = reformatAlreadyFormatted;
-    updateGsiKeys();
-  }
+  protected int attempts;
+  protected boolean reformatAlreadyFormatted;
 
   public void setStatus(BulkFormatStatus status) {
     this.status = status;
     updateGsiKeys();
   }
 
-  private void updateGsiKeys() {
+  protected void updateGsiKeys() {
     this.statusBulkFormatIndexGsiPk = status.name();
     this.statusBulkFormatIndexGsiSk = Instant.now().toString();
   }

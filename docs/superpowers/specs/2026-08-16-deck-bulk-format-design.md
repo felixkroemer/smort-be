@@ -76,11 +76,12 @@ loop/retry/status machinery common to both.
   subclass owns its `pk` field with the `@DynamoDbPartitionKey` getter.
 - `anki/AnalysisBulkFormatEntity extends BulkFormatEntity` (`@DynamoDbBean`): ctor
   `(UUID analysisId, boolean reformat)`; `pk = AnalysisKeys.analysisPk(analysisId)`,
-  `sk = BulkFormatKeys.bulkFormatSk()`; `getAnalysisId()` parses `ANALYSIS#`.
+  `sk = BulkFormatKeys.analysisBulkFormatSk()`; `getAnalysisId()` parses `ANALYSIS#`.
 - `deck/DeckBulkFormatEntity extends BulkFormatEntity` (`@DynamoDbBean`): ctor
   `(UUID deckId, boolean reformat)`; `pk = DeckKeys.deckPk(deckId)`,
   `sk = BulkFormatKeys.deckBulkFormatSk()`; `getDeckId()` parses `DECK#`.
-- `keys/sort/BulkFormatKeys`: keep `bulkFormatSk()` (`META#BULKFORMAT#`), add
+- `keys/sort/BulkFormatKeys`: `bulkFormatPrefix()` (`META#BULKFORMAT#`),
+  `analysisBulkFormatSk()` (`META#BULKFORMAT#ANALYSIS#`),
   `deckBulkFormatSk()` (`META#BULKFORMAT#DECK#`).
 - `BulkFormatRepository`:
   - Two table beans (`DynamoDbTable<AnalysisBulkFormatEntity>`,

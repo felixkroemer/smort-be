@@ -1,8 +1,10 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.deck;
 
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.BulkFormatKeys;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,7 +22,13 @@ public class DeckBulkFormatEntity extends BulkFormatEntity {
 
   public DeckBulkFormatEntity(UUID deckId, boolean reformatAlreadyFormatted) {
     this.pk = DeckKeys.deckPk(deckId);
-    initialize(BulkFormatKeys.deckBulkFormatSk(), reformatAlreadyFormatted);
+    this.sk = BulkFormatKeys.deckBulkFormatSk();
+    this.status = BulkFormatStatus.PENDING;
+    this.createdAt = Instant.now();
+    this.lastUpdatedAt = Instant.now();
+    this.attempts = 0;
+    this.reformatAlreadyFormatted = reformatAlreadyFormatted;
+    updateGsiKeys();
   }
 
   public UUID getDeckId() {

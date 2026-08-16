@@ -38,7 +38,7 @@ public class BulkFormatRepository {
     var key =
         Key.builder()
             .partitionValue(AnalysisKeys.analysisPk(analysisId))
-            .sortValue(BulkFormatKeys.bulkFormatSk())
+            .sortValue(BulkFormatKeys.analysisBulkFormatSk())
             .build();
     return Optional.ofNullable(analysisBulkFormatTable.getItem(key));
   }
@@ -57,7 +57,7 @@ public class BulkFormatRepository {
         .flatMap(
             status ->
                 Stream.concat(
-                    queryIndex(statusAnalysisBulkFormatIndex, status, BulkFormatKeys.bulkFormatSk()),
+                    queryIndex(statusAnalysisBulkFormatIndex, status, BulkFormatKeys.analysisBulkFormatSk()),
                     queryIndex(statusDeckBulkFormatIndex, status, BulkFormatKeys.deckBulkFormatSk())))
         .toList();
   }
@@ -121,7 +121,7 @@ public class BulkFormatRepository {
     var key =
         Key.builder()
             .partitionValue(AnalysisKeys.analysisPk(analysisId))
-            .sortValue(BulkFormatKeys.bulkFormatSk())
+            .sortValue(BulkFormatKeys.analysisBulkFormatSk())
             .build();
     analysisBulkFormatTable.deleteItem(key);
   }

@@ -45,7 +45,7 @@ public class BulkFormatCron {
   }
 
   private void resume(BulkFormatEntity job) {
-    if (BulkFormatKeys.bulkFormatSk().equals(job.getSk())) {
+    if (BulkFormatKeys.analysisBulkFormatSk().equals(job.getSk())) {
       analysisBulkFormatService.resumeBulkFormat((AnalysisBulkFormatEntity) job);
     } else if (BulkFormatKeys.deckBulkFormatSk().equals(job.getSk())) {
       deckBulkFormatService.resumeBulkFormat((DeckBulkFormatEntity) job);

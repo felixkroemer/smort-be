@@ -22,6 +22,8 @@
 - `BulkFormatEngine.assertNoActiveJob` and its `isActive` helper were dropped post-review; each service's `startBulkFormat` inlines the active-job guard (`PENDING`/`IN_PROGRESS`/`WAITING_RETRY`), and `cancel` inlines the same status check.
 - The analysis service was renamed `BulkFormatService` → `AnalysisBulkFormatService` (and its field to `analysisBulkFormatService`) for symmetry with `DeckBulkFormatService`.
 - The abstract `getOwnerId()` was replaced with an abstract `getPk()`: each subclass now owns its `pk` field (with the `@DynamoDbPartitionKey` getter), and logging/error messages are keyed on `pk`.
+- The protected `initialize(...)` helper was removed; each subclass constructor sets the fields directly (`sk`, `status`, `createdAt`, `lastUpdatedAt`, `attempts`, `reformatAlreadyFormatted`, `updateGsiKeys()`), matching the original pre-abstract constructor shape. The fields those constructors set are `protected` on the base.
+- `BulkFormatKeys.bulkFormatSk()` was renamed to `analysisBulkFormatSk()` with value `META#BULKFORMAT#ANALYSIS#`, symmetric with `deckBulkFormatSk()` (`META#BULKFORMAT#DECK#`).
 
 ---
 
