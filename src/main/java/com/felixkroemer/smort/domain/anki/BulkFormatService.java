@@ -1,5 +1,6 @@
 package com.felixkroemer.smort.domain.anki;
 
+import com.felixkroemer.smort.common.exception.BulkFormatCancelledException;
 import com.felixkroemer.smort.common.exception.LogSeverity;
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.common.exception.SmortException;
@@ -13,9 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -40,7 +38,6 @@ public class BulkFormatService {
   private final ChatService chatService;
   private final BulkFormatEntityMapper bulkFormatEntityMapper;
   private final AsyncTaskExecutor bulkFormatTaskExecutor;
-  private final ConcurrentHashMap<UUID, Future<?>> bulkFormatFutures = new ConcurrentHashMap<>();
 
   public void startBulkFormat(UUID analysisId, boolean reformatAlreadyFormatted) {
     var existing = bulkFormatRepository.findBulkFormatByAnalysisId(analysisId);
@@ -87,18 +84,12 @@ public class BulkFormatService {
         bulkFormatRepository
             .findBulkFormatByAnalysisId(analysisId)
             .orElseThrow(
-                () ->
-                    new NotFoundException(
-                        "No bulk format job found. analysisId={}", analysisId));
+                () -> new NotFoundException("No bulk format job found. analysisId={}", analysisId));
     if (job.getStatus() == BulkFormatStatus.PENDING
         || job.getStatus() == BulkFormatStatus.IN_PROGRESS
         || job.getStatus() == BulkFormatStatus.WAITING_RETRY) {
       job.setStatus(BulkFormatStatus.CANCELLED);
       bulkFormatRepository.save(job);
-    }
-    var future = bulkFormatFutures.remove(analysisId);
-    if (future != null) {
-      future.cancel(true);
     }
   }
 
@@ -110,21 +101,17 @@ public class BulkFormatService {
   }
 
   private void dispatch(UUID analysisId, Runnable task) {
-    var futureTask =
-        new FutureTask<Void>(
-            () -> {
-              try {
-                task.run();
-              } catch (Exception e) {
-                log.error(
-                    "Unexpected error during bulk format processing. analysisId={}", analysisId, e);
-              } finally {
-                bulkFormatFutures.remove(analysisId, futureTask);
-              }
-            },
-            null);
-    bulkFormatFutures.put(analysisId, futureTask);
-    bulkFormatTaskExecutor.execute(futureTask);
+    bulkFormatTaskExecutor.execute(
+        () -> {
+          try {
+            task.run();
+          } catch (BulkFormatCancelledException e) {
+            log.info("Bulk format cancelled. analysisId={}", analysisId);
+          } catch (Exception e) {
+            log.error(
+                "Unexpected error during bulk format processing. analysisId={}", analysisId, e);
+          }
+        });
   }
 
   private void processNotes(BulkFormatEntity job) {
@@ -173,10 +160,6 @@ public class BulkFormatService {
     bulkFormatRepository.save(job);
 
     for (var noteToProcess : notesToProcess) {
-      if (Thread.currentThread().isInterrupted()) {
-        log.info("Bulk format cancelled. analysisId={}", analysisId);
-        return;
-      }
       var noteEntity = noteToProcess.ankiNote();
       var existingDerivedNote = noteToProcess.existingDerivedNote();
       try {
@@ -267,14 +250,9 @@ public class BulkFormatService {
             processed,
             failed);
       } else {
-        if (Thread.currentThread().isInterrupted()) {
-          log.info("Bulk format cancelled. analysisId={}", analysisId);
-          return;
-        }
         job.setStatus(BulkFormatStatus.WAITING_RETRY);
         job.setLastUpdatedAt(Instant.now());
         bulkFormatRepository.save(job);
-
         log.info(
             "Bulk format had errors. Will resume later.  analysisId={}, processed={}, failed={}, attempts={}",
             analysisId,
