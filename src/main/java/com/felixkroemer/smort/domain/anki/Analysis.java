@@ -18,6 +18,7 @@ public class Analysis {
   private UUID analysisId;
   private AnalysisStatus status;
   private Long deckId;
+  private int noteCount;
   private String deckName;
   private Path dbPath;
   private Instant createdAt;

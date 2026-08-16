@@ -144,6 +144,7 @@ public class AnalysisService {
     analysis.setStatus(AnalysisStatus.DECK_SELECTED);
     analysis.setDeckId(deckId);
     analysis.setDeckName(deck.getName());
+    analysis.setNoteCount(deck.getCards().size());
     analysisMetaRepository.save(analysis);
   }
 
