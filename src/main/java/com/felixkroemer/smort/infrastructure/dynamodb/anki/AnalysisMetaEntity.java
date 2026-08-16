@@ -25,6 +25,7 @@ public class AnalysisMetaEntity {
 
   private String dbPath;
   private Long deckId;
+  private int noteCount;
   private String deckName;
   private AnalysisStatus status;
   private Instant createdAt;

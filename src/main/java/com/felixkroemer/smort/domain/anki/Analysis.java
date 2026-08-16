@@ -1,5 +1,6 @@
 package com.felixkroemer.smort.domain.anki;
 
+import com.felixkroemer.smort.domain.common.BulkFormat;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.AnalysisStatus;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -18,6 +19,7 @@ public class Analysis {
   private UUID analysisId;
   private AnalysisStatus status;
   private Long deckId;
+  private int noteCount;
   private String deckName;
   private Path dbPath;
   private Instant createdAt;

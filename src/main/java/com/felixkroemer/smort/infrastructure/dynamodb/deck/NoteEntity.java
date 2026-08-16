@@ -1,14 +1,18 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.deck;
 
+import com.felixkroemer.smort.infrastructure.dynamodb.OptionalInstantConverter;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.NoteKeys;
 
+import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
@@ -28,14 +32,11 @@ public class NoteEntity {
   private String front;
   private String back;
 
-  public NoteEntity(UUID deckId, UUID noteId, String front, String back) {
-    this.front = front;
-    this.back = back;
-    this.id = noteId;
-    this.pk = DeckKeys.deckPk(deckId);
-    this.sk = NoteKeys.noteSk(noteId);
-  }
-  
+  // The enhanced client ignores explicit NUL values when reading, so the transformTo in the converter is never 
+  // triggered. So we have to initialize this here but its also set in the NoteEntityMapper.
+  @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalInstantConverter.class))
+  private Optional<Instant> lastFormattedAt = Optional.empty();
+
   public Map<String, String> getContent() {
     return Map.of("front", front, "back", back);
   }

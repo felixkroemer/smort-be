@@ -1,7 +1,7 @@
-package com.felixkroemer.smort.domain.anki.mapping;
+package com.felixkroemer.smort.domain.common.mapping;
 
-import com.felixkroemer.smort.domain.anki.BulkFormat;
-import com.felixkroemer.smort.infrastructure.dynamodb.anki.BulkFormatEntity;
+import com.felixkroemer.smort.domain.common.BulkFormat;
+import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
 

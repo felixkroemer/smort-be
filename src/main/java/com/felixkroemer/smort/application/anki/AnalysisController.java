@@ -9,10 +9,10 @@ import com.felixkroemer.smort.application.chat.dto.ChatMessageResponse;
 import com.felixkroemer.smort.application.chat.mapping.ChatMessageRestMapper;
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.common.exception.SmortException;
+import com.felixkroemer.smort.domain.anki.AnalysisBulkFormatService;
 import com.felixkroemer.smort.domain.anki.AnalysisService;
 import com.felixkroemer.smort.domain.anki.AnkiNoteService;
 import com.felixkroemer.smort.domain.anki.AnkiNoteTypeService;
-import com.felixkroemer.smort.domain.anki.BulkFormatService;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteTypeEntity;
@@ -40,7 +40,7 @@ public class AnalysisController {
   private final AnkiNoteService ankiNoteService;
   private final ChatOrchestrationService chatOrchestrationService;
   private final AnkiNoteTypeService ankiNoteTypeService;
-  private final BulkFormatService bulkFormatService;
+  private final AnalysisBulkFormatService analysisBulkFormatService;
 
   private final AnalysisRestMapper analysisRestMapper;
   private final AnkiNoteRestMapper ankiNoteRestMapper;
@@ -209,17 +209,17 @@ public class AnalysisController {
   public void startBulkFormat(
       @PathVariable UUID analysisId,
       @RequestParam(defaultValue = "true") boolean reformatAlreadyFormatted) {
-    bulkFormatService.startBulkFormat(analysisId, reformatAlreadyFormatted);
+    analysisBulkFormatService.startBulkFormat(analysisId, reformatAlreadyFormatted);
   }
 
   @GetMapping("/{analysisId}/format/status")
   public BulkFormatResponse getBulkFormatStatus(@PathVariable UUID analysisId) {
-    return bulkFormatRestMapper.toBulkFormatResponse(bulkFormatService.getJobStatus(analysisId));
+    return bulkFormatRestMapper.toBulkFormatResponse(analysisBulkFormatService.getJobStatus(analysisId));
   }
 
   @PostMapping("/{analysisId}/format/cancel")
   @ResponseStatus(HttpStatus.ACCEPTED)
   public void cancelBulkFormat(@PathVariable UUID analysisId) {
-    bulkFormatService.cancelBulkFormat(analysisId);
+    analysisBulkFormatService.cancelBulkFormat(analysisId);
   }
 }

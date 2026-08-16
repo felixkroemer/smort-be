@@ -8,8 +8,8 @@ import com.felixkroemer.smort.domain.anki.AnkiNote;
 import com.felixkroemer.smort.domain.anki.AnkiNoteTypeService;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.domain.deck.mapping.NoteEntityMapper;
-import com.felixkroemer.smort.infrastructure.dynamodb.anki.BulkFormatRepository;
-import com.felixkroemer.smort.infrastructure.dynamodb.anki.BulkFormatStatus;
+import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
+import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckMetaEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckRepository;
@@ -44,7 +44,7 @@ public class DeckService {
   }
 
   // TODO: clean up possible failed imports based on status and time passed
-  public void importDeck(UUID analysisId, Map<String, NoteTypeTemplate> templates) {
+  public DeckMetaEntity importDeck(UUID analysisId, Map<String, NoteTypeTemplate> templates) {
     var activeJob = bulkFormatRepository.findBulkFormatByAnalysisId(analysisId);
     if (activeJob.isPresent()
         && (activeJob.get().getStatus() == BulkFormatStatus.IN_PROGRESS
@@ -74,6 +74,7 @@ public class DeckService {
 
     deck.setStatus(DeckStatus.ACTIVE);
     deckRepository.saveDeckMeta(deck);
+    return deck;
   }
 
   private DeckMetaEntity createDeck(String deckName) {
@@ -84,7 +85,10 @@ public class DeckService {
 
   private void handleDerivedNotes(UUID deckId, List<DerivedNoteEntity> derivedNotes) {
     derivedNotes.stream()
-        .map(d -> new NoteEntity(deckId, UUID.randomUUID(), d.getFront(), d.getBack()))
+        .map(
+            d ->
+                noteEntityMapper.toNoteEntity(
+                    deckId, UUID.randomUUID(), new NoteSchema(d.getFront(), d.getBack())))
         .forEach(deckRepository::saveNote);
   }
 
