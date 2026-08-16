@@ -249,7 +249,7 @@ Note in the report: compilation skipped per AGENTS.md. (The old `BulkFormatEntit
 ### Task 3: Repository and config for both job types
 
 **Files:**
-- Modify: `src/main/java/com/felixkroemer/smort/infrastructure/dynamodb/anki/BulkFormatRepository.java`
+- Move: `src/main/java/com/felixkroemer/smort/infrastructure/dynamodb/anki/BulkFormatRepository.java` → `src/main/java/com/felixkroemer/smort/infrastructure/dynamodb/BulkFormatRepository.java` (package becomes `com.felixkroemer.smort.infrastructure.dynamodb`; it manages both job types and must be shared, matching every reference in this plan)
 - Modify: `src/main/java/com/felixkroemer/smort/infrastructure/dynamodb/DynamoDbClientConfig.java`
 
 **Interfaces:**
@@ -261,16 +261,15 @@ Note in the report: compilation skipped per AGENTS.md. (The old `BulkFormatEntit
   - `void save(BulkFormatEntity)` — dispatches by concrete type, keeps the cancellation conditional write
   - `void delete(UUID analysisId)`, `void deleteDeckJob(UUID deckId)`
 
-- [ ] **Step 1: Rewrite `BulkFormatRepository`**
+- [ ] **Step 1: Move and rewrite `BulkFormatRepository`**
 
-`src/main/java/com/felixkroemer/smort/infrastructure/dynamodb/anki/BulkFormatRepository.java`:
+`git mv src/main/java/com/felixkroemer/smort/infrastructure/dynamodb/anki/BulkFormatRepository.java src/main/java/com/felixkroemer/smort/infrastructure/dynamodb/BulkFormatRepository.java`, then set the package declaration to `com.felixkroemer.smort.infrastructure.dynamodb` and use the code below (imports unchanged in content):
 
 ```java
-package com.felixkroemer.smort.infrastructure.dynamodb.anki;
+package com.felixkroemer.smort.infrastructure.dynamodb;
 
 import com.felixkroemer.smort.common.exception.BulkFormatCancelledException;
-import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatEntity;
-import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
+import com.felixkroemer.smort.infrastructure.dynamodb.anki.AnalysisBulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckBulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
@@ -681,7 +680,6 @@ import com.felixkroemer.smort.domain.common.BulkFormat;
 import com.felixkroemer.smort.domain.common.BulkFormatEngine;
 import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatEntity;
-import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
 import java.time.Instant;
 import java.util.List;
