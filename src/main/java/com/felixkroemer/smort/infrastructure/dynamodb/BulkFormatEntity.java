@@ -1,8 +1,5 @@
-package com.felixkroemer.smort.infrastructure.dynamodb.anki;
+package com.felixkroemer.smort.infrastructure.dynamodb;
 
-import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
-import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
-import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.BulkFormatKeys;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.Getter;
@@ -14,7 +11,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
 @Getter
 @Setter
 @NoArgsConstructor
-public class BulkFormatEntity {
+public abstract class BulkFormatEntity {
 
   @Getter(onMethod_ = @DynamoDbPartitionKey)
   private String pk;
@@ -36,9 +33,11 @@ public class BulkFormatEntity {
   private int attempts;
   private boolean reformatAlreadyFormatted;
 
-  public BulkFormatEntity(UUID analysisId, boolean reformatAlreadyFormatted) {
-    this.pk = AnalysisKeys.analysisPk(analysisId);
-    this.sk = BulkFormatKeys.bulkFormatSk();
+  public abstract UUID getOwnerId();
+
+  protected void initialize(String pk, String sk, boolean reformatAlreadyFormatted) {
+    this.pk = pk;
+    this.sk = sk;
     this.status = BulkFormatStatus.PENDING;
     this.createdAt = Instant.now();
     this.lastUpdatedAt = Instant.now();
@@ -55,9 +54,5 @@ public class BulkFormatEntity {
   private void updateGsiKeys() {
     this.statusBulkFormatIndexGsiPk = status.name();
     this.statusBulkFormatIndexGsiSk = Instant.now().toString();
-  }
-
-  public UUID getAnalysisId() {
-    return UUID.fromString(pk.substring("ANALYSIS#".length()));
   }
 }

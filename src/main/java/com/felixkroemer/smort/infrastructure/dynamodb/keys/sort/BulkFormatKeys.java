@@ -9,4 +9,8 @@ public final class BulkFormatKeys {
   public static String bulkFormatPrefix() {
     return "META#BULKFORMAT#";
   }
+
+  public static String deckBulkFormatSk() {
+    return "META#BULKFORMAT#DECK#";
+  }
 }
