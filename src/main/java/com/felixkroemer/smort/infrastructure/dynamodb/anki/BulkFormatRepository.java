@@ -1,10 +1,14 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.anki;
 
 import com.felixkroemer.smort.common.exception.BulkFormatCancelledException;
+import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
+import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckBulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.BulkFormatKeys;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -26,40 +30,73 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
 @Slf4j
 public class BulkFormatRepository {
 
-  private final DynamoDbTable<BulkFormatEntity> bulkFormatTable;
-  private final DynamoDbIndex<BulkFormatEntity> statusBulkFormatIndex;
+  private final DynamoDbTable<AnalysisBulkFormatEntity> analysisBulkFormatTable;
+  private final DynamoDbTable<DeckBulkFormatEntity> deckBulkFormatTable;
+  private final DynamoDbIndex<AnalysisBulkFormatEntity> statusAnalysisBulkFormatIndex;
+  private final DynamoDbIndex<DeckBulkFormatEntity> statusDeckBulkFormatIndex;
 
-  public Optional<BulkFormatEntity> findBulkFormatByAnalysisId(UUID analysisId) {
+  public Optional<AnalysisBulkFormatEntity> findBulkFormatByAnalysisId(UUID analysisId) {
     var key =
         Key.builder()
             .partitionValue(AnalysisKeys.analysisPk(analysisId))
             .sortValue(BulkFormatKeys.bulkFormatSk())
             .build();
+    return Optional.ofNullable(analysisBulkFormatTable.getItem(key));
+  }
 
-    return Optional.ofNullable(bulkFormatTable.getItem(key));
+  public Optional<DeckBulkFormatEntity> findBulkFormatByDeckId(UUID deckId) {
+    var key =
+        Key.builder()
+            .partitionValue(DeckKeys.deckPk(deckId))
+            .sortValue(BulkFormatKeys.deckBulkFormatSk())
+            .build();
+    return Optional.ofNullable(deckBulkFormatTable.getItem(key));
   }
 
   public List<BulkFormatEntity> findAllActive() {
     return Stream.of(BulkFormatStatus.IN_PROGRESS, BulkFormatStatus.WAITING_RETRY)
         .flatMap(
             status ->
-                statusBulkFormatIndex
-                    .query(
-                        QueryEnhancedRequest.builder()
-                            .queryConditional(
-                                QueryConditional.keyEqualTo(
-                                    Key.builder().partitionValue(status.name()).build()))
-                            .build())
-                    .stream()
-                    .flatMap(page -> page.items().stream()))
+                Stream.concat(
+                    queryIndex(statusAnalysisBulkFormatIndex, status, BulkFormatKeys.bulkFormatSk()),
+                    queryIndex(statusDeckBulkFormatIndex, status, BulkFormatKeys.deckBulkFormatSk())))
         .toList();
   }
 
-  public void save(BulkFormatEntity bulkFormatEntity) {
+  private <T extends BulkFormatEntity> Stream<BulkFormatEntity> queryIndex(
+      DynamoDbIndex<T> index, BulkFormatStatus status, String sk) {
+    return index
+        .query(
+            QueryEnhancedRequest.builder()
+                .queryConditional(
+                    QueryConditional.keyEqualTo(Key.builder().partitionValue(status.name()).build()))
+                .filterExpression(
+                    Expression.builder()
+                        .expression("#sk = :sk")
+                        .expressionNames(Map.of("#sk", "sk"))
+                        .expressionValues(Map.of(":sk", AttributeValue.fromS(sk)))
+                        .build())
+                .build())
+        .stream()
+        .flatMap(page -> page.items().stream());
+  }
+
+  public void save(BulkFormatEntity entity) {
+    if (entity instanceof AnalysisBulkFormatEntity analysisJob) {
+      save(analysisBulkFormatTable, analysisJob);
+    } else if (entity instanceof DeckBulkFormatEntity deckJob) {
+      save(deckBulkFormatTable, deckJob);
+    } else {
+      throw new IllegalArgumentException(
+          "Unsupported bulk format entity type: " + entity.getClass().getName());
+    }
+  }
+
+  private <T extends BulkFormatEntity> void save(DynamoDbTable<T> table, T entity) {
     try {
-      bulkFormatTable.putItem(
-          PutItemEnhancedRequest.builder(BulkFormatEntity.class)
-              .item(bulkFormatEntity)
+      table.putItem(
+          PutItemEnhancedRequest.<T>builder((Class<T>) entity.getClass())
+              .item(entity)
               .conditionExpression(
                   Expression.builder()
                       .expression(
@@ -72,12 +109,12 @@ public class BulkFormatRepository {
                           ":cancelled", AttributeValue.fromS(BulkFormatStatus.CANCELLED.name()))
                       .putExpressionValue(
                           ":newCreatedAt",
-                          AttributeValue.fromS(bulkFormatEntity.getCreatedAt().toString()))
+                          AttributeValue.fromS(entity.getCreatedAt().toString()))
                       .build())
               .build());
     } catch (ConditionalCheckFailedException e) {
       throw new BulkFormatCancelledException(
-          "Bulk format was cancelled. analysisId={}", bulkFormatEntity.getAnalysisId());
+          "Bulk format was cancelled. ownerId={}", entity.getOwnerId());
     }
   }
 
@@ -87,6 +124,15 @@ public class BulkFormatRepository {
             .partitionValue(AnalysisKeys.analysisPk(analysisId))
             .sortValue(BulkFormatKeys.bulkFormatSk())
             .build();
-    bulkFormatTable.deleteItem(key);
+    analysisBulkFormatTable.deleteItem(key);
+  }
+
+  public void deleteDeckJob(UUID deckId) {
+    var key =
+        Key.builder()
+            .partitionValue(DeckKeys.deckPk(deckId))
+            .sortValue(BulkFormatKeys.deckBulkFormatSk())
+            .build();
+    deckBulkFormatTable.deleteItem(key);
   }
 }

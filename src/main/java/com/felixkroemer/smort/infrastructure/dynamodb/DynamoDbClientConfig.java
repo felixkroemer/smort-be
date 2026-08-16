@@ -1,9 +1,10 @@
 package com.felixkroemer.smort.infrastructure.dynamodb;
 
+import com.felixkroemer.smort.infrastructure.dynamodb.anki.AnalysisBulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.AnalysisMetaEntity;
-import com.felixkroemer.smort.infrastructure.dynamodb.anki.BulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckBulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckMetaEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
 import java.net.URI;
@@ -54,8 +55,13 @@ public class DynamoDbClientConfig {
   }
 
   @Bean
-  DynamoDbTable<BulkFormatEntity> bulkFormatTable(DynamoDbEnhancedClient enhancedClient) {
-    return enhancedClient.table(COMMON_TABLE_NAME, TableSchema.fromBean(BulkFormatEntity.class));
+  DynamoDbTable<AnalysisBulkFormatEntity> bulkFormatTable(DynamoDbEnhancedClient enhancedClient) {
+    return enhancedClient.table(COMMON_TABLE_NAME, TableSchema.fromBean(AnalysisBulkFormatEntity.class));
+  }
+
+  @Bean
+  DynamoDbTable<DeckBulkFormatEntity> deckBulkFormatTable(DynamoDbEnhancedClient enhancedClient) {
+    return enhancedClient.table(COMMON_TABLE_NAME, TableSchema.fromBean(DeckBulkFormatEntity.class));
   }
 
   @Bean
@@ -69,9 +75,15 @@ public class DynamoDbClientConfig {
   }
 
   @Bean
-  DynamoDbIndex<BulkFormatEntity> statusBulkFormatIndex(
-      DynamoDbTable<BulkFormatEntity> bulkFormatTable) {
+  DynamoDbIndex<AnalysisBulkFormatEntity> statusBulkFormatIndex(
+      DynamoDbTable<AnalysisBulkFormatEntity> bulkFormatTable) {
     return bulkFormatTable.index("StatusBulkFormatIndex");
+  }
+
+  @Bean
+  DynamoDbIndex<DeckBulkFormatEntity> statusDeckBulkFormatIndex(
+      DynamoDbTable<DeckBulkFormatEntity> deckBulkFormatTable) {
+    return deckBulkFormatTable.index("StatusBulkFormatIndex");
   }
 
   @Bean
