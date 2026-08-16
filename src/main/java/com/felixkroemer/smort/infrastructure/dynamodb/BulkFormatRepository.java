@@ -1,6 +1,7 @@
 package com.felixkroemer.smort.infrastructure.dynamodb;
 
 import com.felixkroemer.smort.common.exception.BulkFormatCancelledException;
+import com.felixkroemer.smort.infrastructure.dynamodb.anki.AnalysisBulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckBulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
