@@ -32,8 +32,10 @@ public class NoteEntity {
   private String front;
   private String back;
 
+  // The enhanced client ignores explicit NUL values when reading, so the transformTo in the converter is never 
+  // triggered. So we have to initialize this here but its also set in the NoteEntityMapper.
   @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalInstantConverter.class))
-  private Optional<Instant> lastFormattedAt;
+  private Optional<Instant> lastFormattedAt = Optional.empty();
 
   public Map<String, String> getContent() {
     return Map.of("front", front, "back", back);
