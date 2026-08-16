@@ -61,10 +61,17 @@ public class BulkFormatRepository {
               .item(bulkFormatEntity)
               .conditionExpression(
                   Expression.builder()
-                      .expression("attribute_not_exists(#status) OR #status <> :cancelled")
+                      .expression(
+                          "attribute_not_exists(#status)"
+                              + " OR (:newCreatedAt = #createdAt AND #status <> :cancelled)"
+                              + " OR :newCreatedAt > #createdAt")
                       .putExpressionName("#status", "status")
+                      .putExpressionName("#createdAt", "createdAt")
                       .putExpressionValue(
                           ":cancelled", AttributeValue.fromS(BulkFormatStatus.CANCELLED.name()))
+                      .putExpressionValue(
+                          ":newCreatedAt",
+                          AttributeValue.fromS(bulkFormatEntity.getCreatedAt().toString()))
                       .build())
               .build());
     } catch (ConditionalCheckFailedException e) {
