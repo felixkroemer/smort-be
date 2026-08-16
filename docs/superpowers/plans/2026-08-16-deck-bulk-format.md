@@ -16,6 +16,11 @@
 - Follow existing code style: Lombok (`@RequiredArgsConstructor`, `@Getter`/`@Setter`, `@Slf4j`), `var`, records, 2-space indent.
 - `BulkFormatResponse` and `BulkFormatRestMapper` stay in `application/anki`; the deck controller reuses them.
 
+## Deviations recorded during execution
+
+- `BulkFormatRepository` was moved to the shared `com.felixkroemer.smort.infrastructure.dynamodb` package (the plan's code and all references already assumed this).
+- `BulkFormatEngine.assertNoActiveJob` and its `isActive` helper were dropped post-review; each service's `startBulkFormat` inlines the active-job guard (`PENDING`/`IN_PROGRESS`/`WAITING_RETRY`), and `cancel` inlines the same status check.
+
 ---
 
 ### Task 1: Move `BulkFormatStatus` to the shared `infrastructure.dynamodb` package

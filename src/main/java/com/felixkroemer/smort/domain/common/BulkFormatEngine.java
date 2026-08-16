@@ -1,13 +1,11 @@
 package com.felixkroemer.smort.domain.common;
 
 import com.felixkroemer.smort.common.exception.BulkFormatCancelledException;
-import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.task.AsyncTaskExecutor;
@@ -29,16 +27,6 @@ public class BulkFormatEngine {
     void process(T item) throws Exception;
   }
 
-  public void assertNoActiveJob(Optional<? extends BulkFormatEntity> existing) {
-    existing.ifPresent(
-        job -> {
-          if (isActive(job)) {
-            throw new SmortException(
-                "Bulk format already in progress. ownerId={}", job.getOwnerId());
-          }
-        });
-  }
-
   public void dispatch(BulkFormatEntity job, Runnable task) {
     bulkFormatTaskExecutor.execute(
         () -> {
@@ -56,7 +44,9 @@ public class BulkFormatEngine {
   }
 
   public void cancel(BulkFormatEntity job) {
-    if (isActive(job)) {
+    if (job.getStatus() == BulkFormatStatus.PENDING
+        || job.getStatus() == BulkFormatStatus.IN_PROGRESS
+        || job.getStatus() == BulkFormatStatus.WAITING_RETRY) {
       job.setStatus(BulkFormatStatus.CANCELLED);
       bulkFormatRepository.save(job);
     }
@@ -135,11 +125,5 @@ public class BulkFormatEngine {
             job.getAttempts());
       }
     }
-  }
-
-  private static boolean isActive(BulkFormatEntity job) {
-    return job.getStatus() == BulkFormatStatus.PENDING
-        || job.getStatus() == BulkFormatStatus.IN_PROGRESS
-        || job.getStatus() == BulkFormatStatus.WAITING_RETRY;
   }
 }

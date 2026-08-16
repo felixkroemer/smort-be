@@ -9,6 +9,7 @@ import com.felixkroemer.smort.domain.common.BulkFormatEngine;
 import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
+import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckBulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
@@ -33,7 +34,14 @@ public class DeckBulkFormatService {
   private final BulkFormatEngine bulkFormatEngine;
 
   public void startBulkFormat(UUID deckId, boolean reformatAlreadyFormatted) {
-    bulkFormatEngine.assertNoActiveJob(bulkFormatRepository.findBulkFormatByDeckId(deckId));
+    var existing = bulkFormatRepository.findBulkFormatByDeckId(deckId);
+    if (existing.isPresent()
+        && (existing.get().getStatus() == BulkFormatStatus.PENDING
+            || existing.get().getStatus() == BulkFormatStatus.IN_PROGRESS
+            || existing.get().getStatus() == BulkFormatStatus.WAITING_RETRY)) {
+      throw new SmortException(
+          "Bulk format already in progress for deck. deckId={}", deckId);
+    }
 
     var notes = deckRepository.findNotesByDeckId(deckId);
     var job = new DeckBulkFormatEntity(deckId, reformatAlreadyFormatted);

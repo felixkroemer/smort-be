@@ -56,10 +56,12 @@ loop/retry/status machinery common to both.
     count `processed`/`failed`, break on `consecutiveFailed >= MAX_RECENT_FAILED`, per-item
     progress save **outside** the per-item try/catch (so cancellation propagates), then the
     `COMPLETED` / `FAILED` / `WAITING_RETRY` transition.
-  - `cancel(BulkFormatEntity job)` — set `CANCELLED` if active and save.
-  - `assertNoActiveJob(Optional<? extends BulkFormatEntity> existing)` — the shared
-    already-in-progress guard used by both `startBulkFormat` methods.
+  - `cancel(BulkFormatEntity job)` — set `CANCELLED` if the status is `PENDING` /
+    `IN_PROGRESS` / `WAITING_RETRY` and save.
   - `@FunctionalInterface ItemProcessor<T> { void process(T item) throws Exception; }`
+  - The already-in-progress guard is **not** a shared helper: each service's
+    `startBulkFormat` inlines the active-job check (`PENDING`/`IN_PROGRESS`/`WAITING_RETRY`)
+    before creating a job, per a post-design decision.
 - `BulkFormat` (moved from `domain/anki`) — shared status/status DTO shape.
 - `mapping/BulkFormatEntityMapper` (moved from `domain/anki/mapping`) — maps the abstract
   base to `BulkFormat`; works for both subclasses.

@@ -10,6 +10,7 @@ import com.felixkroemer.smort.domain.common.BulkFormatEngine;
 import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
+import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
 import java.time.Instant;
 import java.util.List;
@@ -37,8 +38,14 @@ public class BulkFormatService {
   private final BulkFormatEngine bulkFormatEngine;
 
   public void startBulkFormat(UUID analysisId, boolean reformatAlreadyFormatted) {
-    bulkFormatEngine.assertNoActiveJob(
-        bulkFormatRepository.findBulkFormatByAnalysisId(analysisId));
+    var existing = bulkFormatRepository.findBulkFormatByAnalysisId(analysisId);
+    if (existing.isPresent()
+        && (existing.get().getStatus() == BulkFormatStatus.PENDING
+            || existing.get().getStatus() == BulkFormatStatus.IN_PROGRESS
+            || existing.get().getStatus() == BulkFormatStatus.WAITING_RETRY)) {
+      throw new SmortException(
+          "Bulk format already in progress for analysis. analysisId={}", analysisId);
+    }
 
     var notes = analysisService.getNotes(analysisId);
     var existingDerivedNotes =
