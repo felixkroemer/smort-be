@@ -1,5 +1,7 @@
 package com.felixkroemer.smort.application.deck;
 
+import com.felixkroemer.smort.application.anki.dto.BulkFormatResponse;
+import com.felixkroemer.smort.application.anki.mapping.BulkFormatRestMapper;
 import com.felixkroemer.smort.application.chat.dto.ChatMessageRequest;
 import com.felixkroemer.smort.application.chat.dto.ChatMessageResponse;
 import com.felixkroemer.smort.application.chat.mapping.ChatMessageRestMapper;
@@ -10,12 +12,14 @@ import com.felixkroemer.smort.application.deck.mapping.DeckRestMapper;
 import com.felixkroemer.smort.application.deck.mapping.NoteRestMapper;
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
+import com.felixkroemer.smort.domain.deck.DeckBulkFormatService;
 import com.felixkroemer.smort.domain.deck.DeckService;
 import com.felixkroemer.smort.domain.deck.NoteService;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -26,8 +30,10 @@ public class DeckController {
   private final DeckService deckService;
   private final NoteService noteService;
   private final ChatOrchestrationService chatOrchestrationService;
+  private final DeckBulkFormatService deckBulkFormatService;
 
   private final DeckRestMapper deckRestMapper;
+  private final BulkFormatRestMapper bulkFormatRestMapper;
   private final NoteRestMapper noteRestMapper;
   private final ChatMessageRestMapper chatMessageRestMapper;
 
@@ -62,6 +68,25 @@ public class DeckController {
       @PathVariable("deckId") UUID deckId, @PathVariable("noteId") UUID noteId) {
     var note = noteService.formatNote(deckId, noteId);
     return noteRestMapper.toNoteResponse(note);
+  }
+
+  @PostMapping("/{deckId}/format")
+  @ResponseStatus(HttpStatus.ACCEPTED)
+  public void startBulkFormat(
+      @PathVariable UUID deckId,
+      @RequestParam(defaultValue = "true") boolean reformatAlreadyFormatted) {
+    deckBulkFormatService.startBulkFormat(deckId, reformatAlreadyFormatted);
+  }
+
+  @GetMapping("/{deckId}/format/status")
+  public BulkFormatResponse getBulkFormatStatus(@PathVariable UUID deckId) {
+    return bulkFormatRestMapper.toBulkFormatResponse(deckBulkFormatService.getJobStatus(deckId));
+  }
+
+  @PostMapping("/{deckId}/format/cancel")
+  @ResponseStatus(HttpStatus.ACCEPTED)
+  public void cancelBulkFormat(@PathVariable UUID deckId) {
+    deckBulkFormatService.cancelBulkFormat(deckId);
   }
 
   @PostMapping("/{deckId}/notes/{noteId}/chat")
