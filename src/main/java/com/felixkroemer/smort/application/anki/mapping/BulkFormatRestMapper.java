@@ -1,7 +1,7 @@
 package com.felixkroemer.smort.application.anki.mapping;
 
 import com.felixkroemer.smort.application.anki.dto.BulkFormatResponse;
-import com.felixkroemer.smort.domain.anki.BulkFormat;
+import com.felixkroemer.smort.domain.common.BulkFormat;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;

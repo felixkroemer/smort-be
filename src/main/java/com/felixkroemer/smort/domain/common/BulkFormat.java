@@ -1,4 +1,4 @@
-package com.felixkroemer.smort.domain.anki;
+package com.felixkroemer.smort.domain.common;
 
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import java.time.Instant;
