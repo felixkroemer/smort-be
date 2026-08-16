@@ -82,8 +82,7 @@ public class AnalysisController {
   }
 
   @GetMapping("/{analysisId}/settings")
-  public AnalysisSettingsResponse getAnalysisSettings(
-      @PathVariable("analysisId") UUID analysisId) {
+  public AnalysisSettingsResponse getAnalysisSettings(@PathVariable("analysisId") UUID analysisId) {
     return analysisRestMapper.toAnalysisSettingsResponse(
         analysisService.getAnalysisSettings(analysisId));
   }

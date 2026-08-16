@@ -25,60 +25,60 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
 @Slf4j
 public class BulkFormatRepository {
 
-    private final DynamoDbTable<BulkFormatEntity> bulkFormatTable;
-    private final DynamoDbIndex<BulkFormatEntity> statusBulkFormatIndex;
+  private final DynamoDbTable<BulkFormatEntity> bulkFormatTable;
+  private final DynamoDbIndex<BulkFormatEntity> statusBulkFormatIndex;
 
-    public Optional<BulkFormatEntity> findBulkFormatByAnalysisId(UUID analysisId) {
-        var key =
-                Key.builder()
-                        .partitionValue(AnalysisKeys.analysisPk(analysisId))
-                        .sortValue(BulkFormatKeys.bulkFormatSk())
-                        .build();
+  public Optional<BulkFormatEntity> findBulkFormatByAnalysisId(UUID analysisId) {
+    var key =
+        Key.builder()
+            .partitionValue(AnalysisKeys.analysisPk(analysisId))
+            .sortValue(BulkFormatKeys.bulkFormatSk())
+            .build();
 
-        return Optional.ofNullable(bulkFormatTable.getItem(key));
-    }
+    return Optional.ofNullable(bulkFormatTable.getItem(key));
+  }
 
-    public List<BulkFormatEntity> findAllActive() {
-        return Stream.of(BulkFormatStatus.IN_PROGRESS, BulkFormatStatus.WAITING_RETRY)
-                .flatMap(
-                        status ->
-                                statusBulkFormatIndex
-                                        .query(
-                                                QueryEnhancedRequest.builder()
-                                                        .queryConditional(
-                                                                QueryConditional.keyEqualTo(
-                                                                        Key.builder().partitionValue(status.name()).build()))
-                                                        .build())
-                                        .stream()
-                                        .flatMap(page -> page.items().stream()))
-                .toList();
-    }
+  public List<BulkFormatEntity> findAllActive() {
+    return Stream.of(BulkFormatStatus.IN_PROGRESS, BulkFormatStatus.WAITING_RETRY)
+        .flatMap(
+            status ->
+                statusBulkFormatIndex
+                    .query(
+                        QueryEnhancedRequest.builder()
+                            .queryConditional(
+                                QueryConditional.keyEqualTo(
+                                    Key.builder().partitionValue(status.name()).build()))
+                            .build())
+                    .stream()
+                    .flatMap(page -> page.items().stream()))
+        .toList();
+  }
 
-    public void save(BulkFormatEntity bulkFormatEntity) {
-        try {
-            bulkFormatTable.putItem(
-                    PutItemEnhancedRequest.builder(BulkFormatEntity.class)
-                            .item(bulkFormatEntity)
-                            .conditionExpression(
+  public void save(BulkFormatEntity bulkFormatEntity) {
+    try {
+      bulkFormatTable.putItem(
+          PutItemEnhancedRequest.builder(BulkFormatEntity.class)
+              .item(bulkFormatEntity)
+              .conditionExpression(
                   Expression.builder()
                       .expression("attribute_not_exists(#status) OR #status <> :cancelled")
                       .putExpressionName("#status", "status")
                       .putExpressionValue(
                           ":cancelled", AttributeValue.fromS(BulkFormatStatus.CANCELLED.name()))
                       .build())
-                            .build());
-        } catch (ConditionalCheckFailedException e) {
-            throw new BulkFormatCancelledException(
-                    "Bulk format was cancelled. analysisId={}", bulkFormatEntity.getAnalysisId());
-        }
+              .build());
+    } catch (ConditionalCheckFailedException e) {
+      throw new BulkFormatCancelledException(
+          "Bulk format was cancelled. analysisId={}", bulkFormatEntity.getAnalysisId());
     }
+  }
 
-    public void delete(UUID analysisId) {
-        var key =
-                Key.builder()
-                        .partitionValue(AnalysisKeys.analysisPk(analysisId))
-                        .sortValue(BulkFormatKeys.bulkFormatSk())
-                        .build();
-        bulkFormatTable.deleteItem(key);
-    }
+  public void delete(UUID analysisId) {
+    var key =
+        Key.builder()
+            .partitionValue(AnalysisKeys.analysisPk(analysisId))
+            .sortValue(BulkFormatKeys.bulkFormatSk())
+            .build();
+    bulkFormatTable.deleteItem(key);
+  }
 }

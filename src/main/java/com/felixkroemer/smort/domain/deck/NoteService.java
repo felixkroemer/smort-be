@@ -1,7 +1,6 @@
 package com.felixkroemer.smort.domain.deck;
 
 import com.felixkroemer.smort.common.exception.NotFoundException;
-import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.domain.chat.ChatService;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;

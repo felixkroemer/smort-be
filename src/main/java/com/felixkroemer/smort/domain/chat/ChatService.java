@@ -71,7 +71,8 @@ public class ChatService {
     try {
       StructuredResponseCreateParams<NoteSchema> params =
           ResponseCreateParams.builder()
-              .instructions(FORMATTING_INSTRUCTION.formatted(formatInstructions.orElse(FORMATTING_RULES)))
+              .instructions(
+                  FORMATTING_INSTRUCTION.formatted(formatInstructions.orElse(FORMATTING_RULES)))
               .input(mapper.writeValueAsString(fields))
               .text(NoteSchema.class)
               .model(model)
