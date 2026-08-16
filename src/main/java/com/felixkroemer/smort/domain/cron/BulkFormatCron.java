@@ -1,7 +1,7 @@
 package com.felixkroemer.smort.domain.cron;
 
 import com.felixkroemer.smort.domain.anki.BulkFormatService;
-import com.felixkroemer.smort.infrastructure.dynamodb.anki.BulkFormatRepository;
+import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
 import java.time.Duration;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;

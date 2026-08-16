@@ -8,7 +8,7 @@ import com.felixkroemer.smort.domain.anki.AnkiNote;
 import com.felixkroemer.smort.domain.anki.AnkiNoteTypeService;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.domain.deck.mapping.NoteEntityMapper;
-import com.felixkroemer.smort.infrastructure.dynamodb.anki.BulkFormatRepository;
+import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckMetaEntity;

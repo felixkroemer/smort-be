@@ -5,6 +5,7 @@ import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.mapping.AnalysisEntityMapper;
 import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
+import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.*;
 import java.io.IOException;
