@@ -13,8 +13,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -140,8 +140,7 @@ public class AnalysisService {
             .findAny()
             .orElseThrow(
                 () ->
-                    new NotFoundException(
-                        "Deck not found. id={}, deckId={}", analysisId, deckId));
+                    new NotFoundException("Deck not found. id={}, deckId={}", analysisId, deckId));
 
     analysis.setStatus(AnalysisStatus.DECK_SELECTED);
     analysis.setDeckId(deckId);

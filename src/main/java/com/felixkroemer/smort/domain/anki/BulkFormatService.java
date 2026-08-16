@@ -1,5 +1,6 @@
 package com.felixkroemer.smort.domain.anki;
 
+import com.felixkroemer.smort.common.exception.BulkFormatCancelledException;
 import com.felixkroemer.smort.common.exception.LogSeverity;
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.common.exception.SmortException;
@@ -18,7 +19,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.task.TaskExecutor;
+import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -36,7 +37,7 @@ public class BulkFormatService {
   private final AnalysisService analysisService;
   private final ChatService chatService;
   private final BulkFormatEntityMapper bulkFormatEntityMapper;
-  private final TaskExecutor bulkFormatTaskExecutor;
+  private final AsyncTaskExecutor bulkFormatTaskExecutor;
 
   public void startBulkFormat(UUID analysisId, boolean reformatAlreadyFormatted) {
     var existing = bulkFormatRepository.findBulkFormatByAnalysisId(analysisId);
@@ -71,37 +72,37 @@ public class BulkFormatService {
 
     job.setTotalNotes(notesToProcess.size());
     bulkFormatRepository.save(job);
-    dispatch(job, notesToProcess);
+    dispatch(job.getAnalysisId(), () -> processNotes(job, notesToProcess));
   }
 
   public void resumeBulkFormat(BulkFormatEntity bulkFormatEntity) {
-    dispatch(bulkFormatEntity);
+    dispatch(bulkFormatEntity.getAnalysisId(), () -> processNotes(bulkFormatEntity));
   }
 
-  private void dispatch(BulkFormatEntity job) {
+  public void cancelBulkFormat(UUID analysisId) {
+    var job =
+        bulkFormatRepository
+            .findBulkFormatByAnalysisId(analysisId)
+            .orElseThrow(
+                () -> new NotFoundException("No bulk format job found. analysisId={}", analysisId));
+    if (job.getStatus() == BulkFormatStatus.PENDING
+        || job.getStatus() == BulkFormatStatus.IN_PROGRESS
+        || job.getStatus() == BulkFormatStatus.WAITING_RETRY) {
+      job.setStatus(BulkFormatStatus.CANCELLED);
+      bulkFormatRepository.save(job);
+    }
+  }
+
+  private void dispatch(UUID analysisId, Runnable task) {
     bulkFormatTaskExecutor.execute(
         () -> {
           try {
-            processNotes(job);
+            task.run();
+          } catch (BulkFormatCancelledException e) {
+            log.info("Bulk format cancelled. analysisId={}", analysisId);
           } catch (Exception e) {
             log.error(
-                "Unexpected error during bulk format processing. analysisId={}",
-                job.getAnalysisId(),
-                e);
-          }
-        });
-  }
-
-  private void dispatch(BulkFormatEntity job, List<NoteToProcess> notesToProcess) {
-    bulkFormatTaskExecutor.execute(
-        () -> {
-          try {
-            processNotes(job, notesToProcess);
-          } catch (Exception e) {
-            log.error(
-                "Unexpected error during bulk format processing. analysisId={}",
-                job.getAnalysisId(),
-                e);
+                "Unexpected error during bulk format processing. analysisId={}", analysisId, e);
           }
         });
   }
@@ -185,8 +186,6 @@ public class BulkFormatService {
         processed++;
         consecutiveFailed = 0;
         job.setCompletedNotes(job.getCompletedNotes() + 1);
-        job.setLastUpdatedAt(Instant.now());
-        bulkFormatRepository.save(job);
 
       } catch (Exception e) {
         failed++;
@@ -202,7 +201,11 @@ public class BulkFormatService {
               analysisId);
           break;
         }
+        continue;
       }
+
+      job.setLastUpdatedAt(Instant.now());
+      bulkFormatRepository.save(job);
     }
 
     handleProcessNotesResult(job, processed, failed, analysisId);
@@ -235,7 +238,6 @@ public class BulkFormatService {
         job.setStatus(BulkFormatStatus.WAITING_RETRY);
         job.setLastUpdatedAt(Instant.now());
         bulkFormatRepository.save(job);
-
         log.info(
             "Bulk format had errors. Will resume later.  analysisId={}, processed={}, failed={}, attempts={}",
             analysisId,

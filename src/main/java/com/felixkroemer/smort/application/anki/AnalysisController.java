@@ -82,8 +82,7 @@ public class AnalysisController {
   }
 
   @GetMapping("/{analysisId}/settings")
-  public AnalysisSettingsResponse getAnalysisSettings(
-      @PathVariable("analysisId") UUID analysisId) {
+  public AnalysisSettingsResponse getAnalysisSettings(@PathVariable("analysisId") UUID analysisId) {
     return analysisRestMapper.toAnalysisSettingsResponse(
         analysisService.getAnalysisSettings(analysisId));
   }
@@ -216,5 +215,11 @@ public class AnalysisController {
   @GetMapping("/{analysisId}/format/status")
   public BulkFormatResponse getBulkFormatStatus(@PathVariable UUID analysisId) {
     return bulkFormatRestMapper.toBulkFormatResponse(bulkFormatService.getJobStatus(analysisId));
+  }
+
+  @PostMapping("/{analysisId}/format/cancel")
+  @ResponseStatus(HttpStatus.ACCEPTED)
+  public void cancelBulkFormat(@PathVariable UUID analysisId) {
+    bulkFormatService.cancelBulkFormat(analysisId);
   }
 }

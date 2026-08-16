@@ -1,5 +1,6 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.anki;
 
+import com.felixkroemer.smort.common.exception.BulkFormatCancelledException;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.BulkFormatKeys;
 import java.util.List;
@@ -11,9 +12,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
+import software.amazon.awssdk.enhanced.dynamodb.model.PutItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
 @Repository
 @RequiredArgsConstructor
@@ -50,7 +55,29 @@ public class BulkFormatRepository {
   }
 
   public void save(BulkFormatEntity bulkFormatEntity) {
-    bulkFormatTable.putItem(bulkFormatEntity);
+    try {
+      bulkFormatTable.putItem(
+          PutItemEnhancedRequest.builder(BulkFormatEntity.class)
+              .item(bulkFormatEntity)
+              .conditionExpression(
+                  Expression.builder()
+                      .expression(
+                          "attribute_not_exists(#status)"
+                              + " OR (:newCreatedAt = #createdAt AND #status <> :cancelled)"
+                              + " OR :newCreatedAt > #createdAt")
+                      .putExpressionName("#status", "status")
+                      .putExpressionName("#createdAt", "createdAt")
+                      .putExpressionValue(
+                          ":cancelled", AttributeValue.fromS(BulkFormatStatus.CANCELLED.name()))
+                      .putExpressionValue(
+                          ":newCreatedAt",
+                          AttributeValue.fromS(bulkFormatEntity.getCreatedAt().toString()))
+                      .build())
+              .build());
+    } catch (ConditionalCheckFailedException e) {
+      throw new BulkFormatCancelledException(
+          "Bulk format was cancelled. analysisId={}", bulkFormatEntity.getAnalysisId());
+    }
   }
 
   public void delete(UUID analysisId) {

@@ -5,5 +5,6 @@ public enum BulkFormatStatus {
   IN_PROGRESS,
   WAITING_RETRY,
   COMPLETED,
-  FAILED
+  FAILED,
+  CANCELLED
 }
