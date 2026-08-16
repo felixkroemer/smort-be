@@ -1,4 +1,4 @@
-package com.felixkroemer.smort.infrastructure.dynamodb.anki;
+package com.felixkroemer.smort.infrastructure.dynamodb;
 
 public enum BulkFormatStatus {
   PENDING,

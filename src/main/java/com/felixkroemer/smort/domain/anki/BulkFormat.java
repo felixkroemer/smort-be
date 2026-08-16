@@ -1,6 +1,6 @@
 package com.felixkroemer.smort.domain.anki;
 
-import com.felixkroemer.smort.infrastructure.dynamodb.anki.BulkFormatStatus;
+import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
