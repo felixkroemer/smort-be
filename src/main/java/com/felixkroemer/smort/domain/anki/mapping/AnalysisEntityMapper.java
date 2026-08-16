@@ -1,7 +1,7 @@
 package com.felixkroemer.smort.domain.anki.mapping;
 
 import com.felixkroemer.smort.domain.anki.Analysis;
-import com.felixkroemer.smort.domain.anki.BulkFormat;
+import com.felixkroemer.smort.domain.common.BulkFormat;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.AnalysisMetaEntity;
 import java.nio.file.Path;
 import java.util.Optional;
