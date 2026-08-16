@@ -61,7 +61,7 @@ public class BulkFormatRepository {
                             .item(bulkFormatEntity)
                             .conditionExpression(
                   Expression.builder()
-                      .expression("#status <> :cancelled")
+                      .expression("attribute_not_exists(#status) OR #status <> :cancelled")
                       .putExpressionName("#status", "status")
                       .putExpressionValue(
                           ":cancelled", AttributeValue.fromS(BulkFormatStatus.CANCELLED.name()))
