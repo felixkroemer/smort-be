@@ -1,14 +1,18 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.deck;
 
+import com.felixkroemer.smort.infrastructure.dynamodb.OptionalInstantConverter;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.NoteKeys;
 
+import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
@@ -27,6 +31,9 @@ public class NoteEntity {
   private UUID id;
   private String front;
   private String back;
+
+  @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalInstantConverter.class))
+  private Optional<Instant> lastFormattedAt = Optional.empty();
 
   public NoteEntity(UUID deckId, UUID noteId, String front, String back) {
     this.front = front;
