@@ -55,8 +55,10 @@ public class DynamoDbClientConfig {
   }
 
   @Bean
-  DynamoDbTable<AnalysisBulkFormatEntity> bulkFormatTable(DynamoDbEnhancedClient enhancedClient) {
-    return enhancedClient.table(COMMON_TABLE_NAME, TableSchema.fromBean(AnalysisBulkFormatEntity.class));
+  DynamoDbTable<AnalysisBulkFormatEntity> analysisBulkFormatTable(
+      DynamoDbEnhancedClient enhancedClient) {
+    return enhancedClient.table(
+        COMMON_TABLE_NAME, TableSchema.fromBean(AnalysisBulkFormatEntity.class));
   }
 
   @Bean
@@ -76,8 +78,8 @@ public class DynamoDbClientConfig {
 
   @Bean
   DynamoDbIndex<AnalysisBulkFormatEntity> statusBulkFormatIndex(
-      DynamoDbTable<AnalysisBulkFormatEntity> bulkFormatTable) {
-    return bulkFormatTable.index("StatusBulkFormatIndex");
+      DynamoDbTable<AnalysisBulkFormatEntity> analysisBulkFormatTable) {
+    return analysisBulkFormatTable.index("StatusBulkFormatIndex");
   }
 
   @Bean
