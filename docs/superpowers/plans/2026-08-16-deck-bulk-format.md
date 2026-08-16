@@ -363,7 +363,7 @@ public class BulkFormatRepository {
   private <T extends BulkFormatEntity> void save(DynamoDbTable<T> table, T entity) {
     try {
       table.putItem(
-          PutItemEnhancedRequest.<T>builder(entity.getClass())
+          PutItemEnhancedRequest.<T>builder((Class<T>) entity.getClass())
               .item(entity)
               .conditionExpression(
                   Expression.builder()
@@ -406,7 +406,7 @@ public class BulkFormatRepository {
 }
 ```
 
-Note: `PutItemEnhancedRequest.<T>builder(entity.getClass())` uses an unchecked cast internally; this is acceptable and mirrors the generic nature of the two table beans.
+Note: the `(Class<T>) entity.getClass()` cast is an unchecked cast — required because `getClass()` returns `Class<? extends BulkFormatEntity>` while `PutItemEnhancedRequest.builder(Class<T>)` needs `Class<T>`. This mirrors the generic nature of the two table beans.
 
 - [ ] **Step 2: Wire both tables and indexes in `DynamoDbClientConfig`**
 
