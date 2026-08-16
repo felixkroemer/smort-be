@@ -32,8 +32,9 @@ public class DeckController {
   private final ChatMessageRestMapper chatMessageRestMapper;
 
   @PostMapping()
-  public void importAnalysis(@RequestBody ImportAnalysisRequest importAnalysisRequest) {
-    deckService.importDeck(importAnalysisRequest.id(), importAnalysisRequest.templates());
+  public DeckResponse importAnalysis(@RequestBody ImportAnalysisRequest importAnalysisRequest) {
+    return deckRestMapper.toDeckResponse(
+        deckService.importDeck(importAnalysisRequest.id(), importAnalysisRequest.templates()));
   }
 
   @GetMapping

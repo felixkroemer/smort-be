@@ -44,7 +44,7 @@ public class DeckService {
   }
 
   // TODO: clean up possible failed imports based on status and time passed
-  public void importDeck(UUID analysisId, Map<String, NoteTypeTemplate> templates) {
+  public DeckMetaEntity importDeck(UUID analysisId, Map<String, NoteTypeTemplate> templates) {
     var activeJob = bulkFormatRepository.findBulkFormatByAnalysisId(analysisId);
     if (activeJob.isPresent()
         && (activeJob.get().getStatus() == BulkFormatStatus.IN_PROGRESS
@@ -74,6 +74,7 @@ public class DeckService {
 
     deck.setStatus(DeckStatus.ACTIVE);
     deckRepository.saveDeckMeta(deck);
+    return deck;
   }
 
   private DeckMetaEntity createDeck(String deckName) {
