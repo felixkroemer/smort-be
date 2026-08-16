@@ -51,7 +51,7 @@ public class BulkFormatService {
 
     var notes = analysisService.getNotes(analysisId);
     var existingDerivedNotes =
-        derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId).stream()
+        analysisService.getDerivedNotes(analysisId).stream()
             .collect(
                 Collectors.toMap(
                     DerivedNoteEntity::getNoteId, Function.identity(), (first, second) -> first));
@@ -107,7 +107,7 @@ public class BulkFormatService {
   private void processNotes(BulkFormatEntity job) {
     var notes = analysisService.getNotes(job.getAnalysisId());
     var existingDerivedNotes =
-        derivedNoteRepository.findDerivedNotesByAnalysisId(job.getAnalysisId()).stream()
+        analysisService.getDerivedNotes(job.getAnalysisId()).stream()
             .collect(
                 Collectors.toMap(
                     DerivedNoteEntity::getNoteId, Function.identity(), (first, second) -> first));
