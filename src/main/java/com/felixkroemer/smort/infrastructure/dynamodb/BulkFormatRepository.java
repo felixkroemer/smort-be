@@ -113,7 +113,7 @@ public class BulkFormatRepository {
               .build());
     } catch (ConditionalCheckFailedException e) {
       throw new BulkFormatCancelledException(
-          "Bulk format was cancelled. ownerId={}", entity.getOwnerId());
+          "Bulk format was cancelled. pk={}", entity.getPk());
     }
   }
 

@@ -1,7 +1,6 @@
 package com.felixkroemer.smort.infrastructure.dynamodb;
 
 import java.time.Instant;
-import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -13,8 +12,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
 @NoArgsConstructor
 public abstract class BulkFormatEntity {
 
-  @Getter(onMethod_ = @DynamoDbPartitionKey)
-  private String pk;
+  public abstract String getPk();
 
   @Getter(onMethod_ = @DynamoDbSortKey)
   private String sk;
@@ -33,10 +31,7 @@ public abstract class BulkFormatEntity {
   private int attempts;
   private boolean reformatAlreadyFormatted;
 
-  public abstract UUID getOwnerId();
-
-  protected void initialize(String pk, String sk, boolean reformatAlreadyFormatted) {
-    this.pk = pk;
+  protected void initialize(String sk, boolean reformatAlreadyFormatted) {
     this.sk = sk;
     this.status = BulkFormatStatus.PENDING;
     this.createdAt = Instant.now();

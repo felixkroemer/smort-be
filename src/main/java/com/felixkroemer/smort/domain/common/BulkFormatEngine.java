@@ -33,11 +33,11 @@ public class BulkFormatEngine {
           try {
             task.run();
           } catch (BulkFormatCancelledException e) {
-            log.info("Bulk format cancelled. ownerId={}", job.getOwnerId());
+            log.info("Bulk format cancelled. pk={}", job.getPk());
           } catch (Exception e) {
             log.error(
-                "Unexpected error during bulk format processing. ownerId={}",
-                job.getOwnerId(),
+                "Unexpected error during bulk format processing. pk={}",
+                job.getPk(),
                 e);
           }
         });
@@ -73,11 +73,11 @@ public class BulkFormatEngine {
         failed++;
         consecutiveFailed++;
         log.warn(
-            "Failed to format item during bulk format. ownerId={}", job.getOwnerId(), e);
+            "Failed to format item during bulk format. pk={}", job.getPk(), e);
         if (consecutiveFailed >= MAX_RECENT_FAILED) {
           log.warn(
-              "Hit consecutive failed limit while processing bulk format. ownerId={}",
-              job.getOwnerId());
+              "Hit consecutive failed limit while processing bulk format. pk={}",
+              job.getPk());
           break;
         }
         continue;
@@ -91,15 +91,15 @@ public class BulkFormatEngine {
   }
 
   private void handleProcessNotesResult(BulkFormatEntity job, int processed, int failed) {
-    var ownerId = job.getOwnerId();
+    var pk = job.getPk();
     if (failed == 0) {
       job.setStatus(BulkFormatStatus.COMPLETED);
       job.setLastUpdatedAt(Instant.now());
       bulkFormatRepository.save(job);
 
       log.info(
-          "Bulk format complete. ownerId={}, processed={}, failed={}",
-          ownerId,
+          "Bulk format complete. pk={}, processed={}, failed={}",
+          pk,
           processed,
           failed);
     } else {
@@ -109,8 +109,8 @@ public class BulkFormatEngine {
         bulkFormatRepository.save(job);
 
         log.warn(
-            "Bulk format reached max attempts. Setting to FAILED. ownerId={}, processed={}, failed={}",
-            ownerId,
+            "Bulk format reached max attempts. Setting to FAILED. pk={}, processed={}, failed={}",
+            pk,
             processed,
             failed);
       } else {
@@ -118,8 +118,8 @@ public class BulkFormatEngine {
         job.setLastUpdatedAt(Instant.now());
         bulkFormatRepository.save(job);
         log.info(
-            "Bulk format had errors. Will resume later. ownerId={}, processed={}, failed={}, attempts={}",
-            ownerId,
+            "Bulk format had errors. Will resume later. pk={}, processed={}, failed={}, attempts={}",
+            pk,
             processed,
             failed,
             job.getAttempts());

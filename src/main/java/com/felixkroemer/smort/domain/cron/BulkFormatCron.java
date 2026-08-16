@@ -31,14 +31,14 @@ public class BulkFormatCron {
     for (var job : allJobs) {
       if (Duration.between(job.getLastUpdatedAt(), Instant.now()).compareTo(CRASH_TIMEOUT) > 0) {
         log.warn(
-            "Resuming IN_PROGRESS bulk format. ownerId={}, lastUpdate={}, attempts={}",
-            job.getOwnerId(),
+            "Resuming IN_PROGRESS bulk format. pk={}, lastUpdate={}, attempts={}",
+            job.getPk(),
             job.getLastUpdatedAt(),
             job.getAttempts());
         try {
           resume(job);
         } catch (Exception e) {
-          log.error("Failed to resume bulk format. ownerId={}", job.getOwnerId(), e);
+          log.error("Failed to resume bulk format. pk={}", job.getPk(), e);
         }
       }
     }
