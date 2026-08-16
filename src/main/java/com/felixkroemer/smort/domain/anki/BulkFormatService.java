@@ -39,12 +39,14 @@ public class BulkFormatService {
 
   public void startBulkFormat(UUID analysisId, boolean reformatAlreadyFormatted) {
     var existing = bulkFormatRepository.findBulkFormatByAnalysisId(analysisId);
-    if (existing.isPresent()
-        && (existing.get().getStatus() == BulkFormatStatus.PENDING
-            || existing.get().getStatus() == BulkFormatStatus.IN_PROGRESS
-            || existing.get().getStatus() == BulkFormatStatus.WAITING_RETRY)) {
-      throw new SmortException(
-          "Bulk format already in progress for analysis. analysisId={}", analysisId);
+    if (existing.isPresent()) {
+      var job = existing.get();
+      if (job.getStatus() == BulkFormatStatus.PENDING
+          || job.getStatus() == BulkFormatStatus.IN_PROGRESS
+          || job.getStatus() == BulkFormatStatus.WAITING_RETRY) {
+        throw new SmortException(
+            "Bulk format already in progress for analysis. analysisId={}", analysisId);
+      }
     }
 
     var notes = analysisService.getNotes(analysisId);

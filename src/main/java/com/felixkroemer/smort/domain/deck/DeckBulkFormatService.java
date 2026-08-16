@@ -35,12 +35,14 @@ public class DeckBulkFormatService {
 
   public void startBulkFormat(UUID deckId, boolean reformatAlreadyFormatted) {
     var existing = bulkFormatRepository.findBulkFormatByDeckId(deckId);
-    if (existing.isPresent()
-        && (existing.get().getStatus() == BulkFormatStatus.PENDING
-            || existing.get().getStatus() == BulkFormatStatus.IN_PROGRESS
-            || existing.get().getStatus() == BulkFormatStatus.WAITING_RETRY)) {
-      throw new SmortException(
-          "Bulk format already in progress for deck. deckId={}", deckId);
+    if (existing.isPresent()) {
+      var job = existing.get();
+      if (job.getStatus() == BulkFormatStatus.PENDING
+          || job.getStatus() == BulkFormatStatus.IN_PROGRESS
+          || job.getStatus() == BulkFormatStatus.WAITING_RETRY) {
+        throw new SmortException(
+            "Bulk format already in progress for deck. deckId={}", deckId);
+      }
     }
 
     var notes = deckRepository.findNotesByDeckId(deckId);
