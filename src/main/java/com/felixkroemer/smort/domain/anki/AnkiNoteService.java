@@ -6,16 +6,12 @@ import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
-import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteEntity;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
-import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteTypeEntity;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,22 +31,15 @@ public class AnkiNoteService {
 
   public AnkiNote getNote(UUID analysisId, Long noteId) {
     var note = ankiNoteRepository.findNoteByAnalysisIdAndNoteId(analysisId, noteId);
-    var noteTypes = noteTypeService.getNoteTypesByAnalysisId(analysisId);
     return new AnkiNote(
-        note.getId(), getFields(note, noteTypes), note.getGuid(), note.getNoteTypeId());
+        note.getId(),
+        noteTypeService.getContent(analysisId, note),
+        note.getGuid(),
+        note.getNoteTypeId());
   }
 
   public Optional<DerivedNoteEntity> getDerivedNote(UUID analysisId, Long noteId) {
     return derivedNoteRepository.findDerivedNotedByAnalysisIdAndNoteId(analysisId, noteId);
-  }
-
-  public static Map<String, String> getFields(
-      AnkiNoteEntity note, Map<Long, AnkiNoteTypeEntity> noteTypes) {
-    var noteType = noteTypes.get(note.getNoteTypeId());
-    var noteTypeFieldNames = noteType.getFields();
-    return IntStream.range(0, noteTypeFieldNames.size())
-        .boxed()
-        .collect(Collectors.toMap(noteTypeFieldNames::get, note.getFlds()::get));
   }
 
   public Map<String, String> getContent(UUID analysisId, Long noteId) {

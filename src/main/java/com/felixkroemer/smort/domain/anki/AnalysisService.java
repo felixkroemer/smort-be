@@ -149,14 +149,13 @@ public class AnalysisService {
 
   public List<AnkiNote> getNotes(UUID analysisId) {
     var analysis = getAnalysis(analysisId);
-    var noteTypes = noteTypeService.getNoteTypesByAnalysisId(analysisId);
     var notes = ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, analysis.getDeckId());
     return notes.stream()
         .map(
             n ->
                 new AnkiNote(
                     n.getId(),
-                    AnkiNoteService.getFields(n, noteTypes),
+                    noteTypeService.getContent(analysisId, n),
                     n.getGuid(),
                     n.getNoteTypeId()))
         .toList();
