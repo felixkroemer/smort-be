@@ -105,6 +105,20 @@ public class DeckController {
     return chatMessageRestMapper.toChatMessageResponse(chatMessageResponses);
   }
 
+  @PostMapping("/{deckId}/chat")
+  public List<ChatMessageResponse> postDeckChatMessage(
+      @PathVariable("deckId") UUID deckId,
+      @RequestBody ChatMessageRequest chatMessageRequest) {
+    var chatMessageResponses = deckService.chat(deckId, chatMessageRequest.message());
+    return chatMessageRestMapper.toChatMessageResponse(chatMessageResponses);
+  }
+
+  @GetMapping("/{deckId}/chat")
+  public List<ChatMessageResponse> getDeckChat(@PathVariable("deckId") UUID deckId) {
+    var chatMessageResponses = deckService.getChat(deckId);
+    return chatMessageRestMapper.toChatMessageResponse(chatMessageResponses);
+  }
+
   @DeleteMapping("/{deckId}")
   public void deleteDeck(@PathVariable("deckId") UUID deckId) {
     deckService.deleteDeck(deckId);
