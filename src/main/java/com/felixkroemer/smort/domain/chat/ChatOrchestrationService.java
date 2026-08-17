@@ -21,7 +21,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhanced
 @RequiredArgsConstructor
 public class ChatOrchestrationService {
 
-  private final ChatService chatService;
+  private final NoteChatService noteChatService;
   private final ChatRepository chatRepository;
   private final DynamoDbEnhancedClient enhancedClient;
   private final ObjectMapper mapper;
@@ -47,7 +47,7 @@ public class ChatOrchestrationService {
       Map<String, String> content,
       Optional<String> formatInstructions,
       TriConsumer<TransactWriteItemsEnhancedRequest.Builder, String, String> storeNoteHandler) {
-    var storeNoteToolChatMessage = chatService.formatNote(content, formatInstructions);
+    var storeNoteToolChatMessage = noteChatService.formatNote(content, formatInstructions);
 
     String result;
     try {
@@ -91,7 +91,8 @@ public class ChatOrchestrationService {
     var latestChatMessageResponseId =
         latestChatMessage.map(AbstractChatMessageEntity::getResponseId);
 
-    var chatMessage = chatService.chat(fields, message, latestChatMessageResponseId);
+    var chatMessage =
+        noteChatService.chat(new NoteChatContext(null, fields), message, latestChatMessageResponseId);
 
     return handleChatMessageResponse(
         chatMessage, pk, entityId, message, latestChatMessageResponseId, storeNoteHandler);
@@ -134,7 +135,7 @@ public class ChatOrchestrationService {
             Optional.empty(),
             false);
     var ackResponse =
-        chatService.acknowledgeStoreNoteToolCall(
+        noteChatService.acknowledgeStoreNoteToolCall(
             storeNoteToolChatMessageResponse.callId(),
             storeNoteToolChatMessageResponse.meta().responseId());
     if (ackResponse instanceof TextChatMessage(String text, ChatMessageMeta meta)) {

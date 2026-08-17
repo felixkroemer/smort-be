@@ -16,35 +16,15 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class ChatService {
+public class NoteChatService {
 
   @Value("${openai.model}")
   private String model;
 
-  private final String FORMATTING_INSTRUCTION =
-      """
-          You receive an Anki ankiNote as a list of fields, each with a title and content.
-          Your task is to produce exactly two output fields: "front" and "back".
+  private final OpenAIClient openAIClient;
+  private final ObjectMapper mapper;
 
-          Mapping rules:
-          - Identify the single field that clearly represents the main question or term (e.g. titled "Front", "Question", "Term", or similar). Map it to "front".
-          - Concatenate all remaining fields into "back". When concatenating multiple fields, separate them using their titles to distinguish them.
-
-          When processing each field, consider only its content and intended meaning — disregard any existing formatting entirely.
-
-          Formatting rules (apply to both fields):
-          %s
-      """;
-
-  private final String FORMATTING_RULES =
-      """
-          Output must be plain markdown. Never output HTML tags — not even a single one.
-          Convert all HTML in the input to its markdown equivalent before outputting (e.g. <strong> → **, <ul>/<li> → - lists, <code> → `code`).
-          When separating concatenated fields, use markdown headings (e.g. ## Definition, ## Example).
-          Fix any obvious spelling and punctuation mistakes as long as the intended meaning remains unchanged.
-      """;
-
-  private final String CHAT_INSTRUCTIONS =
+  private static final String CHAT_INSTRUCTIONS =
       """
       Your task is to assist the user in fact-checking, learning about, and improving the anki ankiNote provided in the form of its fields.
       When you are asked to edit one or multiple fields in any way, use the tool for updating notes.
@@ -54,16 +34,13 @@ public class ChatService {
       %s
       """;
 
-  private final OpenAIClient openAIClient;
-  private final ObjectMapper mapper;
-
   public StoreNoteToolChatMessage formatNote(
       Map<String, String> fields, Optional<String> formatInstructions) {
     try {
       StructuredResponseCreateParams<NoteSchema> params =
           ResponseCreateParams.builder()
               .instructions(
-                  FORMATTING_INSTRUCTION.formatted(formatInstructions.orElse(FORMATTING_RULES)))
+                  ChatUtil.formatInstructions())
               .input(mapper.writeValueAsString(fields))
               .text(NoteSchema.class)
               .model(model)
@@ -99,8 +76,7 @@ public class ChatService {
   public ChatMessage acknowledgeStoreNoteToolCall(String callId, String previousResponseId) {
     ResponseCreateParams params =
         ResponseCreateParams.builder()
-            .instructions(
-                CHAT_INSTRUCTIONS.formatted(FORMATTING_INSTRUCTION.formatted(FORMATTING_RULES)))
+            .instructions(CHAT_INSTRUCTIONS.formatted(ChatUtil.formatInstructions()))
             .input(
                 ResponseCreateParams.Input.ofResponse(
                     List.of(
@@ -125,24 +101,23 @@ public class ChatService {
             .orElseThrow(() -> new SmortException("Received no output items"));
 
     var meta = new ChatMessageMeta(response.id(), response.previousResponseId(), Instant.now());
-    ResponseOutputText outputText = getResponseOutputText(responseOutputItem.asMessage());
+    ResponseOutputText outputText = ChatUtil.getResponseOutputText(responseOutputItem.asMessage());
     return new TextChatMessage(outputText.text(), meta);
   }
 
   public ChatMessage chat(
-      Map<String, String> fields, String message, Optional<String> previousResponseId) {
+      NoteChatContext ctx, String message, Optional<String> previousResponseId) {
     String fullInput =
         "Fields:\n"
             + String.join(
                 "\n",
-                fields.entrySet().stream().map(e -> e.getKey() + ": " + e.getValue()).toList())
+                ctx.fields().entrySet().stream().map(e -> e.getKey() + ": " + e.getValue()).toList())
             + "\n\n"
             + message;
 
     ResponseCreateParams params =
         ResponseCreateParams.builder()
-            .instructions(
-                CHAT_INSTRUCTIONS.formatted(FORMATTING_INSTRUCTION.formatted(FORMATTING_RULES)))
+            .instructions(CHAT_INSTRUCTIONS.formatted(ChatUtil.formatInstructions()))
             .input(fullInput)
             .previousResponseId(previousResponseId)
             .model(model)
@@ -172,30 +147,10 @@ public class ChatService {
           storeNoteToolCall.back,
           meta);
     } else if (responseOutputItem.isMessage()) {
-      ResponseOutputText outputText = getResponseOutputText(responseOutputItem.asMessage());
+      ResponseOutputText outputText = ChatUtil.getResponseOutputText(responseOutputItem.asMessage());
       return new TextChatMessage(outputText.text(), meta);
     } else {
       throw new SmortException("Unexpected response output item type");
     }
-  }
-
-  private static ResponseOutputText getResponseOutputText(
-      ResponseOutputMessage responseOutputMessage) {
-    if (responseOutputMessage.content().size() != 1) {
-      throw new SmortException(
-          "Received multiple contents for a ResponseOutputMessage: {}",
-          responseOutputMessage.content().size());
-    }
-
-    var content = responseOutputMessage.content().getFirst();
-
-    if (content.isRefusal()) {
-      var refusal = content.asRefusal();
-      throw new SmortException("Model returned a refusal: {}", refusal.refusal());
-    }
-
-    return content
-        .outputText()
-        .orElseThrow(() -> new SmortException("Expected output_text, got unknown content"));
   }
 }
