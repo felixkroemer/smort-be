@@ -47,14 +47,35 @@ public List<ChatMessageEntity> deckChat(
 
 The `noteChat()` method reuses the existing `formatNote()` logic. The `deckChat()` method calls `chatService.chat(DeckChatContext, message, previousResponseId)`.
 
-### 4. Split `ChatService.chat()` into overloaded methods
+### 4. Split `ChatService` into `NoteChatService`, `DeckChatService`, and `ChatUtil`
 
+Split the current `ChatService` into three classes:
+
+**`ChatUtil`** - Common utility methods:
 ```java
-// For note chat - includes StoreNoteTool
-public ChatMessage chat(NoteChatContext ctx, String message, Optional<String> previousResponseId)
+public final class ChatUtil {
+    public static String formatInstructions() { ... }
+    public static String formattingRules() { ... }
+    public static ResponseOutputText getResponseOutputText(ResponseOutputMessage msg) { ... }
+}
+```
 
-// For deck chat - no tools
-public ChatMessage chat(DeckChatContext ctx, String message, Optional<String> previousResponseId)
+**`NoteChatService`** - Note-specific chat:
+```java
+@Service
+public class NoteChatService {
+    public StoreNoteToolChatMessage formatNote(Map<String, String> fields, Optional<String> formatInstructions) { ... }
+    public ChatMessage acknowledgeStoreNoteToolCall(String callId, String previousResponseId) { ... }
+    public ChatMessage chat(NoteChatContext ctx, String message, Optional<String> previousResponseId) { ... }
+}
+```
+
+**`DeckChatService`** - Deck-specific chat (no tools):
+```java
+@Service
+public class DeckChatService {
+    public ChatMessage chat(DeckChatContext ctx, String message, Optional<String> previousResponseId) { ... }
+}
 ```
 
 ### 5. Add deck chat methods to `DeckService`
@@ -108,8 +129,11 @@ This means deck chat and note chat coexist in the same partition, distinguished 
 | `ChatKeys.java` | Rename `noteId` → `entityId` |
 | `ChatMessageEntity.java` | Rename `noteId` field → `entityId` |
 | `ChatRepository.java` | Rename `noteId` params → `entityId` |
-| `ChatOrchestrationService.java` | Rename params, add `noteChat()` and `deckChat()` methods |
-| `ChatService.java` | Add overloaded `chat()` methods for `NoteChatContext` and `DeckChatContext` |
+| `ChatOrchestrationService.java` | Rename params, add `noteChat()` and `deckChat()`, inject new services |
+| `ChatService.java` | Delete - split into NoteChatService, DeckChatService, ChatUtil |
+| `NoteChatService.java` | New file - note-specific chat with tools |
+| `DeckChatService.java` | New file - deck-specific chat without tools |
+| `ChatUtil.java` | New file - common utility methods |
 | `DeckService.java` | Add `chat()` and `getChat()` methods |
 | `DeckController.java` | Add deck chat endpoints |
 | `NoteService.java` | Update to use `NoteChatContext` |

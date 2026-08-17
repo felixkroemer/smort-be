@@ -4,7 +4,7 @@
 
 **Goal:** Add chat infrastructure for Decks (imported decks) similar to Notes, enabling future features like passing note titles to the LLM to find gaps.
 
-**Architecture:** Rename `noteId` to `entityId` across chat infrastructure, introduce a `ChatContext` sealed interface to differentiate note vs deck chat, split `ChatService.chat()` and `ChatOrchestrationService.chat()` into context-specific methods, and add deck chat endpoints to `DeckService`/`DeckController`.
+**Architecture:** Rename `noteId` to `entityId` across chat infrastructure, introduce a `ChatContext` sealed interface to differentiate note vs deck chat, split `ChatService` into `NoteChatService` and `DeckChatService` with common code in `ChatUtil`, split `ChatOrchestrationService.chat()` into context-specific methods, and add deck chat endpoints to `DeckService`/`DeckController`.
 
 **Tech Stack:** Java, Spring Boot, DynamoDB Enhanced Client, OpenAI Responses API
 
@@ -26,8 +26,10 @@
 | `src/main/java/com/felixkroemer/smort/domain/chat/ChatContext.java` | Create | Sealed interface for chat contexts |
 | `src/main/java/com/felixkroemer/smort/domain/chat/NoteChatContext.java` | Create | Record for note chat context |
 | `src/main/java/com/felixkroemer/smort/domain/chat/DeckChatContext.java` | Create | Record for deck chat context |
-| `src/main/java/com/felixkroemer/smort/domain/chat/ChatService.java` | Modify | Add overloaded `chat()` for `NoteChatContext` and `DeckChatContext` |
-| `src/main/java/com/felixkroemer/smort/domain/chat/ChatOrchestrationService.java` | Modify | Rename params, split `chat()` into `noteChat()` and `deckChat()` |
+| `src/main/java/com/felixkroemer/smort/domain/chat/ChatUtil.java` | Create | Common utility methods (response parsing) |
+| `src/main/java/com/felixkroemer/smort/domain/chat/NoteChatService.java` | Create | Note-specific chat (formatNote, acknowledgeStoreNoteToolCall, chat with tools) |
+| `src/main/java/com/felixkroemer/smort/domain/chat/DeckChatService.java` | Create | Deck-specific chat (no tools) |
+| `src/main/java/com/felixkroemer/smort/domain/chat/ChatOrchestrationService.java` | Modify | Rename params, split `chat()` into `noteChat()` and `deckChat()`, inject new services |
 | `src/main/java/com/felixkroemer/smort/domain/deck/NoteService.java` | Modify | Update to use `NoteChatContext` |
 | `src/main/java/com/felixkroemer/smort/domain/anki/AnkiNoteService.java` | Modify | Update to use `NoteChatContext` |
 | `src/main/java/com/felixkroemer/smort/domain/deck/DeckService.java` | Modify | Add `chat()` and `getChat()` methods |
@@ -140,23 +142,191 @@ git commit -m "feat: add ChatContext sealed interface with NoteChatContext and D
 
 ---
 
-### Task 3: Split ChatService.chat() into overloaded methods
+### Task 3: Split ChatService into NoteChatService, DeckChatService, and ChatUtil
 
-Modify `ChatService` to accept `NoteChatContext` or `DeckChatContext` and conditionally include tools.
+Split the current `ChatService` into three classes. `ChatUtil` holds common utility methods. `NoteChatService` handles note-specific chat (formatNote, acknowledgeStoreNoteToolCall, chat with tools). `DeckChatService` handles deck-specific chat (no tools).
 
 **Files:**
-- Modify: `src/main/java/com/felixkroemer/smort/domain/chat/ChatService.java:132-180`
+- Create: `src/main/java/com/felixkroemer/smort/domain/chat/ChatUtil.java`
+- Create: `src/main/java/com/felixkroemer/smort/domain/chat/NoteChatService.java`
+- Create: `src/main/java/com/felixkroemer/smort/domain/chat/DeckChatService.java`
+- Delete: `src/main/java/com/felixkroemer/smort/domain/chat/ChatService.java`
 
 **Interfaces:**
 - Consumes: `NoteChatContext`, `DeckChatContext` (from Task 2)
-- Produces: Two overloaded `chat()` methods returning `ChatMessage`
+- Produces: `NoteChatService.chat()`, `NoteChatService.formatNote()`, `NoteChatService.acknowledgeStoreNoteToolCall()`, `DeckChatService.chat()`
 
-- [ ] **Step 1: Add overloaded chat() for NoteChatContext**
-
-Rename the existing `chat(Map<String,String>, String, Optional<String>)` method to accept `NoteChatContext`:
+- [ ] **Step 1: Create ChatUtil.java**
 
 ```java
-public ChatMessage chat(NoteChatContext ctx, String message, Optional<String> previousResponseId) {
+package com.felixkroemer.smort.domain.chat;
+
+import com.felixkroemer.smort.common.exception.SmortException;
+import com.openai.models.responses.ResponseOutputMessage;
+import com.openai.models.responses.ResponseOutputText;
+
+public final class ChatUtil {
+
+  private ChatUtil() {}
+
+  public static String formatInstructions() {
+    return """
+        You receive an Anki ankiNote as a list of fields, each with a title and content.
+        Your task is to produce exactly two output fields: "front" and "back".
+
+        Mapping rules:
+        - Identify the single field that clearly represents the main question or term (e.g. titled "Front", "Question", "Term", or similar). Map it to "front".
+        - Concatenate all remaining fields into "back". When concatenating multiple fields, separate them using their titles to distinguish them.
+
+        When processing each field, consider only its content and intended meaning — disregard any existing formatting entirely.
+
+        Formatting rules (apply to both fields):
+        %s
+    """.formatted(formattingRules());
+  }
+
+  public static String formattingRules() {
+    return """
+        Output must be plain markdown. Never output HTML tags — not even a single one.
+        Convert all HTML in the input to its markdown equivalent before outputting (e.g. <strong> → **, <ul>/<li> → - lists, <code> → `code`).
+        When separating concatenated fields, use markdown headings (e.g. ## Definition, ## Example).
+        Fix any obvious spelling and punctuation mistakes as long as the intended meaning remains unchanged.
+    """;
+  }
+
+  public static ResponseOutputText getResponseOutputText(
+      ResponseOutputMessage responseOutputMessage) {
+    if (responseOutputMessage.content().size() != 1) {
+      throw new SmortException(
+          "Received multiple contents for a ResponseOutputMessage: {}",
+          responseOutputMessage.content().size());
+    }
+
+    var content = responseOutputMessage.content().getFirst();
+
+    if (content.isRefusal()) {
+      var refusal = content.asRefusal();
+      throw new SmortException("Model returned a refusal: {}", refusal.refusal());
+    }
+
+    return content
+        .outputText()
+        .orElseThrow(() -> new SmortException("Expected output_text, got unknown content"));
+  }
+}
+```
+
+- [ ] **Step 2: Create NoteChatService.java**
+
+```java
+package com.felixkroemer.smort.domain.chat;
+
+import com.fasterxml.jackson.annotation.JsonClassDescription;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.felixkroemer.smort.common.exception.SmortException;
+import com.openai.client.OpenAIClient;
+import com.openai.models.responses.*;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class NoteChatService {
+
+  @Value("${openai.model}")
+  private String model;
+
+  private final OpenAIClient openAIClient;
+  private final ObjectMapper mapper;
+
+  private static final String CHAT_INSTRUCTIONS =
+      """
+      Your task is to assist the user in fact-checking, learning about, and improving the anki ankiNote provided in the form of its fields.
+      When you are asked to edit one or multiple fields in any way, use the tool for updating notes.
+      Then acknowledge with a short summary.
+
+      For the formatting, consider these rules:
+      %s
+      """;
+
+  public StoreNoteToolChatMessage formatNote(
+      Map<String, String> fields, Optional<String> formatInstructions) {
+    try {
+      StructuredResponseCreateParams<NoteSchema> params =
+          ResponseCreateParams.builder()
+              .instructions(
+                  ChatUtil.formatInstructions())
+              .input(mapper.writeValueAsString(fields))
+              .text(NoteSchema.class)
+              .model(model)
+              .build();
+
+      var response = openAIClient.responses().create(params);
+
+      var content =
+          response.output().stream()
+              .flatMap(item -> item.message().stream())
+              .flatMap(message -> message.content().stream())
+              .flatMap(c -> c.outputText().stream())
+              .findFirst()
+              .orElseThrow();
+
+      return new StoreNoteToolChatMessage(
+          StoreNoteTool.class.getName(),
+          "",
+          content.front(),
+          content.back(),
+          new ChatMessageMeta(response.id(), Optional.empty(), Instant.now()));
+    } catch (Exception e) {
+      throw new SmortException("Could not format ankiNote", e);
+    }
+  }
+
+  @JsonClassDescription("Store a updated ankiNote.")
+  static class StoreNoteTool {
+    public String front;
+    public String back;
+  }
+
+  public ChatMessage acknowledgeStoreNoteToolCall(String callId, String previousResponseId) {
+    ResponseCreateParams params =
+        ResponseCreateParams.builder()
+            .instructions(CHAT_INSTRUCTIONS.formatted(ChatUtil.formatInstructions()))
+            .input(
+                ResponseCreateParams.Input.ofResponse(
+                    List.of(
+                        ResponseInputItem.ofFunctionCallOutput(
+                            ResponseInputItem.FunctionCallOutput.builder()
+                                .callId(callId)
+                                .outputAsJson("ok")
+                                .build()))))
+            .previousResponseId(previousResponseId)
+            .model(model)
+            .build();
+
+    var response = openAIClient.responses().create(params);
+    var output = response.output();
+
+    var responseOutputItem =
+        output.stream()
+            .reduce(
+                (a, b) -> {
+                  throw new SmortException("Received multiple output items");
+                })
+            .orElseThrow(() -> new SmortException("Received no output items"));
+
+    var meta = new ChatMessageMeta(response.id(), response.previousResponseId(), Instant.now());
+    ResponseOutputText outputText = ChatUtil.getResponseOutputText(responseOutputItem.asMessage());
+    return new TextChatMessage(outputText.text(), meta);
+  }
+
+  public ChatMessage chat(
+      NoteChatContext ctx, String message, Optional<String> previousResponseId) {
     String fullInput =
         "Fields:\n"
             + String.join(
@@ -167,8 +337,7 @@ public ChatMessage chat(NoteChatContext ctx, String message, Optional<String> pr
 
     ResponseCreateParams params =
         ResponseCreateParams.builder()
-            .instructions(
-                CHAT_INSTRUCTIONS.formatted(FORMATTING_INSTRUCTION.formatted(FORMATTING_RULES)))
+            .instructions(CHAT_INSTRUCTIONS.formatted(ChatUtil.formatInstructions()))
             .input(fullInput)
             .previousResponseId(previousResponseId)
             .model(model)
@@ -182,41 +351,70 @@ public ChatMessage chat(NoteChatContext ctx, String message, Optional<String> pr
         output.stream()
             .reduce(
                 (a, b) -> {
-                    throw new SmortException("Received multiple output items");
+                  throw new SmortException("Received multiple output items");
                 })
             .orElseThrow(() -> new SmortException("Received no output items"));
 
     var meta = new ChatMessageMeta(response.id(), response.previousResponseId(), Instant.now());
 
     if (responseOutputItem.isFunctionCall()) {
-        var responseFunctionToolCall = responseOutputItem.asFunctionCall();
-        var storeNoteToolCall = responseFunctionToolCall.arguments(StoreNoteTool.class);
-        return new StoreNoteToolChatMessage(
-            StoreNoteTool.class.getName(),
-            responseFunctionToolCall.callId(),
-            storeNoteToolCall.front,
-            storeNoteToolCall.back,
-            meta);
+      var responseFunctionToolCall = responseOutputItem.asFunctionCall();
+      var storeNoteToolCall = responseFunctionToolCall.arguments(StoreNoteTool.class);
+      return new StoreNoteToolChatMessage(
+          StoreNoteTool.class.getName(),
+          responseFunctionToolCall.callId(),
+          storeNoteToolCall.front,
+          storeNoteToolCall.back,
+          meta);
     } else if (responseOutputItem.isMessage()) {
-        ResponseOutputText outputText = getResponseOutputText(responseOutputItem.asMessage());
-        return new TextChatMessage(outputText.text(), meta);
+      ResponseOutputText outputText = ChatUtil.getResponseOutputText(responseOutputItem.asMessage());
+      return new TextChatMessage(outputText.text(), meta);
     } else {
-        throw new SmortException("Unexpected response output item type");
+      throw new SmortException("Unexpected response output item type");
     }
+  }
 }
 ```
 
-- [ ] **Step 2: Add overloaded chat() for DeckChatContext**
+- [ ] **Step 3: Create DeckChatService.java**
 
 ```java
-public ChatMessage chat(DeckChatContext ctx, String message, Optional<String> previousResponseId) {
-    String fullInput =
-        "Deck: " + ctx.deckName() + "\n\n" + message;
+package com.felixkroemer.smort.domain.chat;
+
+import com.felixkroemer.smort.common.exception.SmortException;
+import com.openai.client.OpenAIClient;
+import com.openai.models.responses.*;
+import java.time.Instant;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.Value;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class DeckChatService {
+
+  @Value("${openai.model}")
+  private String model;
+
+  private final OpenAIClient openAIClient;
+
+  private static final String CHAT_INSTRUCTIONS =
+      """
+      Your task is to assist the user in learning about and improving their Anki deck.
+      You can discuss the deck's content, help identify gaps, and suggest improvements.
+
+      For the formatting, consider these rules:
+      %s
+      """;
+
+  public ChatMessage chat(
+      DeckChatContext ctx, String message, Optional<String> previousResponseId) {
+    String fullInput = "Deck: " + ctx.deckName() + "\n\n" + message;
 
     ResponseCreateParams params =
         ResponseCreateParams.builder()
-            .instructions(
-                CHAT_INSTRUCTIONS.formatted(FORMATTING_INSTRUCTION.formatted(FORMATTING_RULES)))
+            .instructions(CHAT_INSTRUCTIONS.formatted(ChatUtil.formatInstructions()))
             .input(fullInput)
             .previousResponseId(previousResponseId)
             .model(model)
@@ -229,44 +427,69 @@ public ChatMessage chat(DeckChatContext ctx, String message, Optional<String> pr
         output.stream()
             .reduce(
                 (a, b) -> {
-                    throw new SmortException("Received multiple output items");
+                  throw new SmortException("Received multiple output items");
                 })
             .orElseThrow(() -> new SmortException("Received no output items"));
 
     var meta = new ChatMessageMeta(response.id(), response.previousResponseId(), Instant.now());
 
     if (responseOutputItem.isMessage()) {
-        ResponseOutputText outputText = getResponseOutputText(responseOutputItem.asMessage());
-        return new TextChatMessage(outputText.text(), meta);
+      ResponseOutputText outputText = ChatUtil.getResponseOutputText(responseOutputItem.asMessage());
+      return new TextChatMessage(outputText.text(), meta);
     } else {
-        throw new SmortException("Unexpected response output item type");
+      throw new SmortException("Unexpected response output item type");
     }
+  }
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 4: Delete ChatService.java**
 
 ```bash
-git add src/main/java/com/felixkroemer/smort/domain/chat/ChatService.java
-git commit -m "feat: split ChatService.chat() into NoteChatContext and DeckChatContext overloads"
+git rm src/main/java/com/felixkroemer/smort/domain/chat/ChatService.java
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/main/java/com/felixkroemer/smort/domain/chat/ChatUtil.java \
+       src/main/java/com/felixkroemer/smort/domain/chat/NoteChatService.java \
+       src/main/java/com/felixkroemer/smort/domain/chat/DeckChatService.java
+git commit -m "feat: split ChatService into NoteChatService, DeckChatService, and ChatUtil"
 ```
 
 ---
 
 ### Task 4: Split ChatOrchestrationService.chat() and update callers
 
-Split the `chat()` method into `noteChat()` and `deckChat()`, then update `NoteService` and `AnkiNoteService`.
+Split the `chat()` method into `noteChat()` and `deckChat()`, then update `NoteService` and `AnkiNoteService`. Update `ChatOrchestrationService` to inject `NoteChatService` and `DeckChatService` instead of `ChatService`.
 
 **Files:**
-- Modify: `src/main/java/com/felixkroemer/smort/domain/chat/ChatOrchestrationService.java:83-98`
+- Modify: `src/main/java/com/felixkroemer/smort/domain/chat/ChatOrchestrationService.java:22-27,83-98`
 - Modify: `src/main/java/com/felixkroemer/smort/domain/deck/NoteService.java:55-70`
 - Modify: `src/main/java/com/felixkroemer/smort/domain/anki/AnkiNoteService.java:83-97`
 
 **Interfaces:**
-- Consumes: `NoteChatContext`, `DeckChatContext` (Task 2), `ChatService.chat(NoteChatContext, ...)` and `ChatService.chat(DeckChatContext, ...)` (Task 3)
+- Consumes: `NoteChatContext`, `DeckChatContext` (Task 2), `NoteChatService` and `DeckChatService` (Task 3)
 - Produces: `noteChat()` and `deckChat()` methods in `ChatOrchestrationService`
 
-- [ ] **Step 1: Replace chat() with noteChat() and deckChat() in ChatOrchestrationService**
+- [ ] **Step 1: Update ChatOrchestrationService dependencies**
+
+Replace the `ChatService` dependency with `NoteChatService` and `DeckChatService`:
+
+```java
+@Service
+@RequiredArgsConstructor
+public class ChatOrchestrationService {
+
+  private final NoteChatService noteChatService;
+  private final DeckChatService deckChatService;
+  private final ChatRepository chatRepository;
+  private final DynamoDbEnhancedClient enhancedClient;
+  private final ObjectMapper mapper;
+```
+
+- [ ] **Step 2: Replace chat() with noteChat() and deckChat()**
 
 Replace the existing `chat()` method (lines 83-98) with:
 
@@ -281,7 +504,7 @@ public List<ChatMessageEntity> noteChat(
     var latestChatMessageResponseId =
         latestChatMessage.map(AbstractChatMessageEntity::getResponseId);
 
-    var chatMessage = chatService.chat(ctx, message, latestChatMessageResponseId);
+    var chatMessage = noteChatService.chat(ctx, message, latestChatMessageResponseId);
 
     return handleChatMessageResponse(
         chatMessage, pk, ctx.noteId(), message, latestChatMessageResponseId, storeNoteHandler);
@@ -296,7 +519,7 @@ public List<ChatMessageEntity> deckChat(
     var latestChatMessageResponseId =
         latestChatMessage.map(AbstractChatMessageEntity::getResponseId);
 
-    var chatMessage = chatService.chat(ctx, message, latestChatMessageResponseId);
+    var chatMessage = deckChatService.chat(ctx, message, latestChatMessageResponseId);
 
     return handleChatMessageResponse(
         chatMessage, pk, ctx.deckId(), message, latestChatMessageResponseId,
@@ -304,7 +527,7 @@ public List<ChatMessageEntity> deckChat(
 }
 ```
 
-- [ ] **Step 2: Update NoteService.chat() to use NoteChatContext**
+- [ ] **Step 3: Update NoteService.chat() to use NoteChatContext**
 
 ```java
 public List<ChatMessageEntity> chat(UUID deckId, UUID noteId, String message) {
@@ -325,7 +548,7 @@ public List<ChatMessageEntity> chat(UUID deckId, UUID noteId, String message) {
 }
 ```
 
-- [ ] **Step 3: Update AnkiNoteService.chat() to use NoteChatContext**
+- [ ] **Step 4: Update AnkiNoteService.chat() to use NoteChatContext**
 
 ```java
 public List<ChatMessageEntity> chat(UUID analysisId, Long noteId, String message) {
@@ -345,7 +568,7 @@ public List<ChatMessageEntity> chat(UUID analysisId, Long noteId, String message
 }
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add src/main/java/com/felixkroemer/smort/domain/chat/ChatOrchestrationService.java \
