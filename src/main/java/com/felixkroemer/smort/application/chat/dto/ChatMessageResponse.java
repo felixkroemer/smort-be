@@ -8,4 +8,5 @@ public record ChatMessageResponse(
     Optional<String> response,
     Optional<String> toolName,
     Optional<String> message,
+    boolean userInitiated,
     Instant createdAt) {}
