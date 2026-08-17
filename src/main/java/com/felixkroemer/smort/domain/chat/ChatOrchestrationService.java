@@ -30,20 +30,30 @@ public class ChatOrchestrationService {
     return chatRepository.findAll(pk, noteId);
   }
 
-  public <T> NoteSchema formatNote(
-      String pk, T noteId, String front, String back, Optional<String> formatInstructions) {
-    return formatNote(pk, noteId, Map.of("front", front, "back", back), formatInstructions);
+  public <T> List<ChatMessageEntity> formatNote(
+      String pk,
+      T noteId,
+      String front,
+      String back,
+      Optional<String> formatInstructions,
+      TriConsumer<TransactWriteItemsEnhancedRequest.Builder, String, String> storeNoteHandler) {
+    return formatNote(
+        pk, noteId, Map.of("front", front, "back", back), formatInstructions, storeNoteHandler);
   }
 
-  public <T> NoteSchema formatNote(
-      String pk, T noteId, Map<String, String> content, Optional<String> formatInstructions) {
+  public <T> List<ChatMessageEntity> formatNote(
+      String pk,
+      T noteId,
+      Map<String, String> content,
+      Optional<String> formatInstructions,
+      TriConsumer<TransactWriteItemsEnhancedRequest.Builder, String, String> storeNoteHandler) {
     var storeNoteToolChatMessage = chatService.formatNote(content, formatInstructions);
-    var noteSchema =
-        new NoteSchema(storeNoteToolChatMessage.front(), storeNoteToolChatMessage.back());
 
     String result;
     try {
-      result = mapper.writeValueAsString(noteSchema);
+      result =
+          mapper.writeValueAsString(
+              new NoteSchema(storeNoteToolChatMessage.front(), storeNoteToolChatMessage.back()));
     } catch (JsonProcessingException e) {
       throw new SmortException("Could not serialize formatted note", e);
     }
@@ -60,9 +70,14 @@ public class ChatOrchestrationService {
             Optional.empty(),
             true);
 
-    chatRepository.save(formatChatMessageEntity);
+    enhancedClient.transactWriteItems(
+        tx -> {
+          chatRepository.saveInTx(tx, formatChatMessageEntity);
+          storeNoteHandler.accept(
+              tx, storeNoteToolChatMessage.front(), storeNoteToolChatMessage.back());
+        });
 
-    return noteSchema;
+    return List.of(formatChatMessageEntity);
   }
 
   public <T> List<ChatMessageEntity> chat(

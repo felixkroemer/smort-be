@@ -49,32 +49,36 @@ public class AnkiNoteService {
         .orElseGet(note::getContent);
   }
 
-  public DerivedNoteEntity formatNote(UUID analysisId, Long noteId) {
+  public List<ChatMessageEntity> formatNote(UUID analysisId, Long noteId) {
     var analysis = analysisService.getAnalysis(analysisId);
     var content = getContent(analysisId, noteId);
-    var noteSchema =
+
+    var chatMessages =
         chatOrchestrationService.formatNote(
             AnalysisKeys.analysisPk(analysisId),
             noteId,
             content,
-            analysis.getFormatInstructions());
-
-    var derivedNote =
-        getDerivedNote(analysisId, noteId)
-            .map(
-                d -> {
-                  d.setFront(noteSchema.front());
-                  d.setBack(noteSchema.back());
-                  d.setLastFormattedAt(Optional.of(Instant.now()));
-                  return d;
-                })
-            .orElseGet(
-                () -> derivedNoteEntityMapper.toDerivedNoteEntity(analysisId, noteId, noteSchema));
-    derivedNoteRepository.save(derivedNote);
+            analysis.getFormatInstructions(),
+            (tx, front, back) -> {
+              var derivedNote =
+                  getDerivedNote(analysisId, noteId)
+                      .map(
+                          d -> {
+                            d.setFront(front);
+                            d.setBack(back);
+                            d.setLastFormattedAt(Optional.of(Instant.now()));
+                            return d;
+                          })
+                      .orElseGet(
+                          () ->
+                              derivedNoteEntityMapper.toDerivedNoteEntity(
+                                  analysisId, noteId, new NoteSchema(front, back)));
+              derivedNoteRepository.saveInTx(tx, derivedNote);
+            });
 
     log.info("Formatted note. analysisId={}, noteId={}", analysisId, noteId);
 
-    return derivedNote;
+    return chatMessages;
   }
 
   public List<ChatMessageEntity> chat(UUID analysisId, Long noteId, String message) {

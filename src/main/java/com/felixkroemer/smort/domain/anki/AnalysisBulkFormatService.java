@@ -117,26 +117,27 @@ public class AnalysisBulkFormatService {
               existingDerivedNote
                   .map(DerivedNoteEntity::getContent)
                   .orElse(noteEntity.getContent());
-          var noteSchema =
-              chatOrchestrationService.formatNote(
-                  AnalysisKeys.analysisPk(analysisId),
-                  noteEntity.getId(),
-                  content,
-                  analysis.getFormatInstructions());
-          var derivedNote =
-              existingDerivedNote
-                  .map(
-                      d -> {
-                        d.setFront(noteSchema.front());
-                        d.setBack(noteSchema.back());
-                        d.setLastFormattedAt(Optional.of(Instant.now()));
-                        return d;
-                      })
-                  .orElseGet(
-                      () ->
-                          derivedNoteEntityMapper.toDerivedNoteEntity(
-                              analysisId, noteEntity.getId(), noteSchema));
-          derivedNoteRepository.save(derivedNote);
+          chatOrchestrationService.formatNote(
+              AnalysisKeys.analysisPk(analysisId),
+              noteEntity.getId(),
+              content,
+              analysis.getFormatInstructions(),
+              (tx, front, back) -> {
+                var derivedNote =
+                    existingDerivedNote
+                        .map(
+                            d -> {
+                              d.setFront(front);
+                              d.setBack(back);
+                              d.setLastFormattedAt(Optional.of(Instant.now()));
+                              return d;
+                            })
+                        .orElseGet(
+                            () ->
+                                derivedNoteEntityMapper.toDerivedNoteEntity(
+                                    analysisId, noteEntity.getId(), new NoteSchema(front, back)));
+                derivedNoteRepository.saveInTx(tx, derivedNote);
+              });
         });
   }
 

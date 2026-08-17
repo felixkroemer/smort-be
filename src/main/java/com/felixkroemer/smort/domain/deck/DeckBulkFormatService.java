@@ -86,17 +86,18 @@ public class DeckBulkFormatService {
         job,
         notesToProcess,
         note -> {
-          var noteSchema =
-              chatOrchestrationService.formatNote(
-                  DeckKeys.deckPk(job.getDeckId()),
-                  note.getId(),
-                  note.getFront(),
-                  note.getBack(),
-                  Optional.empty());
-          note.setFront(noteSchema.front());
-          note.setBack(noteSchema.back());
-          note.setLastFormattedAt(Optional.of(Instant.now()));
-          deckRepository.saveNote(note);
+          chatOrchestrationService.formatNote(
+              DeckKeys.deckPk(job.getDeckId()),
+              note.getId(),
+              note.getFront(),
+              note.getBack(),
+              Optional.empty(),
+              (tx, front, back) -> {
+                note.setFront(front);
+                note.setBack(back);
+                note.setLastFormattedAt(Optional.of(Instant.now()));
+                deckRepository.saveNoteInTx(tx, note);
+              });
         });
   }
 

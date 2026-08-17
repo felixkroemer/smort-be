@@ -180,10 +180,10 @@ public class AnalysisController {
   }
 
   @PatchMapping("/{analysisId}/notes/{noteId}/format")
-  public DerivedNoteResponse formatNote(
+  public List<ChatMessageResponse> formatNote(
       @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
-    var derivedNote = ankiNoteService.formatNote(analysisId, noteId);
-    return ankiNoteRestMapper.toDerivedNoteResponse(derivedNote);
+    var chatMessages = ankiNoteService.formatNote(analysisId, noteId);
+    return chatMessageRestMapper.toChatMessageResponse(chatMessages);
   }
 
   @PostMapping("/{analysisId}/notes/{noteId}/chat")

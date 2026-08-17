@@ -64,10 +64,10 @@ public class DeckController {
   }
 
   @PatchMapping("/{deckId}/notes/{noteId}/format")
-  public NoteResponse formatNote(
+  public List<ChatMessageResponse> formatNote(
       @PathVariable("deckId") UUID deckId, @PathVariable("noteId") UUID noteId) {
-    var note = noteService.formatNote(deckId, noteId);
-    return noteRestMapper.toNoteResponse(note);
+    var chatMessages = noteService.formatNote(deckId, noteId);
+    return chatMessageRestMapper.toChatMessageResponse(chatMessages);
   }
 
   @PostMapping("/{deckId}/format")

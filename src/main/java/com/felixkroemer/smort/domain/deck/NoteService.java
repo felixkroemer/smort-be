@@ -28,23 +28,28 @@ public class NoteService {
     return deckRepository.findNoteByDeckIdAndNoteId(deckId, noteId);
   }
 
-  public NoteEntity formatNote(UUID deckId, UUID noteId) {
+  public List<ChatMessageEntity> formatNote(UUID deckId, UUID noteId) {
     var note =
         deckRepository
             .findNoteByDeckIdAndNoteId(deckId, noteId)
             .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
 
-    var noteSchema =
+    var chatMessages =
         chatOrchestrationService.formatNote(
-            DeckKeys.deckPk(deckId), noteId, note.getFront(), note.getBack(), Optional.empty());
-
-    note.setFront(noteSchema.front());
-    note.setBack(noteSchema.back());
-    deckRepository.saveNote(note);
+            DeckKeys.deckPk(deckId),
+            noteId,
+            note.getFront(),
+            note.getBack(),
+            Optional.empty(),
+            (tx, front, back) -> {
+              note.setFront(front);
+              note.setBack(back);
+              deckRepository.saveNoteInTx(tx, note);
+            });
 
     log.info("Formatted note. deckId={}, noteId={}", deckId, noteId);
 
-    return note;
+    return chatMessages;
   }
 
   public List<ChatMessageEntity> chat(UUID deckId, UUID noteId, String message) {
