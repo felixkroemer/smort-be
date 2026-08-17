@@ -3,12 +3,17 @@ package com.felixkroemer.smort.domain.chat;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.openai.models.responses.ResponseOutputMessage;
 import com.openai.models.responses.ResponseOutputText;
+import java.util.Optional;
 
 public final class ChatUtil {
 
   private ChatUtil() {}
 
   public static String formatInstructions() {
+    return formatInstructions(Optional.empty());
+  }
+
+  public static String formatInstructions(Optional<String> customInstructions) {
     return """
         You receive an Anki ankiNote as a list of fields, each with a title and content.
         Your task is to produce exactly two output fields: "front" and "back".
@@ -21,7 +26,7 @@ public final class ChatUtil {
 
         Formatting rules (apply to both fields):
         %s
-    """.formatted(formattingRules());
+    """.formatted(customInstructions.orElse(formattingRules()));
   }
 
   public static String formattingRules() {

@@ -40,7 +40,7 @@ public class NoteChatService {
       StructuredResponseCreateParams<NoteSchema> params =
           ResponseCreateParams.builder()
               .instructions(
-                  ChatUtil.formatInstructions())
+                  ChatUtil.formatInstructions(formatInstructions))
               .input(mapper.writeValueAsString(fields))
               .text(NoteSchema.class)
               .model(model)
