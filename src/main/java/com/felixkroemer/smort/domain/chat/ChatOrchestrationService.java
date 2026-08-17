@@ -1,5 +1,7 @@
 package com.felixkroemer.smort.domain.chat;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.AbstractChatMessageEntity;
@@ -22,6 +24,7 @@ public class ChatOrchestrationService {
   private final ChatService chatService;
   private final ChatRepository chatRepository;
   private final DynamoDbEnhancedClient enhancedClient;
+  private final ObjectMapper mapper;
 
   public <T> List<ChatMessageEntity> getChat(String pk, T noteId) {
     return chatRepository.findAll(pk, noteId);
@@ -35,21 +38,26 @@ public class ChatOrchestrationService {
   public <T> NoteSchema formatNote(
       String pk, T noteId, Map<String, String> content, Optional<String> formatInstructions) {
     var storeNoteToolChatMessage = chatService.formatNote(content, formatInstructions);
+    var noteSchema = new NoteSchema(storeNoteToolChatMessage.front(), storeNoteToolChatMessage.back());
 
-    var toolCallChatMessageEntity =
-        ChatMessageEntity.toolCall(
+    String result;
+    try {
+      result = mapper.writeValueAsString(noteSchema);
+    } catch (JsonProcessingException e) {
+      throw new SmortException("Could not serialize formatted note", e);
+    }
+
+    var formatChatMessageEntity =
+        ChatMessageEntity.format(
             pk,
             noteId,
-            "user-initiated format",
+            result,
             storeNoteToolChatMessage.meta().responseId(),
-            Optional.empty(),
-            storeNoteToolChatMessage.callId(),
-            storeNoteToolChatMessage.toolName(),
-            true);
+            storeNoteToolChatMessage.toolName());
 
-    chatRepository.save(toolCallChatMessageEntity);
+    chatRepository.save(formatChatMessageEntity);
 
-    return new NoteSchema(storeNoteToolChatMessage.front(), storeNoteToolChatMessage.back());
+    return noteSchema;
   }
 
   public <T> List<ChatMessageEntity> chat(

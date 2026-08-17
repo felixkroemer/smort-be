@@ -8,11 +8,11 @@ public final class ChatKeys {
     return "CHAT#" + (userInitiated ? "U#" : "C#") + noteId + "#" + createdAt + "#" + responseId;
   }
 
-  public static <T> String allChatMessagesPrefix(T noteId) {
-    return "CHAT#" + noteId + "#";
+  public static <T> String llmChatMessagesPrefix(T noteId) {
+    return "CHAT#C#" + noteId + "#";
   }
 
-  public static <T> String llmChatMessagesPrefix(T noteId) {
-    return "CHAT#" + noteId + "#C#";
+  public static <T> String userChatMessagesPrefix(T noteId) {
+    return "CHAT#U#" + noteId + "#";
   }
 }

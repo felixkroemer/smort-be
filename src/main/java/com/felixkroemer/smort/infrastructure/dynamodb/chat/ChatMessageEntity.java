@@ -94,4 +94,20 @@ public class ChatMessageEntity extends AbstractChatMessageEntity {
         Optional.of(toolName),
         userInitiated);
   }
+
+  public static <T> ChatMessageEntity format(
+      String pk, T noteId, String result, String responseId, String toolName) {
+    return new ChatMessageEntity(
+        pk,
+        String.valueOf(noteId),
+        Optional.of("user-initiated format"),
+        responseId,
+        Optional.empty(),
+        Instant.now(),
+        ChatMessageType.TOOL_CALL,
+        Optional.of(result),
+        Optional.empty(),
+        Optional.of(toolName),
+        true);
+  }
 }

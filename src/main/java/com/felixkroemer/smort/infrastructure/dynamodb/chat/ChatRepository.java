@@ -1,8 +1,10 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.chat;
 
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.ChatKeys;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -18,7 +20,6 @@ public class ChatRepository {
   private final DynamoDbTable<ChatMessageEntity> table;
 
   public <T> Optional<ChatMessageEntity> findLatestChatMessage(String pk, T noteId) {
-
     QueryEnhancedRequest request =
         QueryEnhancedRequest.builder()
             .queryConditional(
@@ -35,16 +36,23 @@ public class ChatRepository {
   }
 
   public <T> List<ChatMessageEntity> findAll(String pk, T noteId) {
+    return Stream.concat(
+            queryByPrefix(pk, ChatKeys.llmChatMessagesPrefix(noteId)).stream(),
+            queryByPrefix(pk, ChatKeys.userChatMessagesPrefix(noteId)).stream())
+        .sorted(Comparator.comparing(ChatMessageEntity::getCreatedAt).reversed())
+        .toList();
+  }
+
+  private <T> List<ChatMessageEntity> queryByPrefix(String pk, String sortKeyPrefix) {
     QueryEnhancedRequest request =
         QueryEnhancedRequest.builder()
             .queryConditional(
                 QueryConditional.sortBeginsWith(
                     Key.builder()
                         .partitionValue(pk)
-                        .sortValue(ChatKeys.allChatMessagesPrefix(noteId))
+                        .sortValue(sortKeyPrefix)
                         .build()))
             .scanIndexForward(false)
-            .limit(1)
             .build();
 
     return table.query(request).items().stream().toList();
