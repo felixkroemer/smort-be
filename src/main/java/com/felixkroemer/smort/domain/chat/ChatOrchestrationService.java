@@ -48,12 +48,16 @@ public class ChatOrchestrationService {
     }
 
     var formatChatMessageEntity =
-        ChatMessageEntity.format(
+        ChatMessageEntity.toolCall(
             pk,
             noteId,
-            result,
+            "user-initiated format",
             storeNoteToolChatMessage.meta().responseId(),
-            storeNoteToolChatMessage.toolName());
+            Optional.empty(),
+            storeNoteToolChatMessage.callId(),
+            storeNoteToolChatMessage.toolName(),
+            Optional.of(result),
+            true);
 
     chatRepository.save(formatChatMessageEntity);
 
@@ -111,6 +115,7 @@ public class ChatOrchestrationService {
             latestChatMessageResponseId,
             storeNoteToolChatMessageResponse.callId(),
             storeNoteToolChatMessageResponse.toolName(),
+            Optional.empty(),
             false);
     var ackResponse =
         chatService.acknowledgeStoreNoteToolCall(

@@ -80,6 +80,7 @@ public class ChatMessageEntity extends AbstractChatMessageEntity {
       Optional<String> previousResponseId,
       String callId,
       String toolName,
+      Optional<String> response,
       boolean userInitiated) {
     return new ChatMessageEntity(
         pk,
@@ -89,25 +90,9 @@ public class ChatMessageEntity extends AbstractChatMessageEntity {
         previousResponseId,
         Instant.now(),
         ChatMessageType.TOOL_CALL,
-        Optional.empty(),
+        response,
         Optional.of(callId),
         Optional.of(toolName),
         userInitiated);
-  }
-
-  public static <T> ChatMessageEntity format(
-      String pk, T noteId, String result, String responseId, String toolName) {
-    return new ChatMessageEntity(
-        pk,
-        String.valueOf(noteId),
-        Optional.of("user-initiated format"),
-        responseId,
-        Optional.empty(),
-        Instant.now(),
-        ChatMessageType.TOOL_CALL,
-        Optional.of(result),
-        Optional.empty(),
-        Optional.of(toolName),
-        true);
   }
 }
