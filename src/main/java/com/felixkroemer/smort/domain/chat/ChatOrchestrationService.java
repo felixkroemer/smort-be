@@ -38,7 +38,8 @@ public class ChatOrchestrationService {
   public <T> NoteSchema formatNote(
       String pk, T noteId, Map<String, String> content, Optional<String> formatInstructions) {
     var storeNoteToolChatMessage = chatService.formatNote(content, formatInstructions);
-    var noteSchema = new NoteSchema(storeNoteToolChatMessage.front(), storeNoteToolChatMessage.back());
+    var noteSchema =
+        new NoteSchema(storeNoteToolChatMessage.front(), storeNoteToolChatMessage.back());
 
     String result;
     try {
@@ -51,12 +52,12 @@ public class ChatOrchestrationService {
         ChatMessageEntity.toolCall(
             pk,
             noteId,
-            "user-initiated format",
+            result,
             storeNoteToolChatMessage.meta().responseId(),
             Optional.empty(),
             storeNoteToolChatMessage.callId(),
             storeNoteToolChatMessage.toolName(),
-            Optional.of(result),
+            Optional.empty(),
             true);
 
     chatRepository.save(formatChatMessageEntity);
