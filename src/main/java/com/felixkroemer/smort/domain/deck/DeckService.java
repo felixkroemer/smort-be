@@ -6,14 +6,18 @@ import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.AnalysisService;
 import com.felixkroemer.smort.domain.anki.AnkiNote;
 import com.felixkroemer.smort.domain.anki.AnkiNoteTypeService;
+import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
+import com.felixkroemer.smort.domain.chat.DeckChatContext;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.domain.deck.mapping.NoteEntityMapper;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckMetaEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteTypeEntity;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +38,7 @@ public class DeckService {
 
   private final AnalysisService analysisService;
   private final AnkiNoteTypeService ankiNoteTypeService;
+  private final ChatOrchestrationService chatOrchestrationService;
   private final DeckRepository deckRepository;
   private final NoteEntityMapper noteEntityMapper;
 
@@ -151,5 +156,19 @@ public class DeckService {
 
   public void deleteNote(UUID deckId, UUID noteId) {
     deckRepository.deleteNoteByDeckIdAndNoteId(deckId, noteId);
+  }
+
+  public List<ChatMessageEntity> chat(UUID deckId, String message) {
+    var deck =
+        deckRepository
+            .findDeckMetaByDeckId(deckId)
+            .orElseThrow(() -> new NotFoundException("Could not find deck. deckId={}", deckId));
+
+    var ctx = new DeckChatContext(deckId, deck.getName());
+    return chatOrchestrationService.deckChat(DeckKeys.deckPk(deckId), ctx, message);
+  }
+
+  public List<ChatMessageEntity> getChat(UUID deckId) {
+    return chatOrchestrationService.getChat(DeckKeys.deckPk(deckId), deckId);
   }
 }
