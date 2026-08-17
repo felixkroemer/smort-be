@@ -22,6 +22,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhanced
 public class ChatOrchestrationService {
 
   private final NoteChatService noteChatService;
+  private final DeckChatService deckChatService;
   private final ChatRepository chatRepository;
   private final DynamoDbEnhancedClient enhancedClient;
   private final ObjectMapper mapper;
@@ -80,22 +81,36 @@ public class ChatOrchestrationService {
     return List.of(formatChatMessageEntity);
   }
 
-  public <T> List<ChatMessageEntity> chat(
+  public List<ChatMessageEntity> noteChat(
       String pk,
-      T entityId,
-      Map<String, String> fields,
+      NoteChatContext ctx,
       String message,
       TriConsumer<TransactWriteItemsEnhancedRequest.Builder, String, String> storeNoteHandler) {
 
-    var latestChatMessage = chatRepository.findLatestChatMessage(pk, entityId);
+    var latestChatMessage = chatRepository.findLatestChatMessage(pk, ctx.noteId());
     var latestChatMessageResponseId =
         latestChatMessage.map(AbstractChatMessageEntity::getResponseId);
 
-    var chatMessage =
-        noteChatService.chat(new NoteChatContext(null, fields), message, latestChatMessageResponseId);
+    var chatMessage = noteChatService.chat(ctx, message, latestChatMessageResponseId);
 
     return handleChatMessageResponse(
-        chatMessage, pk, entityId, message, latestChatMessageResponseId, storeNoteHandler);
+        chatMessage, pk, ctx.noteId(), message, latestChatMessageResponseId, storeNoteHandler);
+  }
+
+  public List<ChatMessageEntity> deckChat(
+      String pk,
+      DeckChatContext ctx,
+      String message) {
+
+    var latestChatMessage = chatRepository.findLatestChatMessage(pk, ctx.deckId());
+    var latestChatMessageResponseId =
+        latestChatMessage.map(AbstractChatMessageEntity::getResponseId);
+
+    var chatMessage = deckChatService.chat(ctx, message, latestChatMessageResponseId);
+
+    return handleChatMessageResponse(
+        chatMessage, pk, ctx.deckId(), message, latestChatMessageResponseId,
+        (tx, front, back) -> {});
   }
 
   public <T> List<ChatMessageEntity> handleChatMessageResponse(
