@@ -40,6 +40,7 @@ public class NoteService {
 
     note.setFront(noteSchema.front());
     note.setBack(noteSchema.back());
+    deckRepository.saveNote(note);
 
     log.info("Formatted note. deckId={}, noteId={}", deckId, noteId);
 
