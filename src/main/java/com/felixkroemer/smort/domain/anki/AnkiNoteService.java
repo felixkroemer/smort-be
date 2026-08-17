@@ -52,7 +52,12 @@ public class AnkiNoteService {
   public DerivedNoteEntity formatNote(UUID analysisId, Long noteId) {
     var analysis = analysisService.getAnalysis(analysisId);
     var content = getContent(analysisId, noteId);
-    var noteSchema = chatService.formatNote(content, analysis.getFormatInstructions());
+    var noteSchema =
+        chatOrchestrationService.formatNote(
+            AnalysisKeys.analysisPk(analysisId),
+            noteId,
+            content,
+            analysis.getFormatInstructions());
 
     var derivedNote =
         getDerivedNote(analysisId, noteId)
@@ -76,9 +81,9 @@ public class AnkiNoteService {
     var content = getContent(analysisId, noteId);
 
     return chatOrchestrationService.chat(
-        content,
         AnalysisKeys.analysisPk(analysisId),
         noteId,
+        content,
         message,
         (tx, front, back) -> {
           derivedNoteRepository.saveInTx(

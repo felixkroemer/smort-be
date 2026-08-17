@@ -2,7 +2,6 @@ package com.felixkroemer.smort.domain.deck;
 
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
-import com.felixkroemer.smort.domain.chat.ChatService;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.domain.deck.mapping.NoteEntityMapper;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
@@ -22,7 +21,6 @@ import org.springframework.stereotype.Service;
 public class NoteService {
 
   private final DeckRepository deckRepository;
-  private final ChatService chatService;
   private final ChatOrchestrationService chatOrchestrationService;
   private final NoteEntityMapper noteEntityMapper;
 
@@ -36,7 +34,9 @@ public class NoteService {
             .findNoteByDeckIdAndNoteId(deckId, noteId)
             .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
 
-    var noteSchema = chatService.formatNote(note.getFront(), note.getBack(), Optional.empty());
+    var noteSchema =
+        chatOrchestrationService.formatNote(
+            DeckKeys.deckPk(deckId), noteId, note.getFront(), note.getBack(), Optional.empty());
 
     note.setFront(noteSchema.front());
     note.setBack(noteSchema.back());
@@ -53,9 +53,9 @@ public class NoteService {
             .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
 
     return chatOrchestrationService.chat(
-        note.getContent(),
         DeckKeys.deckPk(deckId),
         noteId,
+        note.getContent(),
         message,
         (tx, front, back) -> {
           deckRepository.saveNoteInTx(

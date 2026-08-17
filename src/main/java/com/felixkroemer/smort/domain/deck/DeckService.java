@@ -8,7 +8,6 @@ import com.felixkroemer.smort.domain.anki.AnkiNote;
 import com.felixkroemer.smort.domain.anki.AnkiNoteTypeService;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.domain.deck.mapping.NoteEntityMapper;
-import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckMetaEntity;
@@ -36,7 +35,6 @@ public class DeckService {
   private final AnalysisService analysisService;
   private final AnkiNoteTypeService ankiNoteTypeService;
   private final DeckRepository deckRepository;
-  private final BulkFormatRepository bulkFormatRepository;
   private final NoteEntityMapper noteEntityMapper;
 
   public List<NoteEntity> getNotes(UUID deckId) {
@@ -45,7 +43,8 @@ public class DeckService {
 
   // TODO: clean up possible failed imports based on status and time passed
   public DeckMetaEntity importDeck(UUID analysisId, Map<String, NoteTypeTemplate> templates) {
-    var activeJob = bulkFormatRepository.findBulkFormatByAnalysisId(analysisId);
+    var analysis = analysisService.getAnalysis(analysisId);
+    var activeJob = analysis.getBulkFormat();
     if (activeJob.isPresent()
         && (activeJob.get().getStatus() == BulkFormatStatus.IN_PROGRESS
             || activeJob.get().getStatus() == BulkFormatStatus.PENDING
@@ -53,7 +52,6 @@ public class DeckService {
       throw new SmortException(
           "Cannot import while bulk format is in progress. analysisId={}", analysisId);
     }
-    var analysis = analysisService.getAnalysis(analysisId);
     var deck = createDeck(analysis.getDeckName());
 
     var notes = analysisService.getNotes(analysisId);

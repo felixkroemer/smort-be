@@ -3,7 +3,7 @@ package com.felixkroemer.smort.domain.deck;
 import com.felixkroemer.smort.common.exception.LogSeverity;
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.common.exception.SmortException;
-import com.felixkroemer.smort.domain.chat.ChatService;
+import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.domain.common.BulkFormat;
 import com.felixkroemer.smort.domain.common.BulkFormatEngine;
 import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
@@ -13,6 +13,7 @@ import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckBulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -29,7 +30,7 @@ public class DeckBulkFormatService {
 
   private final BulkFormatRepository bulkFormatRepository;
   private final DeckRepository deckRepository;
-  private final ChatService chatService;
+  private final ChatOrchestrationService chatOrchestrationService;
   private final BulkFormatEntityMapper bulkFormatEntityMapper;
   private final BulkFormatEngine bulkFormatEngine;
 
@@ -40,8 +41,7 @@ public class DeckBulkFormatService {
       if (job.getStatus() == BulkFormatStatus.PENDING
           || job.getStatus() == BulkFormatStatus.IN_PROGRESS
           || job.getStatus() == BulkFormatStatus.WAITING_RETRY) {
-        throw new SmortException(
-            "Bulk format already in progress for deck. deckId={}", deckId);
+        throw new SmortException("Bulk format already in progress for deck. deckId={}", deckId);
       }
     }
 
@@ -86,7 +86,13 @@ public class DeckBulkFormatService {
         job,
         notesToProcess,
         note -> {
-          var noteSchema = chatService.formatNote(note.getFront(), note.getBack(), Optional.empty());
+          var noteSchema =
+              chatOrchestrationService.formatNote(
+                  DeckKeys.deckPk(job.getDeckId()),
+                  note.getId(),
+                  note.getFront(),
+                  note.getBack(),
+                  Optional.empty());
           note.setFront(noteSchema.front());
           note.setBack(noteSchema.back());
           note.setLastFormattedAt(Optional.of(Instant.now()));

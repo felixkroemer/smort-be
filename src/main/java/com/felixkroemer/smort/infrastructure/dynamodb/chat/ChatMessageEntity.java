@@ -34,11 +34,21 @@ public class ChatMessageEntity extends AbstractChatMessageEntity {
       ChatMessageType type,
       Optional<String> response,
       Optional<String> callId,
-      Optional<String> toolName) {
-    super(type, response, callId, toolName, message, responseId, previousResponseId, createdAt);
+      Optional<String> toolName,
+      boolean userInitiated) {
+    super(
+        type,
+        response,
+        callId,
+        toolName,
+        userInitiated,
+        message,
+        responseId,
+        previousResponseId,
+        createdAt);
     this.noteId = noteId;
     this.pk = pk;
-    this.sk = ChatKeys.chatMessageSk(noteId, createdAt, responseId);
+    this.sk = ChatKeys.chatMessageSk(noteId, createdAt, responseId, userInitiated);
   }
 
   public static <T> ChatMessageEntity text(
@@ -58,7 +68,8 @@ public class ChatMessageEntity extends AbstractChatMessageEntity {
         ChatMessageType.TEXT,
         Optional.of(text),
         Optional.empty(),
-        Optional.empty());
+        Optional.empty(),
+        false);
   }
 
   public static <T> ChatMessageEntity toolCall(
@@ -68,7 +79,8 @@ public class ChatMessageEntity extends AbstractChatMessageEntity {
       String responseId,
       Optional<String> previousResponseId,
       String callId,
-      String toolName) {
+      String toolName,
+      boolean userInitiated) {
     return new ChatMessageEntity(
         pk,
         String.valueOf(noteId),
@@ -79,6 +91,7 @@ public class ChatMessageEntity extends AbstractChatMessageEntity {
         ChatMessageType.TOOL_CALL,
         Optional.empty(),
         Optional.of(callId),
-        Optional.of(toolName));
+        Optional.of(toolName),
+        userInitiated);
   }
 }

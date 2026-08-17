@@ -4,14 +4,16 @@ import com.felixkroemer.smort.common.exception.LogSeverity;
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.mapping.DerivedNoteEntityMapper;
-import com.felixkroemer.smort.domain.chat.ChatService;
+import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.domain.common.BulkFormat;
 import com.felixkroemer.smort.domain.common.BulkFormatEngine;
+import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +34,7 @@ public class AnalysisBulkFormatService {
   private final BulkFormatRepository bulkFormatRepository;
   private final DerivedNoteRepository derivedNoteRepository;
   private final AnalysisService analysisService;
-  private final ChatService chatService;
+  private final ChatOrchestrationService chatOrchestrationService;
   private final BulkFormatEntityMapper bulkFormatEntityMapper;
   private final DerivedNoteEntityMapper derivedNoteEntityMapper;
   private final BulkFormatEngine bulkFormatEngine;
@@ -96,8 +98,7 @@ public class AnalysisBulkFormatService {
     processNotes(job, notesToProcess);
   }
 
-  private void processNotes(
-      AnalysisBulkFormatEntity job, List<NoteToProcess> notesToProcess) {
+  private void processNotes(AnalysisBulkFormatEntity job, List<NoteToProcess> notesToProcess) {
     var analysisId = job.getAnalysisId();
     Analysis analysis;
     try {
@@ -116,7 +117,12 @@ public class AnalysisBulkFormatService {
               existingDerivedNote
                   .map(DerivedNoteEntity::getContent)
                   .orElse(noteEntity.getContent());
-          var noteSchema = chatService.formatNote(content, analysis.getFormatInstructions());
+          var noteSchema =
+              chatOrchestrationService.formatNote(
+                  AnalysisKeys.analysisPk(analysisId),
+                  noteEntity.getId(),
+                  content,
+                  analysis.getFormatInstructions());
           var derivedNote =
               existingDerivedNote
                   .map(

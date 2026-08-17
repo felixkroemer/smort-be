@@ -10,7 +10,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -58,11 +57,8 @@ public class ChatService {
   private final OpenAIClient openAIClient;
   private final ObjectMapper mapper;
 
-  public NoteSchema formatNote(String front, String back, Optional<String> formatInstructions) {
-    return formatNote(Map.of("front", front, "back", back), formatInstructions);
-  }
-
-  public NoteSchema formatNote(Map<String, String> fields, Optional<String> formatInstructions) {
+  public StoreNoteToolChatMessage formatNote(
+      Map<String, String> fields, Optional<String> formatInstructions) {
     try {
       StructuredResponseCreateParams<NoteSchema> params =
           ResponseCreateParams.builder()
@@ -73,12 +69,22 @@ public class ChatService {
               .model(model)
               .build();
 
-      return openAIClient.responses().create(params).output().stream()
-          .flatMap(item -> item.message().stream())
-          .flatMap(message -> message.content().stream())
-          .flatMap(content -> content.outputText().stream())
-          .findFirst()
-          .orElseThrow();
+      var response = openAIClient.responses().create(params);
+
+      var content =
+          response.output().stream()
+              .flatMap(item -> item.message().stream())
+              .flatMap(message -> message.content().stream())
+              .flatMap(c -> c.outputText().stream())
+              .findFirst()
+              .orElseThrow();
+
+      return new StoreNoteToolChatMessage(
+          StoreNoteTool.class.getName(),
+          "",
+          content.front(),
+          content.back(),
+          new ChatMessageMeta(response.id(), Optional.empty(), Instant.now()));
     } catch (Exception e) {
       throw new SmortException("Could not format ankiNote", e);
     }

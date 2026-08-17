@@ -25,7 +25,7 @@ public class ChatRepository {
                 QueryConditional.sortBeginsWith(
                     Key.builder()
                         .partitionValue(pk)
-                        .sortValue(ChatKeys.chatMessagePrefix(noteId))
+                        .sortValue(ChatKeys.llmChatMessagesPrefix(noteId))
                         .build()))
             .scanIndexForward(false)
             .limit(1)
@@ -41,7 +41,7 @@ public class ChatRepository {
                 QueryConditional.sortBeginsWith(
                     Key.builder()
                         .partitionValue(pk)
-                        .sortValue(ChatKeys.chatMessagePrefix(noteId))
+                        .sortValue(ChatKeys.allChatMessagesPrefix(noteId))
                         .build()))
             .scanIndexForward(false)
             .limit(1)

@@ -27,6 +27,8 @@ public abstract class AbstractChatMessageEntity {
 
   @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalStringConverter.class))
   private Optional<String> toolName; // only populated for TOOL_CALL
+  
+  private boolean userInitiated; // only populated for TOOL_CALL
 
   @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalStringConverter.class))
   private Optional<String> message;
