@@ -19,14 +19,14 @@ public class ChatRepository {
 
   private final DynamoDbTable<ChatMessageEntity> table;
 
-  public <T> Optional<ChatMessageEntity> findLatestChatMessage(String pk, T noteId) {
+  public <T> Optional<ChatMessageEntity> findLatestChatMessage(String pk, T entityId) {
     QueryEnhancedRequest request =
         QueryEnhancedRequest.builder()
             .queryConditional(
                 QueryConditional.sortBeginsWith(
                     Key.builder()
                         .partitionValue(pk)
-                        .sortValue(ChatKeys.llmChatMessagesPrefix(noteId))
+                        .sortValue(ChatKeys.llmChatMessagesPrefix(entityId))
                         .build()))
             .scanIndexForward(false)
             .limit(1)
@@ -35,10 +35,10 @@ public class ChatRepository {
     return table.query(request).items().stream().findFirst();
   }
 
-  public <T> List<ChatMessageEntity> findAll(String pk, T noteId) {
+  public <T> List<ChatMessageEntity> findAll(String pk, T entityId) {
     return Stream.concat(
-            queryByPrefix(pk, ChatKeys.llmChatMessagesPrefix(noteId)).stream(),
-            queryByPrefix(pk, ChatKeys.userChatMessagesPrefix(noteId)).stream())
+            queryByPrefix(pk, ChatKeys.llmChatMessagesPrefix(entityId)).stream(),
+            queryByPrefix(pk, ChatKeys.userChatMessagesPrefix(entityId)).stream())
         .sorted(Comparator.comparing(ChatMessageEntity::getCreatedAt).reversed())
         .toList();
   }

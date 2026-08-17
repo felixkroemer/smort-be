@@ -26,24 +26,24 @@ public class ChatOrchestrationService {
   private final DynamoDbEnhancedClient enhancedClient;
   private final ObjectMapper mapper;
 
-  public <T> List<ChatMessageEntity> getChat(String pk, T noteId) {
-    return chatRepository.findAll(pk, noteId);
+  public <T> List<ChatMessageEntity> getChat(String pk, T entityId) {
+    return chatRepository.findAll(pk, entityId);
   }
 
   public <T> List<ChatMessageEntity> formatNote(
       String pk,
-      T noteId,
+      T entityId,
       String front,
       String back,
       Optional<String> formatInstructions,
       TriConsumer<TransactWriteItemsEnhancedRequest.Builder, String, String> storeNoteHandler) {
     return formatNote(
-        pk, noteId, Map.of("front", front, "back", back), formatInstructions, storeNoteHandler);
+        pk, entityId, Map.of("front", front, "back", back), formatInstructions, storeNoteHandler);
   }
 
   public <T> List<ChatMessageEntity> formatNote(
       String pk,
-      T noteId,
+      T entityId,
       Map<String, String> content,
       Optional<String> formatInstructions,
       TriConsumer<TransactWriteItemsEnhancedRequest.Builder, String, String> storeNoteHandler) {
@@ -61,7 +61,7 @@ public class ChatOrchestrationService {
     var formatChatMessageEntity =
         ChatMessageEntity.toolCall(
             pk,
-            noteId,
+            entityId,
             result,
             storeNoteToolChatMessage.meta().responseId(),
             Optional.empty(),
@@ -82,42 +82,42 @@ public class ChatOrchestrationService {
 
   public <T> List<ChatMessageEntity> chat(
       String pk,
-      T noteId,
+      T entityId,
       Map<String, String> fields,
       String message,
       TriConsumer<TransactWriteItemsEnhancedRequest.Builder, String, String> storeNoteHandler) {
 
-    var latestChatMessage = chatRepository.findLatestChatMessage(pk, noteId);
+    var latestChatMessage = chatRepository.findLatestChatMessage(pk, entityId);
     var latestChatMessageResponseId =
         latestChatMessage.map(AbstractChatMessageEntity::getResponseId);
 
     var chatMessage = chatService.chat(fields, message, latestChatMessageResponseId);
 
     return handleChatMessageResponse(
-        chatMessage, pk, noteId, message, latestChatMessageResponseId, storeNoteHandler);
+        chatMessage, pk, entityId, message, latestChatMessageResponseId, storeNoteHandler);
   }
 
   public <T> List<ChatMessageEntity> handleChatMessageResponse(
       ChatMessage chatMessage,
       String pk,
-      T noteId,
+      T entityId,
       String message,
       Optional<String> latestChatMessageResponseId,
       TriConsumer<TransactWriteItemsEnhancedRequest.Builder, String, String> storeNoteHandler) {
     switch (chatMessage) {
       case TextChatMessage r -> {
-        return handleChatMessageTextResponse(pk, noteId, message, r, latestChatMessageResponseId);
+        return handleChatMessageTextResponse(pk, entityId, message, r, latestChatMessageResponseId);
       }
       case StoreNoteToolChatMessage r -> {
         return handleStoreNoteToolResponse(
-            pk, noteId, message, r, latestChatMessageResponseId, storeNoteHandler);
+            pk, entityId, message, r, latestChatMessageResponseId, storeNoteHandler);
       }
     }
   }
 
   private @NonNull <T> List<ChatMessageEntity> handleStoreNoteToolResponse(
       String pk,
-      T noteId,
+      T entityId,
       String message,
       StoreNoteToolChatMessage storeNoteToolChatMessageResponse,
       Optional<String> latestChatMessageResponseId,
@@ -125,7 +125,7 @@ public class ChatOrchestrationService {
     var toolCallChatMessageEntity =
         ChatMessageEntity.toolCall(
             pk,
-            noteId,
+            entityId,
             message,
             storeNoteToolChatMessageResponse.meta().responseId(),
             latestChatMessageResponseId,
@@ -140,7 +140,7 @@ public class ChatOrchestrationService {
     if (ackResponse instanceof TextChatMessage(String text, ChatMessageMeta meta)) {
       var chatMessageEntity =
           ChatMessageEntity.text(
-              pk, noteId, Optional.empty(), meta.responseId(), latestChatMessageResponseId, text);
+              pk, entityId, Optional.empty(), meta.responseId(), latestChatMessageResponseId, text);
       enhancedClient.transactWriteItems(
           tx -> {
             chatRepository.saveInTx(tx, toolCallChatMessageEntity);
@@ -158,14 +158,14 @@ public class ChatOrchestrationService {
 
   private @NonNull <T> List<ChatMessageEntity> handleChatMessageTextResponse(
       String pk,
-      T noteId,
+      T entityId,
       String message,
       TextChatMessage r,
       Optional<String> latestChatMessageResponseId) {
     var chatMessageEntity =
         ChatMessageEntity.text(
             pk,
-            noteId,
+            entityId,
             Optional.of(message),
             r.meta().responseId(),
             latestChatMessageResponseId,
