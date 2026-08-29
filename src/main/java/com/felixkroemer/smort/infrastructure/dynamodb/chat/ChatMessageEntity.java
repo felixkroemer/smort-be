@@ -1,5 +1,6 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.chat;
 
+import com.felixkroemer.smort.domain.chat.NoteChatToolType;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.ChatKeys;
 import java.time.Instant;
 import java.util.Optional;
@@ -79,7 +80,7 @@ public class ChatMessageEntity extends AbstractChatMessageEntity {
       String responseId,
       Optional<String> previousResponseId,
       String callId,
-      String toolName,
+      NoteChatToolType noteChatTool,
       Optional<String> response,
       boolean userInitiated) {
     return new ChatMessageEntity(
@@ -92,7 +93,7 @@ public class ChatMessageEntity extends AbstractChatMessageEntity {
         ChatMessageType.TOOL_CALL,
         response,
         Optional.of(callId),
-        Optional.of(toolName),
+        Optional.of(noteChatTool.name()),
         userInitiated);
   }
 }

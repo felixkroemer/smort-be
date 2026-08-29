@@ -7,6 +7,7 @@ import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.AbstractChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatRepository;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -67,7 +68,7 @@ public class ChatOrchestrationService {
             storeNoteToolChatMessage.meta().responseId(),
             Optional.empty(),
             storeNoteToolChatMessage.callId(),
-            storeNoteToolChatMessage.toolName(),
+            NoteChatToolType.STORE_NOTE,
             Optional.empty(),
             true);
 
@@ -83,7 +84,7 @@ public class ChatOrchestrationService {
 
   public List<ChatMessageEntity> noteChat(
       String pk,
-      NoteChatContext ctx,
+      NoteChatContext<?> ctx,
       String message,
       TriConsumer<TransactWriteItemsEnhancedRequest.Builder, String, String> storeNoteHandler) {
 
@@ -93,14 +94,20 @@ public class ChatOrchestrationService {
 
     var chatMessage = noteChatService.chat(ctx, message, latestChatMessageResponseId);
 
-    return handleChatMessageResponse(
-        chatMessage, pk, ctx.noteId(), message, latestChatMessageResponseId, storeNoteHandler);
+    switch (chatMessage) {
+      case TextChatMessage r -> {
+        return handleChatMessageTextResponse(
+            pk, ctx.noteId(), message, r, latestChatMessageResponseId);
+      }
+      case StoreNoteToolChatMessage r -> {
+        return handleStoreNoteToolResponse(
+            pk, ctx.noteId(), message, r, latestChatMessageResponseId, storeNoteHandler);
+      }
+      default -> throw new SmortException("Unexpected message type received");
+    }
   }
 
-  public List<ChatMessageEntity> deckChat(
-      String pk,
-      DeckChatContext ctx,
-      String message) {
+  public List<ChatMessageEntity> deckChat(String pk, DeckChatContext ctx, String message) {
 
     var latestChatMessage = chatRepository.findLatestChatMessage(pk, ctx.deckId());
     var latestChatMessageResponseId =
@@ -108,26 +115,12 @@ public class ChatOrchestrationService {
 
     var chatMessage = deckChatService.chat(ctx, message, latestChatMessageResponseId);
 
-    return handleChatMessageResponse(
-        chatMessage, pk, ctx.deckId(), message, latestChatMessageResponseId,
-        (tx, front, back) -> {});
-  }
-
-  public <T> List<ChatMessageEntity> handleChatMessageResponse(
-      ChatMessage chatMessage,
-      String pk,
-      T entityId,
-      String message,
-      Optional<String> latestChatMessageResponseId,
-      TriConsumer<TransactWriteItemsEnhancedRequest.Builder, String, String> storeNoteHandler) {
     switch (chatMessage) {
       case TextChatMessage r -> {
-        return handleChatMessageTextResponse(pk, entityId, message, r, latestChatMessageResponseId);
+        return handleChatMessageTextResponse(
+            pk, ctx.deckId(), message, r, latestChatMessageResponseId);
       }
-      case StoreNoteToolChatMessage r -> {
-        return handleStoreNoteToolResponse(
-            pk, entityId, message, r, latestChatMessageResponseId, storeNoteHandler);
-      }
+      default -> throw new SmortException("Unexpected message type received");
     }
   }
 
@@ -146,13 +139,12 @@ public class ChatOrchestrationService {
             storeNoteToolChatMessageResponse.meta().responseId(),
             latestChatMessageResponseId,
             storeNoteToolChatMessageResponse.callId(),
-            storeNoteToolChatMessageResponse.toolName(),
+            NoteChatToolType.STORE_NOTE,
             Optional.empty(),
             false);
     var ackResponse =
         noteChatService.acknowledgeStoreNoteToolCall(
-            storeNoteToolChatMessageResponse.callId(),
-            storeNoteToolChatMessageResponse.meta().responseId());
+            storeNoteToolChatMessageResponse.callId(), storeNoteToolChatMessageResponse.meta().responseId());
     if (ackResponse instanceof TextChatMessage(String text, ChatMessageMeta meta)) {
       var chatMessageEntity =
           ChatMessageEntity.text(
@@ -162,9 +154,7 @@ public class ChatOrchestrationService {
             chatRepository.saveInTx(tx, toolCallChatMessageEntity);
             chatRepository.saveInTx(tx, chatMessageEntity);
             storeNoteHandler.accept(
-                tx,
-                storeNoteToolChatMessageResponse.front(),
-                storeNoteToolChatMessageResponse.back());
+                tx, storeNoteToolChatMessageResponse.front(), storeNoteToolChatMessageResponse.back());
           });
       return List.of(toolCallChatMessageEntity, chatMessageEntity);
     } else {

@@ -23,7 +23,7 @@ public class DeckChatService {
       Your task is to assist the user in learning about and improving their Anki deck.
       You can discuss the deck's content, help identify gaps, and suggest improvements.
 
-      For the formatting, consider these rules:
+      The deck currently contains these notes:
       %s
       """;
 
@@ -33,7 +33,7 @@ public class DeckChatService {
 
     ResponseCreateParams params =
         ResponseCreateParams.builder()
-            .instructions(CHAT_INSTRUCTIONS.formatted(ChatUtil.formatInstructions()))
+            .instructions(CHAT_INSTRUCTIONS.formatted(String.join("\n", ctx.notes())))
             .input(fullInput)
             .previousResponseId(previousResponseId)
             .model(model)
@@ -53,7 +53,8 @@ public class DeckChatService {
     var meta = new ChatMessageMeta(response.id(), response.previousResponseId(), Instant.now());
 
     if (responseOutputItem.isMessage()) {
-      ResponseOutputText outputText = ChatUtil.getResponseOutputText(responseOutputItem.asMessage());
+      ResponseOutputText outputText =
+          ChatUtil.getResponseOutputText(responseOutputItem.asMessage());
       return new TextChatMessage(outputText.text(), meta);
     } else {
       throw new SmortException("Unexpected response output item type");

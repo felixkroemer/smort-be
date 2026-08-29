@@ -164,7 +164,10 @@ public class DeckService {
             .findDeckMetaByDeckId(deckId)
             .orElseThrow(() -> new NotFoundException("Could not find deck. deckId={}", deckId));
 
-    var ctx = new DeckChatContext(deckId, deck.getName());
+    
+    var notes = deckRepository.findNotesByDeckId(deckId).stream().map(NoteEntity::getFront).toList();
+    
+    var ctx = new DeckChatContext(deckId, deck.getName(), notes);
     return chatOrchestrationService.deckChat(DeckKeys.deckPk(deckId), ctx, message);
   }
 
