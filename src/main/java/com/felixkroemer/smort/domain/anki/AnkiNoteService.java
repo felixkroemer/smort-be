@@ -24,7 +24,6 @@ public class AnkiNoteService {
   private final AnkiNoteRepository ankiNoteRepository;
   private final DerivedNoteRepository derivedNoteRepository;
   private final ChatOrchestrationService chatOrchestrationService;
-  private final ChatService chatService;
   private final AnkiNoteTypeService noteTypeService;
   private final AnalysisService analysisService;
   private final DerivedNoteEntityMapper derivedNoteEntityMapper;
@@ -84,10 +83,10 @@ public class AnkiNoteService {
   public List<ChatMessageEntity> chat(UUID analysisId, Long noteId, String message) {
     var content = getContent(analysisId, noteId);
 
-    return chatOrchestrationService.chat(
+    var ctx = new NoteChatContext<>(noteId, content);
+    return chatOrchestrationService.noteChat(
         AnalysisKeys.analysisPk(analysisId),
-        noteId,
-        content,
+        ctx,
         message,
         (tx, front, back) -> {
           derivedNoteRepository.saveInTx(

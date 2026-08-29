@@ -2,6 +2,7 @@ package com.felixkroemer.smort.domain.deck;
 
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
+import com.felixkroemer.smort.domain.chat.NoteChatContext;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.domain.deck.mapping.NoteEntityMapper;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
@@ -58,10 +59,10 @@ public class NoteService {
             .findNoteByDeckIdAndNoteId(deckId, noteId)
             .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
 
-    return chatOrchestrationService.chat(
+    var ctx = new NoteChatContext<>(noteId, note.getContent());
+    return chatOrchestrationService.noteChat(
         DeckKeys.deckPk(deckId),
-        noteId,
-        note.getContent(),
+        ctx,
         message,
         (tx, front, back) -> {
           deckRepository.saveNoteInTx(

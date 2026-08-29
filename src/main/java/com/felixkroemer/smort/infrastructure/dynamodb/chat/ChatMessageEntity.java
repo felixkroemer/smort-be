@@ -22,11 +22,11 @@ public class ChatMessageEntity extends AbstractChatMessageEntity {
   @Getter(onMethod_ = @DynamoDbSortKey)
   private String sk;
 
-  private String noteId;
+  private String entityId;
 
   public ChatMessageEntity(
       String pk,
-      String noteId,
+      String entityId,
       Optional<String> message,
       String responseId,
       Optional<String> previousResponseId,
@@ -46,21 +46,21 @@ public class ChatMessageEntity extends AbstractChatMessageEntity {
         responseId,
         previousResponseId,
         createdAt);
-    this.noteId = noteId;
+    this.entityId = entityId;
     this.pk = pk;
-    this.sk = ChatKeys.chatMessageSk(noteId, createdAt, responseId, userInitiated);
+    this.sk = ChatKeys.chatMessageSk(entityId, createdAt, responseId, userInitiated);
   }
 
   public static <T> ChatMessageEntity text(
       String pk,
-      T noteId,
+      T entityId,
       Optional<String> message,
       String responseId,
       Optional<String> previousResponseId,
       String text) {
     return new ChatMessageEntity(
         pk,
-        String.valueOf(noteId),
+        String.valueOf(entityId),
         message,
         responseId,
         previousResponseId,
@@ -74,7 +74,7 @@ public class ChatMessageEntity extends AbstractChatMessageEntity {
 
   public static <T> ChatMessageEntity toolCall(
       String pk,
-      T noteId,
+      T entityId,
       String message,
       String responseId,
       Optional<String> previousResponseId,
@@ -84,7 +84,7 @@ public class ChatMessageEntity extends AbstractChatMessageEntity {
       boolean userInitiated) {
     return new ChatMessageEntity(
         pk,
-        String.valueOf(noteId),
+        String.valueOf(entityId),
         Optional.of(message),
         responseId,
         previousResponseId,
