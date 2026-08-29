@@ -83,7 +83,7 @@ public class AnkiNoteService {
   public List<ChatMessageEntity> chat(UUID analysisId, Long noteId, String message) {
     var content = getContent(analysisId, noteId);
 
-    var ctx = new NoteChatContext(noteId, content);
+    var ctx = new NoteChatContext<>(noteId, content);
     return chatOrchestrationService.noteChat(
         AnalysisKeys.analysisPk(analysisId),
         ctx,

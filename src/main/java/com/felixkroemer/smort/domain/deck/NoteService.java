@@ -59,7 +59,7 @@ public class NoteService {
             .findNoteByDeckIdAndNoteId(deckId, noteId)
             .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
 
-    var ctx = new NoteChatContext(noteId, note.getContent());
+    var ctx = new NoteChatContext<>(noteId, note.getContent());
     return chatOrchestrationService.noteChat(
         DeckKeys.deckPk(deckId),
         ctx,

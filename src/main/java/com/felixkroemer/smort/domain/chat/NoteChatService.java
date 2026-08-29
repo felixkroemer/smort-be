@@ -39,8 +39,7 @@ public class NoteChatService {
     try {
       StructuredResponseCreateParams<NoteSchema> params =
           ResponseCreateParams.builder()
-              .instructions(
-                  ChatUtil.formatInstructions(formatInstructions))
+              .instructions(ChatUtil.formatInstructions(formatInstructions))
               .input(mapper.writeValueAsString(fields))
               .text(NoteSchema.class)
               .model(model)
@@ -106,12 +105,14 @@ public class NoteChatService {
   }
 
   public ChatMessage chat(
-      NoteChatContext ctx, String message, Optional<String> previousResponseId) {
+      NoteChatContext<?> ctx, String message, Optional<String> previousResponseId) {
     String fullInput =
         "Fields:\n"
             + String.join(
                 "\n",
-                ctx.fields().entrySet().stream().map(e -> e.getKey() + ": " + e.getValue()).toList())
+                ctx.fields().entrySet().stream()
+                    .map(e -> e.getKey() + ": " + e.getValue())
+                    .toList())
             + "\n\n"
             + message;
 
@@ -147,7 +148,8 @@ public class NoteChatService {
           storeNoteToolCall.back,
           meta);
     } else if (responseOutputItem.isMessage()) {
-      ResponseOutputText outputText = ChatUtil.getResponseOutputText(responseOutputItem.asMessage());
+      ResponseOutputText outputText =
+          ChatUtil.getResponseOutputText(responseOutputItem.asMessage());
       return new TextChatMessage(outputText.text(), meta);
     } else {
       throw new SmortException("Unexpected response output item type");
