@@ -4,6 +4,9 @@ import com.felixkroemer.smort.common.exception.LogSeverity;
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
+import com.felixkroemer.smort.domain.chat.ChatMessage;
+import com.felixkroemer.smort.domain.chat.StoreNoteToolChatMessage;
+import com.felixkroemer.smort.domain.chat.ToolCallHandler;
 import com.felixkroemer.smort.domain.common.BulkFormat;
 import com.felixkroemer.smort.domain.common.BulkFormatEngine;
 import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
@@ -16,6 +19,7 @@ import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -86,18 +90,23 @@ public class DeckBulkFormatService {
         job,
         notesToProcess,
         note -> {
+          Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+              Map.of(
+                  StoreNoteToolChatMessage.class,
+                  (tx, toolCall) -> {
+                    var m = (StoreNoteToolChatMessage) toolCall;
+                    note.setFront(m.front());
+                    note.setBack(m.back());
+                    note.setLastFormattedAt(Optional.of(Instant.now()));
+                    deckRepository.saveNoteInTx(tx, note);
+                  });
           chatOrchestrationService.formatNote(
               DeckKeys.deckPk(job.getDeckId()),
               note.getId(),
               note.getFront(),
               note.getBack(),
               Optional.empty(),
-              (tx, front, back) -> {
-                note.setFront(front);
-                note.setBack(back);
-                note.setLastFormattedAt(Optional.of(Instant.now()));
-                deckRepository.saveNoteInTx(tx, note);
-              });
+              toolHandlers);
         });
   }
 

@@ -1,8 +1,7 @@
 package com.felixkroemer.smort.domain.deck;
 
 import com.felixkroemer.smort.common.exception.NotFoundException;
-import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
-import com.felixkroemer.smort.domain.chat.NoteChatContext;
+import com.felixkroemer.smort.domain.chat.*;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.domain.deck.mapping.NoteEntityMapper;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
@@ -10,6 +9,7 @@ import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +35,16 @@ public class NoteService {
             .findNoteByDeckIdAndNoteId(deckId, noteId)
             .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
 
+    Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+        Map.of(
+            StoreNoteToolChatMessage.class,
+            (tx, toolCall) -> {
+              var m = (StoreNoteToolChatMessage) toolCall;
+              note.setFront(m.front());
+              note.setBack(m.back());
+              deckRepository.saveNoteInTx(tx, note);
+            });
+
     var chatMessages =
         chatOrchestrationService.formatNote(
             DeckKeys.deckPk(deckId),
@@ -42,11 +52,7 @@ public class NoteService {
             note.getFront(),
             note.getBack(),
             Optional.empty(),
-            (tx, front, back) -> {
-              note.setFront(front);
-              note.setBack(back);
-              deckRepository.saveNoteInTx(tx, note);
-            });
+            toolHandlers);
 
     log.info("Formatted note. deckId={}, noteId={}", deckId, noteId);
 
@@ -60,13 +66,18 @@ public class NoteService {
             .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
 
     var ctx = new NoteChatContext<>(noteId, note.getContent());
-    return chatOrchestrationService.noteChat(
-        DeckKeys.deckPk(deckId),
-        ctx,
-        message,
-        (tx, front, back) -> {
-          deckRepository.saveNoteInTx(
-              tx, noteEntityMapper.toNoteEntity(deckId, noteId, new NoteSchema(front, back)));
-        });
+
+    Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+        Map.of(
+            StoreNoteToolChatMessage.class,
+            (tx, toolCall) -> {
+              var m = (StoreNoteToolChatMessage) toolCall;
+              deckRepository.saveNoteInTx(
+                  tx,
+                  noteEntityMapper.toNoteEntity(
+                      deckId, noteId, new NoteSchema(m.front(), m.back())));
+            });
+
+    return chatOrchestrationService.noteChat(DeckKeys.deckPk(deckId), ctx, message, toolHandlers);
   }
 }

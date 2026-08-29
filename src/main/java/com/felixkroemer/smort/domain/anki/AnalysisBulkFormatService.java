@@ -5,6 +5,9 @@ import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.mapping.DerivedNoteEntityMapper;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
+import com.felixkroemer.smort.domain.chat.ChatMessage;
+import com.felixkroemer.smort.domain.chat.StoreNoteToolChatMessage;
+import com.felixkroemer.smort.domain.chat.ToolCallHandler;
 import com.felixkroemer.smort.domain.common.BulkFormat;
 import com.felixkroemer.smort.domain.common.BulkFormatEngine;
 import com.felixkroemer.smort.domain.common.NoteSchema;
@@ -117,27 +120,34 @@ public class AnalysisBulkFormatService {
               existingDerivedNote
                   .map(DerivedNoteEntity::getContent)
                   .orElse(noteEntity.getContent());
+          Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+              Map.of(
+                  StoreNoteToolChatMessage.class,
+                  (tx, toolCall) -> {
+                    var m = (StoreNoteToolChatMessage) toolCall;
+                    var derivedNote =
+                        existingDerivedNote
+                            .map(
+                                d -> {
+                                  d.setFront(m.front());
+                                  d.setBack(m.back());
+                                  d.setLastFormattedAt(Optional.of(Instant.now()));
+                                  return d;
+                                })
+                            .orElseGet(
+                                () ->
+                                    derivedNoteEntityMapper.toDerivedNoteEntity(
+                                        analysisId,
+                                        noteEntity.getId(),
+                                        new NoteSchema(m.front(), m.back())));
+                    derivedNoteRepository.saveInTx(tx, derivedNote);
+                  });
           chatOrchestrationService.formatNote(
               AnalysisKeys.analysisPk(analysisId),
               noteEntity.getId(),
               content,
               analysis.getFormatInstructions(),
-              (tx, front, back) -> {
-                var derivedNote =
-                    existingDerivedNote
-                        .map(
-                            d -> {
-                              d.setFront(front);
-                              d.setBack(back);
-                              d.setLastFormattedAt(Optional.of(Instant.now()));
-                              return d;
-                            })
-                        .orElseGet(
-                            () ->
-                                derivedNoteEntityMapper.toDerivedNoteEntity(
-                                    analysisId, noteEntity.getId(), new NoteSchema(front, back)));
-                derivedNoteRepository.saveInTx(tx, derivedNote);
-              });
+              toolHandlers);
         });
   }
 

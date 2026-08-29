@@ -135,7 +135,8 @@ public class NoteChatService {
       var toolType = NoteChatToolType.fromToolName(responseFunctionToolCall.name());
       switch (toolType) {
         case STORE_NOTE -> {
-          var storeNoteToolCall = responseFunctionToolCall.arguments(NoteChatTools.StoreNoteTool.class);
+          var storeNoteToolCall =
+              responseFunctionToolCall.arguments(NoteChatTools.StoreNoteTool.class);
           return new StoreNoteToolChatMessage(
               responseFunctionToolCall.callId(),
               storeNoteToolCall.front,

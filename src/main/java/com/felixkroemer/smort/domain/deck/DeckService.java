@@ -166,9 +166,9 @@ public class DeckService {
 
     
     var notes = deckRepository.findNotesByDeckId(deckId).stream().map(NoteEntity::getFront).toList();
-    
+
     var ctx = new DeckChatContext(deckId, deck.getName(), notes);
-    return chatOrchestrationService.deckChat(DeckKeys.deckPk(deckId), ctx, message);
+    return chatOrchestrationService.deckChat(DeckKeys.deckPk(deckId), ctx, message, Map.of());
   }
 
   public List<ChatMessageEntity> getChat(UUID deckId) {
