@@ -6,6 +6,7 @@ import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckBulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckMetaEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.deck.DraftNoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
 import java.net.URI;
 import org.springframework.context.annotation.Bean;
@@ -47,6 +48,11 @@ public class DynamoDbClientConfig {
   @Bean
   public DynamoDbTable<NoteEntity> noteTable(DynamoDbEnhancedClient enhancedClient) {
     return enhancedClient.table(COMMON_TABLE_NAME, TableSchema.fromBean(NoteEntity.class));
+  }
+
+  @Bean
+  public DynamoDbTable<DraftNoteEntity> draftNoteTable(DynamoDbEnhancedClient enhancedClient) {
+    return enhancedClient.table(COMMON_TABLE_NAME, TableSchema.fromBean(DraftNoteEntity.class));
   }
 
   @Bean

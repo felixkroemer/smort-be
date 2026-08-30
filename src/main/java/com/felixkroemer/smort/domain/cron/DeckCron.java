@@ -1,6 +1,7 @@
 package com.felixkroemer.smort.domain.cron;
 
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckRepository;
+import com.felixkroemer.smort.infrastructure.dynamodb.deck.DraftNoteRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 public class DeckCron {
 
   private final DeckRepository deckRepository;
+  private final DraftNoteRepository draftNoteRepository;
 
   @Scheduled(cron = "${app.scheduling.delete-marked-decks-cron}")
   public void deleteDecksMarkedForDeletion() {
@@ -19,6 +21,7 @@ public class DeckCron {
     for (var deckMeta : decksMarkedForDeletion) {
       try {
         deckRepository.deleteDeckNotes(deckMeta.getDeckId());
+        draftNoteRepository.delete(deckMeta.getDeckId());
         deckRepository.deleteDeckMeta(deckMeta.getDeckId());
       } catch (Exception e) {
         log.error(
