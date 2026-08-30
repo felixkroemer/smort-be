@@ -37,6 +37,7 @@ public class DeckBulkFormatService {
   private final ChatOrchestrationService chatOrchestrationService;
   private final BulkFormatEntityMapper bulkFormatEntityMapper;
   private final BulkFormatEngine bulkFormatEngine;
+  private final DeckService deckService;
 
   public void startBulkFormat(UUID deckId, boolean reformatAlreadyFormatted) {
     var existing = bulkFormatRepository.findBulkFormatByDeckId(deckId);
@@ -86,6 +87,7 @@ public class DeckBulkFormatService {
   }
 
   private void processNotes(DeckBulkFormatEntity job, List<NoteEntity> notesToProcess) {
+    var formatInstructions = deckService.getDeckSettings(job.getDeckId()).formatInstructions();
     bulkFormatEngine.process(
         job,
         notesToProcess,
@@ -105,7 +107,7 @@ public class DeckBulkFormatService {
               note.getId(),
               note.getFront(),
               note.getBack(),
-              Optional.empty(),
+              formatInstructions,
               toolHandlers);
         });
   }
