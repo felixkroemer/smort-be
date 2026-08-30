@@ -96,6 +96,7 @@ public class ChatOrchestrationService {
       case StoreNoteToolChatMessage r ->
           handleStoreNoteToolResponse(
               pk, ctx.noteId(), message, r, latestChatMessageResponseId, toolHandlers);
+      default -> throw new SmortException("Unexpected message type received");
     };
   }
 
