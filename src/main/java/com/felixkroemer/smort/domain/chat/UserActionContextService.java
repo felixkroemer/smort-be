@@ -8,7 +8,6 @@ import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageType;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatRepository;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +18,7 @@ public class UserActionContextService {
   private final ChatRepository chatRepository;
   private final ObjectMapper mapper;
 
-  public <T> Optional<String> buildContext(String pk, T entityId) {
+  public <T> String buildContext(String pk, T entityId) {
     var messages = chatRepository.findAll(pk, entityId);
 
     var userInitiatedMessages = new ArrayList<ChatMessageEntity>();
@@ -41,11 +40,11 @@ public class UserActionContextService {
             .toList();
 
     if (entries.isEmpty()) {
-      return Optional.empty();
+      return "no user initiated messages";
     }
 
     try {
-      return Optional.of("Recent user actions:\n" + mapper.writeValueAsString(entries));
+      return "Recent user actions:\n" + mapper.writeValueAsString(entries);
     } catch (JsonProcessingException e) {
       throw new SmortException("Could not serialize user action context", e);
     }

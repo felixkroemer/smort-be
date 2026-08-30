@@ -112,7 +112,7 @@ public class NoteChatService {
       String message,
       Optional<String> formatInstructions,
       Optional<String> previousResponseId,
-      Optional<String> userActionContext) {
+      String userActionContext) {
     String fieldsBlock =
         String.join(
             "\n",
@@ -126,7 +126,7 @@ public class NoteChatService {
                 CHAT_INSTRUCTIONS.formatted(
                     fieldsBlock,
                     ChatUtil.formatInstructions(formatInstructions),
-                    userActionContext.orElse("")))
+                    userActionContext))
             .input(message)
             .previousResponseId(previousResponseId)
             .model(model)

@@ -55,7 +55,7 @@ public class DeckChatService {
       String message,
       Optional<String> formatInstructions,
       Optional<String> previousResponseId,
-      Optional<String> userActionContext) {
+      String userActionContext) {
     var draftSection =
         ctx.draft()
             .map(d -> "Front: %s\nBack: %s".formatted(d.front(), d.back()))
@@ -69,7 +69,7 @@ public class DeckChatService {
                     ChatUtil.formatInstructions(formatInstructions),
                     String.join("\n", ctx.notes()),
                     draftSection,
-                    userActionContext.orElse("")))
+                    userActionContext))
             .input(message)
             .previousResponseId(previousResponseId)
             .model(model)
