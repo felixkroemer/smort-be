@@ -8,6 +8,9 @@
 - When a task or plan is complete, push the feature branch to origin. Do not
   present the finishing-a-development-branch menu; pushing to origin is the
   expected completion flow.
+- Never merge the feature branch into main/master yourself. Stop after pushing
+  the branch and let the human review it. Only merge when the human explicitly
+  asks you to merge.
 - Implementation plans and spec documents (in docs/superpowers/) live on the
   feature branch only; do not merge them into main.
 
