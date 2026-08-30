@@ -9,4 +9,9 @@ public class DeckChatTools {
     public String front;
     public String back;
   }
+
+  static class AddNoteTool {
+    public String front;
+    public String back;
+  }
 }
