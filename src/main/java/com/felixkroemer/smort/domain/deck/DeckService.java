@@ -267,7 +267,7 @@ public class DeckService {
 
     var txBuilder = TransactWriteItemsEnhancedRequest.builder();
     deckRepository.saveNoteInTx(txBuilder, note);
-    draftNoteRepository.deleteInTx(txBuilder, deckId);
+    draftNoteRepository.deleteInTxIfPresent(txBuilder, deckId);
     chatRepository.saveInTx(txBuilder, addNoteMessageEntity);
     enhancedClient.transactWriteItems(txBuilder.build());
 

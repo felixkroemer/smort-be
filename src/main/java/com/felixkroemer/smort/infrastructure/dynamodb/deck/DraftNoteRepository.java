@@ -22,7 +22,7 @@ public class DraftNoteRepository {
     txBuilder.addPutItem(draftNoteTable, entity);
   }
 
-  public void deleteInTx(TransactWriteItemsEnhancedRequest.Builder txBuilder, UUID deckId) {
+  public void deleteInTxIfPresent(TransactWriteItemsEnhancedRequest.Builder txBuilder, UUID deckId) {
     var key =
         Key.builder()
             .partitionValue(DeckKeys.deckPk(deckId))
