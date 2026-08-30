@@ -43,11 +43,15 @@ public class NoteChatService {
       """;
 
   public StoreNoteToolChatMessage formatNote(
-      Map<String, String> fields, Optional<String> formatInstructions) {
+      Map<String, String> fields,
+      Optional<String> formatInstructions,
+      Optional<String> userActionContext) {
     try {
       StructuredResponseCreateParams<NoteSchema> params =
           ResponseCreateParams.builder()
-              .instructions(ChatUtil.formatInstructions(formatInstructions))
+              .instructions(
+                  ChatUtil.appendUserActions(
+                      ChatUtil.formatInstructions(formatInstructions), userActionContext))
               .input(mapper.writeValueAsString(fields))
               .text(NoteSchema.class)
               .model(model)
@@ -109,7 +113,8 @@ public class NoteChatService {
       NoteChatContext<?> ctx,
       String message,
       Optional<String> formatInstructions,
-      Optional<String> previousResponseId) {
+      Optional<String> previousResponseId,
+      Optional<String> userActionContext) {
     String fieldsBlock =
         String.join(
             "\n",
@@ -120,7 +125,10 @@ public class NoteChatService {
     ResponseCreateParams params =
         ResponseCreateParams.builder()
             .instructions(
-                CHAT_INSTRUCTIONS.formatted(fieldsBlock, ChatUtil.formatInstructions(formatInstructions)))
+                ChatUtil.appendUserActions(
+                    CHAT_INSTRUCTIONS.formatted(
+                        fieldsBlock, ChatUtil.formatInstructions(formatInstructions)),
+                    userActionContext))
             .input(message)
             .previousResponseId(previousResponseId)
             .model(model)

@@ -21,6 +21,7 @@ public class ChatOrchestrationService {
   private final DeckChatService deckChatService;
   private final ChatRepository chatRepository;
   private final DynamoDbEnhancedClient enhancedClient;
+  private final UserActionContextService userActionContextService;
 
   public <T> List<ChatMessageEntity> getChat(String pk, T entityId) {
     return chatRepository.findAll(pk, entityId);
@@ -43,7 +44,9 @@ public class ChatOrchestrationService {
       Map<String, String> content,
       Optional<String> formatInstructions,
       Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
-    var storeNoteToolChatMessage = noteChatService.formatNote(content, formatInstructions);
+    var userActionContext = userActionContextService.buildContext(pk, entityId);
+    var storeNoteToolChatMessage =
+        noteChatService.formatNote(content, formatInstructions, userActionContext);
 
     var formatChatMessageEntity =
         ChatMessageEntity.toolCall(
@@ -77,8 +80,11 @@ public class ChatOrchestrationService {
             .findLatestChatMessage(pk, ctx.noteId())
             .map(AbstractChatMessageEntity::getResponseId);
 
+    var userActionContext = userActionContextService.buildContext(pk, ctx.noteId());
+
     var chatMessage =
-        noteChatService.chat(ctx, message, formatInstructions, latestChatMessageResponseId);
+        noteChatService.chat(
+            ctx, message, formatInstructions, latestChatMessageResponseId, userActionContext);
 
     return switch (chatMessage) {
       case TextChatMessage r ->
