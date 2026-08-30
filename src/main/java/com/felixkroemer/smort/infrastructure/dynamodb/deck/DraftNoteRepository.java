@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
+import software.amazon.awssdk.enhanced.dynamodb.model.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest;
 
 @Repository
@@ -22,12 +23,17 @@ public class DraftNoteRepository {
   }
 
   public void deleteInTx(TransactWriteItemsEnhancedRequest.Builder txBuilder, UUID deckId) {
-    txBuilder.addDeleteItem(
-        draftNoteTable,
+    var key =
         Key.builder()
             .partitionValue(DeckKeys.deckPk(deckId))
             .sortValue(DraftNoteKeys.draftNoteSk())
-            .build());
+            .build();
+    var condition =
+        Expression.builder()
+            .expression("attribute_exists(pk) AND attribute_exists(sk)")
+            .build();
+    txBuilder.addDeleteItem(
+        draftNoteTable, key, builder -> builder.conditionExpression(condition));
   }
 
   public Optional<DraftNoteEntity> findDraftNote(UUID deckId) {
