@@ -26,6 +26,7 @@ public class NoteService {
   private final ChatOrchestrationService chatOrchestrationService;
   private final ChatRepository chatRepository;
   private final NoteEntityMapper noteEntityMapper;
+  private final DeckService deckService;
 
   public Optional<NoteEntity> getNote(UUID deckId, UUID noteId) {
     return deckRepository.findNoteByDeckIdAndNoteId(deckId, noteId);
@@ -47,13 +48,14 @@ public class NoteService {
               deckRepository.saveNoteInTx(tx, note);
             });
 
+    var formatInstructions = deckService.getDeckSettings(deckId).formatInstructions();
     var chatMessages =
         chatOrchestrationService.formatNote(
             DeckKeys.deckPk(deckId),
             noteId,
             note.getFront(),
             note.getBack(),
-            Optional.empty(),
+            formatInstructions,
             toolHandlers);
 
     log.info("Formatted note. deckId={}, noteId={}", deckId, noteId);

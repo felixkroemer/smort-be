@@ -6,9 +6,11 @@ import com.felixkroemer.smort.application.chat.dto.ChatMessageRequest;
 import com.felixkroemer.smort.application.chat.dto.ChatMessageResponse;
 import com.felixkroemer.smort.application.chat.mapping.ChatMessageRestMapper;
 import com.felixkroemer.smort.application.deck.dto.DeckResponse;
+import com.felixkroemer.smort.application.deck.dto.DeckSettingsResponse;
 import com.felixkroemer.smort.application.deck.dto.DraftNoteResponse;
 import com.felixkroemer.smort.application.deck.dto.ImportAnalysisRequest;
 import com.felixkroemer.smort.application.deck.dto.NoteResponse;
+import com.felixkroemer.smort.application.deck.dto.UpdateDeckSettingsRequest;
 import com.felixkroemer.smort.application.deck.mapping.DeckRestMapper;
 import com.felixkroemer.smort.application.deck.mapping.DraftNoteRestMapper;
 import com.felixkroemer.smort.application.deck.mapping.NoteRestMapper;
@@ -50,6 +52,19 @@ public class DeckController {
   public List<DeckResponse> getDecks() {
     var decks = deckService.getDecks();
     return deckRestMapper.toDeckResponse(decks);
+  }
+
+  @GetMapping("/{deckId}/settings")
+  public DeckSettingsResponse getDeckSettings(@PathVariable("deckId") UUID deckId) {
+    return deckRestMapper.toDeckSettingsResponse(deckService.getDeckSettings(deckId));
+  }
+
+  @PatchMapping("/{deckId}/settings")
+  public DeckSettingsResponse updateDeckSettings(
+      @PathVariable("deckId") UUID deckId,
+      @RequestBody UpdateDeckSettingsRequest updateDeckSettingsRequest) {
+    return deckRestMapper.toDeckSettingsResponse(
+        deckService.updateDeckSettings(deckId, updateDeckSettingsRequest.formatInstructions()));
   }
 
   @GetMapping("/{deckId}/notes/{noteId}")
