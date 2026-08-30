@@ -5,7 +5,8 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public enum DeckChatToolType {
-  DRAFT_NOTE(DeckChatTools.DraftNoteTool.class);
+  DRAFT_NOTE(DeckChatTools.DraftNoteTool.class),
+  ADD_NOTE(DeckChatTools.AddNoteTool.class);
   private final Class<?> parserClass;
 
   static DeckChatToolType fromToolName(String name) {
