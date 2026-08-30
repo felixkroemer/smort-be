@@ -179,6 +179,19 @@ public class DeckService {
     deckRepository.saveDeckMeta(deck);
   }
 
+  public DeckSettings getDeckSettings(UUID deckId) {
+    return new DeckSettings(getMeta(deckId).getFormatInstructions());
+  }
+
+  public DeckSettings updateDeckSettings(UUID deckId, Optional<String> formatInstructions) {
+    var deck = getMeta(deckId);
+    if (formatInstructions != null) {
+      deck.setFormatInstructions(formatInstructions);
+      deckRepository.saveDeckMeta(deck);
+    }
+    return new DeckSettings(deck.getFormatInstructions());
+  }
+
   public void deleteNote(UUID deckId, UUID noteId) {
     deckRepository.deleteNoteByDeckIdAndNoteId(deckId, noteId);
   }
