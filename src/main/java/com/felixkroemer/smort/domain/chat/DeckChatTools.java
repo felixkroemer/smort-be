@@ -10,6 +10,7 @@ public class DeckChatTools {
     public String back;
   }
 
+  @JsonClassDescription("Add a new ankiNote to the deck.")
   static class AddNoteTool {
     public String front;
     public String back;
