@@ -37,6 +37,12 @@ public class DeckChatService {
       %s
       """;
 
+  private static final String DRAFT_ACK_INSTRUCTIONS =
+      """
+      Confirm to the user that the draft note was created. Keep it to one short sentence.
+      Do not repeat, quote, or restate the drafted note's front or back content.
+      """;
+
   public ChatMessage chat(
       DeckChatContext ctx, String message, Optional<String> previousResponseId) {
     String fullInput = "Deck: " + ctx.deckName() + "\n\n" + message;
@@ -94,7 +100,7 @@ public class DeckChatService {
   public ChatMessage acknowledgeDraftNoteToolCall(String callId, String previousResponseId) {
     ResponseCreateParams params =
         ResponseCreateParams.builder()
-            .instructions(CHAT_INSTRUCTIONS.formatted(ChatUtil.formattingRules(), ""))
+            .instructions(DRAFT_ACK_INSTRUCTIONS)
             .input(
                 ResponseCreateParams.Input.ofResponse(
                     List.of(
