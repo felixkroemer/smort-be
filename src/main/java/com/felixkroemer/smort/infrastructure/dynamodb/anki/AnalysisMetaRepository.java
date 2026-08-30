@@ -34,12 +34,32 @@ public class AnalysisMetaRepository {
   public List<AnalysisMetaEntity> findAllAnalysisMetas() {
     Expression filter =
         Expression.builder()
-            .expression("#sk = :sk AND begins_with(#pk, :pkPrefix)")
-            .expressionNames(Map.of("#sk", "sk", "#pk", "pk"))
+            .expression("#sk = :sk AND begins_with(#pk, :pkPrefix) AND #status <> :status")
+            .expressionNames(Map.of("#sk", "sk", "#pk", "pk", "#status", "status"))
             .expressionValues(
                 Map.of(
                     ":sk", AttributeValue.fromS(MetaKeys.metaSk()),
-                    ":pkPrefix", AttributeValue.fromS(AnalysisKeys.analysisPkPrefix())))
+                    ":pkPrefix", AttributeValue.fromS(AnalysisKeys.analysisPkPrefix()),
+                    ":status", AttributeValue.fromS(AnalysisStatus.MARKED_FOR_DELETION.toString())))
+            .build();
+
+    return analysisMetaTable
+        .scan(ScanEnhancedRequest.builder().filterExpression(filter).build())
+        .items()
+        .stream()
+        .toList();
+  }
+
+  public List<AnalysisMetaEntity> scanForAnalysesMarkedForDeletion() {
+    Expression filter =
+        Expression.builder()
+            .expression("#sk = :sk AND begins_with(#pk, :pkPrefix) AND #status = :status")
+            .expressionNames(Map.of("#sk", "sk", "#pk", "pk", "#status", "status"))
+            .expressionValues(
+                Map.of(
+                    ":sk", AttributeValue.fromS(MetaKeys.metaSk()),
+                    ":pkPrefix", AttributeValue.fromS(AnalysisKeys.analysisPkPrefix()),
+                    ":status", AttributeValue.fromS(AnalysisStatus.MARKED_FOR_DELETION.toString())))
             .build();
 
     return analysisMetaTable
