@@ -69,6 +69,8 @@ public class NoteService {
             .findNoteByDeckIdAndNoteId(deckId, noteId)
             .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
 
+    var formatInstructions = deckService.getDeckSettings(deckId).formatInstructions();
+
     var ctx = new NoteChatContext<>(noteId, note.getContent());
 
     Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
@@ -82,7 +84,8 @@ public class NoteService {
                       deckId, noteId, new NoteSchema(m.front(), m.back())));
             });
 
-    return chatOrchestrationService.noteChat(DeckKeys.deckPk(deckId), ctx, message, toolHandlers);
+    return chatOrchestrationService.noteChat(
+        DeckKeys.deckPk(deckId), ctx, message, formatInstructions, toolHandlers);
   }
 
   public void clearChat(UUID deckId, UUID noteId) {

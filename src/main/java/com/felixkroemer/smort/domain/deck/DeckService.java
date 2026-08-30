@@ -199,6 +199,8 @@ public class DeckService {
   public List<ChatMessageEntity> chat(UUID deckId, String message) {
     var deck = getMeta(deckId);
 
+    var formatInstructions = getDeckSettings(deckId).formatInstructions();
+
     var notes =
         deckRepository.findNotesByDeckId(deckId).stream().map(NoteEntity::getFront).toList();
 
@@ -217,7 +219,8 @@ public class DeckService {
               draftNoteRepository.saveInTx(tx, new DraftNoteEntity(deckId, m.front(), m.back()));
             });
 
-    return chatOrchestrationService.deckChat(DeckKeys.deckPk(deckId), ctx, message, toolHandlers);
+    return chatOrchestrationService.deckChat(
+        DeckKeys.deckPk(deckId), ctx, message, formatInstructions, toolHandlers);
   }
 
   public List<ChatMessageEntity> getChat(UUID deckId) {
