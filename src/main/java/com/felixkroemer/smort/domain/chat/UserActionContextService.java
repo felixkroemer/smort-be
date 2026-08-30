@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageType;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatRepository;
 import java.util.ArrayList;
 import java.util.Map;
@@ -21,21 +22,21 @@ public class UserActionContextService {
   public <T> Optional<String> buildContext(String pk, T entityId) {
     var messages = chatRepository.findAll(pk, entityId);
 
-    var consecutiveRun = new ArrayList<ChatMessageEntity>();
+    var userInitiatedMessages = new ArrayList<ChatMessageEntity>();
     for (var message : messages) {
       if (!message.isUserInitiated()) {
         break;
       }
-      consecutiveRun.add(message);
+      userInitiatedMessages.add(message);
     }
 
-    if (consecutiveRun.isEmpty()) {
+    if (userInitiatedMessages.isEmpty()) {
       return Optional.empty();
     }
 
     var entries =
-        consecutiveRun.reversed().stream()
-            .filter(m -> m.getToolName().isPresent())
+        userInitiatedMessages.reversed().stream()
+            .filter(m -> m.getType() == ChatMessageType.TOOL_CALL)
             .map(
                 m ->
                     Map.<String, Object>of(
