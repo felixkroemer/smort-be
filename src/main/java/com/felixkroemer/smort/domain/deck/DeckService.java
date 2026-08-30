@@ -246,11 +246,7 @@ public class DeckService {
   }
 
   public List<ChatMessageEntity> storeDraftNote(UUID deckId) {
-    var draft =
-        draftNoteRepository
-            .findDraftNote(deckId)
-            .orElseThrow(
-                () -> new NotFoundException("Could not find draft note. deckId={}", deckId));
+    var draft = getDraftNote(deckId);
 
     var note =
         noteEntityMapper.toNoteEntity(
