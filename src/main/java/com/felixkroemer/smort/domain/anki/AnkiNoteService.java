@@ -52,28 +52,34 @@ public class AnkiNoteService {
     var analysis = analysisService.getAnalysis(analysisId);
     var content = getContent(analysisId, noteId);
 
-    var chatMessages =
-        chatOrchestrationService.formatNote(
-            AnalysisKeys.analysisPk(analysisId),
-            noteId,
-            content,
-            analysis.getFormatInstructions(),
-            (tx, front, back) -> {
+    Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+        Map.of(
+            StoreNoteToolChatMessage.class,
+            (tx, toolCall) -> {
+              var m = (StoreNoteToolChatMessage) toolCall;
               var derivedNote =
                   getDerivedNote(analysisId, noteId)
                       .map(
                           d -> {
-                            d.setFront(front);
-                            d.setBack(back);
+                            d.setFront(m.front());
+                            d.setBack(m.back());
                             d.setLastFormattedAt(Optional.of(Instant.now()));
                             return d;
                           })
                       .orElseGet(
                           () ->
                               derivedNoteEntityMapper.toDerivedNoteEntity(
-                                  analysisId, noteId, new NoteSchema(front, back)));
+                                  analysisId, noteId, new NoteSchema(m.front(), m.back())));
               derivedNoteRepository.saveInTx(tx, derivedNote);
             });
+
+    var chatMessages =
+        chatOrchestrationService.formatNote(
+            AnalysisKeys.analysisPk(analysisId),
+            noteId,
+            content,
+            analysis.getFormatInstructions(),
+            toolHandlers);
 
     log.info("Formatted note. analysisId={}, noteId={}", analysisId, noteId);
 
@@ -84,15 +90,19 @@ public class AnkiNoteService {
     var content = getContent(analysisId, noteId);
 
     var ctx = new NoteChatContext<>(noteId, content);
+
+    Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+        Map.of(
+            StoreNoteToolChatMessage.class,
+            (tx, toolCall) -> {
+              var m = (StoreNoteToolChatMessage) toolCall;
+              derivedNoteRepository.saveInTx(
+                  tx,
+                  derivedNoteEntityMapper.toDerivedNoteEntity(
+                      analysisId, noteId, new NoteSchema(m.front(), m.back())));
+            });
+
     return chatOrchestrationService.noteChat(
-        AnalysisKeys.analysisPk(analysisId),
-        ctx,
-        message,
-        (tx, front, back) -> {
-          derivedNoteRepository.saveInTx(
-              tx,
-              derivedNoteEntityMapper.toDerivedNoteEntity(
-                  analysisId, noteId, new NoteSchema(front, back)));
-        });
+        AnalysisKeys.analysisPk(analysisId), ctx, message, toolHandlers);
   }
 }

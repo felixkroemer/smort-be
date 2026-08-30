@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.util.TriConsumer;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
@@ -37,9 +36,9 @@ public class ChatOrchestrationService {
       String front,
       String back,
       Optional<String> formatInstructions,
-      TriConsumer<TransactWriteItemsEnhancedRequest.Builder, String, String> storeNoteHandler) {
+      Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
     return formatNote(
-        pk, entityId, Map.of("front", front, "back", back), formatInstructions, storeNoteHandler);
+        pk, entityId, Map.of("front", front, "back", back), formatInstructions, toolHandlers);
   }
 
   public <T> List<ChatMessageEntity> formatNote(
@@ -47,7 +46,7 @@ public class ChatOrchestrationService {
       T entityId,
       Map<String, String> content,
       Optional<String> formatInstructions,
-      TriConsumer<TransactWriteItemsEnhancedRequest.Builder, String, String> storeNoteHandler) {
+      Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
     var storeNoteToolChatMessage = noteChatService.formatNote(content, formatInstructions);
 
     String result;
@@ -67,68 +66,60 @@ public class ChatOrchestrationService {
             storeNoteToolChatMessage.meta().responseId(),
             Optional.empty(),
             storeNoteToolChatMessage.callId(),
-            storeNoteToolChatMessage.toolName(),
+            NoteChatToolType.STORE_NOTE.name(),
             Optional.empty(),
             true);
 
-    enhancedClient.transactWriteItems(
-        tx -> {
-          chatRepository.saveInTx(tx, formatChatMessageEntity);
-          storeNoteHandler.accept(
-              tx, storeNoteToolChatMessage.front(), storeNoteToolChatMessage.back());
-        });
+    var txBuilder = TransactWriteItemsEnhancedRequest.builder();
+    chatRepository.saveInTx(txBuilder, formatChatMessageEntity);
+    applyToolEffect(txBuilder, storeNoteToolChatMessage, toolHandlers);
+    enhancedClient.transactWriteItems(txBuilder.build());
 
     return List.of(formatChatMessageEntity);
   }
 
   public List<ChatMessageEntity> noteChat(
       String pk,
-      NoteChatContext ctx,
+      NoteChatContext<?> ctx,
       String message,
-      TriConsumer<TransactWriteItemsEnhancedRequest.Builder, String, String> storeNoteHandler) {
-
-    var latestChatMessage = chatRepository.findLatestChatMessage(pk, ctx.noteId());
+      Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
     var latestChatMessageResponseId =
-        latestChatMessage.map(AbstractChatMessageEntity::getResponseId);
+        chatRepository
+            .findLatestChatMessage(pk, ctx.noteId())
+            .map(AbstractChatMessageEntity::getResponseId);
 
     var chatMessage = noteChatService.chat(ctx, message, latestChatMessageResponseId);
 
-    return handleChatMessageResponse(
-        chatMessage, pk, ctx.noteId(), message, latestChatMessageResponseId, storeNoteHandler);
+    return switch (chatMessage) {
+      case TextChatMessage r ->
+          handleChatMessageTextResponse(pk, ctx.noteId(), message, r, latestChatMessageResponseId);
+      case StoreNoteToolChatMessage r ->
+          handleStoreNoteToolResponse(
+              pk, ctx.noteId(), message, r, latestChatMessageResponseId, toolHandlers);
+      default -> throw new SmortException("Unexpected message type received");
+    };
   }
 
   public List<ChatMessageEntity> deckChat(
       String pk,
       DeckChatContext ctx,
-      String message) {
-
-    var latestChatMessage = chatRepository.findLatestChatMessage(pk, ctx.deckId());
+      String message,
+      Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
     var latestChatMessageResponseId =
-        latestChatMessage.map(AbstractChatMessageEntity::getResponseId);
+        chatRepository
+            .findLatestChatMessage(pk, ctx.deckId())
+            .map(AbstractChatMessageEntity::getResponseId);
 
     var chatMessage = deckChatService.chat(ctx, message, latestChatMessageResponseId);
 
-    return handleChatMessageResponse(
-        chatMessage, pk, ctx.deckId(), message, latestChatMessageResponseId,
-        (tx, front, back) -> {});
-  }
-
-  public <T> List<ChatMessageEntity> handleChatMessageResponse(
-      ChatMessage chatMessage,
-      String pk,
-      T entityId,
-      String message,
-      Optional<String> latestChatMessageResponseId,
-      TriConsumer<TransactWriteItemsEnhancedRequest.Builder, String, String> storeNoteHandler) {
-    switch (chatMessage) {
-      case TextChatMessage r -> {
-        return handleChatMessageTextResponse(pk, entityId, message, r, latestChatMessageResponseId);
-      }
-      case StoreNoteToolChatMessage r -> {
-        return handleStoreNoteToolResponse(
-            pk, entityId, message, r, latestChatMessageResponseId, storeNoteHandler);
-      }
-    }
+    return switch (chatMessage) {
+      case TextChatMessage r ->
+          handleChatMessageTextResponse(pk, ctx.deckId(), message, r, latestChatMessageResponseId);
+      case DraftNoteToolChatMessage r ->
+          handleDraftNoteToolResponse(
+              pk, ctx.deckId(), message, r, latestChatMessageResponseId, toolHandlers);
+      default -> throw new SmortException("Unexpected message type received");
+    };
   }
 
   private @NonNull <T> List<ChatMessageEntity> handleStoreNoteToolResponse(
@@ -137,7 +128,7 @@ public class ChatOrchestrationService {
       String message,
       StoreNoteToolChatMessage storeNoteToolChatMessageResponse,
       Optional<String> latestChatMessageResponseId,
-      TriConsumer<TransactWriteItemsEnhancedRequest.Builder, String, String> storeNoteHandler) {
+      Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
     var toolCallChatMessageEntity =
         ChatMessageEntity.toolCall(
             pk,
@@ -146,7 +137,7 @@ public class ChatOrchestrationService {
             storeNoteToolChatMessageResponse.meta().responseId(),
             latestChatMessageResponseId,
             storeNoteToolChatMessageResponse.callId(),
-            storeNoteToolChatMessageResponse.toolName(),
+            NoteChatToolType.STORE_NOTE.name(),
             Optional.empty(),
             false);
     var ackResponse =
@@ -157,19 +148,63 @@ public class ChatOrchestrationService {
       var chatMessageEntity =
           ChatMessageEntity.text(
               pk, entityId, Optional.empty(), meta.responseId(), latestChatMessageResponseId, text);
-      enhancedClient.transactWriteItems(
-          tx -> {
-            chatRepository.saveInTx(tx, toolCallChatMessageEntity);
-            chatRepository.saveInTx(tx, chatMessageEntity);
-            storeNoteHandler.accept(
-                tx,
-                storeNoteToolChatMessageResponse.front(),
-                storeNoteToolChatMessageResponse.back());
-          });
+      var txBuilder = TransactWriteItemsEnhancedRequest.builder();
+      chatRepository.saveInTx(txBuilder, toolCallChatMessageEntity);
+      chatRepository.saveInTx(txBuilder, chatMessageEntity);
+      applyToolEffect(txBuilder, storeNoteToolChatMessageResponse, toolHandlers);
+      enhancedClient.transactWriteItems(txBuilder.build());
       return List.of(toolCallChatMessageEntity, chatMessageEntity);
     } else {
       throw new SmortException("Expected ChatMessageTextResponse in response to tool call ack.");
     }
+  }
+
+  private @NonNull <T> List<ChatMessageEntity> handleDraftNoteToolResponse(
+      String pk,
+      T entityId,
+      String message,
+      DraftNoteToolChatMessage draftNoteToolChatMessageResponse,
+      Optional<String> latestChatMessageResponseId,
+      Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
+    var toolCallChatMessageEntity =
+        ChatMessageEntity.toolCall(
+            pk,
+            entityId,
+            message,
+            draftNoteToolChatMessageResponse.meta().responseId(),
+            latestChatMessageResponseId,
+            draftNoteToolChatMessageResponse.callId(),
+            DeckChatToolType.DRAFT_NOTE.name(),
+            Optional.empty(),
+            false);
+    var ackResponse =
+        deckChatService.acknowledgeDraftNoteToolCall(
+            draftNoteToolChatMessageResponse.callId(),
+            draftNoteToolChatMessageResponse.meta().responseId());
+    if (ackResponse instanceof TextChatMessage(String text, ChatMessageMeta meta)) {
+      var chatMessageEntity =
+          ChatMessageEntity.text(
+              pk, entityId, Optional.empty(), meta.responseId(), latestChatMessageResponseId, text);
+      var txBuilder = TransactWriteItemsEnhancedRequest.builder();
+      chatRepository.saveInTx(txBuilder, toolCallChatMessageEntity);
+      chatRepository.saveInTx(txBuilder, chatMessageEntity);
+      applyToolEffect(txBuilder, draftNoteToolChatMessageResponse, toolHandlers);
+      enhancedClient.transactWriteItems(txBuilder.build());
+      return List.of(toolCallChatMessageEntity, chatMessageEntity);
+    } else {
+      throw new SmortException("Expected ChatMessageTextResponse in response to tool call ack.");
+    }
+  }
+
+  private void applyToolEffect(
+      TransactWriteItemsEnhancedRequest.Builder tx,
+      ChatMessage toolCall,
+      Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
+    var handler = toolHandlers.get(toolCall.getClass());
+    if (handler == null) {
+      throw new SmortException("No tool handler registered. toolCall={}", toolCall.getClass());
+    }
+    handler.execute(tx, toolCall);
   }
 
   private @NonNull <T> List<ChatMessageEntity> handleChatMessageTextResponse(

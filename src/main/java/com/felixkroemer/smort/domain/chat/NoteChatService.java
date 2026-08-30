@@ -1,6 +1,5 @@
 package com.felixkroemer.smort.domain.chat;
 
-import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.common.NoteSchema;
@@ -56,7 +55,6 @@ public class NoteChatService {
               .orElseThrow();
 
       return new StoreNoteToolChatMessage(
-          StoreNoteTool.class.getName(),
           "",
           content.front(),
           content.back(),
@@ -64,12 +62,6 @@ public class NoteChatService {
     } catch (Exception e) {
       throw new SmortException("Could not format ankiNote", e);
     }
-  }
-
-  @JsonClassDescription("Store a updated ankiNote.")
-  static class StoreNoteTool {
-    public String front;
-    public String back;
   }
 
   public ChatMessage acknowledgeStoreNoteToolCall(String callId, String previousResponseId) {
@@ -122,7 +114,7 @@ public class NoteChatService {
             .input(fullInput)
             .previousResponseId(previousResponseId)
             .model(model)
-            .addTool(StoreNoteTool.class)
+            .addTool(NoteChatTools.StoreNoteTool.class)
             .build();
 
     var response = openAIClient.responses().create(params);
@@ -140,13 +132,22 @@ public class NoteChatService {
 
     if (responseOutputItem.isFunctionCall()) {
       var responseFunctionToolCall = responseOutputItem.asFunctionCall();
-      var storeNoteToolCall = responseFunctionToolCall.arguments(StoreNoteTool.class);
-      return new StoreNoteToolChatMessage(
-          StoreNoteTool.class.getName(),
-          responseFunctionToolCall.callId(),
-          storeNoteToolCall.front,
-          storeNoteToolCall.back,
-          meta);
+      var toolType = NoteChatToolType.fromToolName(responseFunctionToolCall.name());
+      switch (toolType) {
+        case STORE_NOTE -> {
+          var storeNoteToolCall =
+              responseFunctionToolCall.arguments(NoteChatTools.StoreNoteTool.class);
+          return new StoreNoteToolChatMessage(
+              responseFunctionToolCall.callId(),
+              storeNoteToolCall.front,
+              storeNoteToolCall.back,
+              meta);
+        }
+        default ->
+            throw new SmortException(
+                "Unexpected tool called. toolName={}", responseFunctionToolCall.name());
+      }
+
     } else if (responseOutputItem.isMessage()) {
       ResponseOutputText outputText =
           ChatUtil.getResponseOutputText(responseOutputItem.asMessage());

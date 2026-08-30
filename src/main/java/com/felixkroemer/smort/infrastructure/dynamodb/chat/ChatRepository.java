@@ -48,10 +48,7 @@ public class ChatRepository {
         QueryEnhancedRequest.builder()
             .queryConditional(
                 QueryConditional.sortBeginsWith(
-                    Key.builder()
-                        .partitionValue(pk)
-                        .sortValue(sortKeyPrefix)
-                        .build()))
+                    Key.builder().partitionValue(pk).sortValue(sortKeyPrefix).build()))
             .scanIndexForward(false)
             .build();
 

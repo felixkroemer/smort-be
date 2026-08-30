@@ -26,7 +26,8 @@ public final class ChatUtil {
 
         Formatting rules (apply to both fields):
         %s
-    """.formatted(customInstructions.orElse(formattingRules()));
+    """
+        .formatted(customInstructions.orElse(formattingRules()));
   }
 
   public static String formattingRules() {

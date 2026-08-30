@@ -35,10 +35,7 @@ public class BulkFormatEngine {
           } catch (BulkFormatCancelledException e) {
             log.info("Bulk format cancelled. pk={}", job.getPk());
           } catch (Exception e) {
-            log.error(
-                "Unexpected error during bulk format processing. pk={}",
-                job.getPk(),
-                e);
+            log.error("Unexpected error during bulk format processing. pk={}", job.getPk(), e);
           }
         });
   }
@@ -52,8 +49,7 @@ public class BulkFormatEngine {
     }
   }
 
-  public <T> void process(
-      BulkFormatEntity job, List<T> items, ItemProcessor<T> itemProcessor) {
+  public <T> void process(BulkFormatEntity job, List<T> items, ItemProcessor<T> itemProcessor) {
     int processed = 0;
     int failed = 0;
     int consecutiveFailed = 0;
@@ -72,12 +68,9 @@ public class BulkFormatEngine {
       } catch (Exception e) {
         failed++;
         consecutiveFailed++;
-        log.warn(
-            "Failed to format item during bulk format. pk={}", job.getPk(), e);
+        log.warn("Failed to format item during bulk format. pk={}", job.getPk(), e);
         if (consecutiveFailed >= MAX_RECENT_FAILED) {
-          log.warn(
-              "Hit consecutive failed limit while processing bulk format. pk={}",
-              job.getPk());
+          log.warn("Hit consecutive failed limit while processing bulk format. pk={}", job.getPk());
           break;
         }
         continue;
@@ -97,11 +90,7 @@ public class BulkFormatEngine {
       job.setLastUpdatedAt(Instant.now());
       bulkFormatRepository.save(job);
 
-      log.info(
-          "Bulk format complete. pk={}, processed={}, failed={}",
-          pk,
-          processed,
-          failed);
+      log.info("Bulk format complete. pk={}, processed={}, failed={}", pk, processed, failed);
     } else {
       if (job.getAttempts() >= MAX_ATTEMPTS) {
         job.setStatus(BulkFormatStatus.FAILED);

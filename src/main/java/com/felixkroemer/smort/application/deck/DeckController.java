@@ -6,9 +6,11 @@ import com.felixkroemer.smort.application.chat.dto.ChatMessageRequest;
 import com.felixkroemer.smort.application.chat.dto.ChatMessageResponse;
 import com.felixkroemer.smort.application.chat.mapping.ChatMessageRestMapper;
 import com.felixkroemer.smort.application.deck.dto.DeckResponse;
+import com.felixkroemer.smort.application.deck.dto.DraftNoteResponse;
 import com.felixkroemer.smort.application.deck.dto.ImportAnalysisRequest;
 import com.felixkroemer.smort.application.deck.dto.NoteResponse;
 import com.felixkroemer.smort.application.deck.mapping.DeckRestMapper;
+import com.felixkroemer.smort.application.deck.mapping.DraftNoteRestMapper;
 import com.felixkroemer.smort.application.deck.mapping.NoteRestMapper;
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
@@ -36,6 +38,7 @@ public class DeckController {
   private final BulkFormatRestMapper bulkFormatRestMapper;
   private final NoteRestMapper noteRestMapper;
   private final ChatMessageRestMapper chatMessageRestMapper;
+  private final DraftNoteRestMapper draftNoteRestMapper;
 
   @PostMapping()
   public DeckResponse importAnalysis(@RequestBody ImportAnalysisRequest importAnalysisRequest) {
@@ -105,10 +108,14 @@ public class DeckController {
     return chatMessageRestMapper.toChatMessageResponse(chatMessageResponses);
   }
 
+  @GetMapping("/{deckId}/draft-note")
+  public DraftNoteResponse getDraftNote(@PathVariable("deckId") UUID deckId) {
+    return draftNoteRestMapper.toDraftNoteResponse(deckService.getDraftNote(deckId));
+  }
+
   @PostMapping("/{deckId}/chat")
   public List<ChatMessageResponse> postDeckChatMessage(
-      @PathVariable("deckId") UUID deckId,
-      @RequestBody ChatMessageRequest chatMessageRequest) {
+      @PathVariable("deckId") UUID deckId, @RequestBody ChatMessageRequest chatMessageRequest) {
     var chatMessageResponses = deckService.chat(deckId, chatMessageRequest.message());
     return chatMessageRestMapper.toChatMessageResponse(chatMessageResponses);
   }
