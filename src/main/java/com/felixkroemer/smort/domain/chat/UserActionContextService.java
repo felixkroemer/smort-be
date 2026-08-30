@@ -30,17 +30,14 @@ public class UserActionContextService {
       userInitiatedMessages.add(message);
     }
 
-    if (userInitiatedMessages.isEmpty()) {
-      return Optional.empty();
-    }
-
     var entries =
         userInitiatedMessages.reversed().stream()
             .filter(m -> m.getType() == ChatMessageType.TOOL_CALL)
             .map(
                 m ->
-                    Map.<String, Object>of(
-                        "toolName", m.getToolName().get(), "arguments", m.getArguments()))
+                    Map.of(
+                        "toolName", m.getToolName().get(),
+                        "arguments", m.getArguments().toString()))
             .toList();
 
     if (entries.isEmpty()) {
