@@ -41,7 +41,7 @@ public class DerivedNoteEntity {
     this.pk = AnalysisKeys.analysisPk(analysisId);
     this.sk = NoteKeys.noteSk(noteId);
   }
-  
+
   public Map<String, String> getContent() {
     return Map.of("front", front, "back", back);
   }

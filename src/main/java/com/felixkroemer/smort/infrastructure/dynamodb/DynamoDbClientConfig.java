@@ -69,7 +69,8 @@ public class DynamoDbClientConfig {
 
   @Bean
   DynamoDbTable<DeckBulkFormatEntity> deckBulkFormatTable(DynamoDbEnhancedClient enhancedClient) {
-    return enhancedClient.table(COMMON_TABLE_NAME, TableSchema.fromBean(DeckBulkFormatEntity.class));
+    return enhancedClient.table(
+        COMMON_TABLE_NAME, TableSchema.fromBean(DeckBulkFormatEntity.class));
   }
 
   @Bean

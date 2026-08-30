@@ -115,8 +115,7 @@ public class DeckController {
 
   @PostMapping("/{deckId}/chat")
   public List<ChatMessageResponse> postDeckChatMessage(
-      @PathVariable("deckId") UUID deckId,
-      @RequestBody ChatMessageRequest chatMessageRequest) {
+      @PathVariable("deckId") UUID deckId, @RequestBody ChatMessageRequest chatMessageRequest) {
     var chatMessageResponses = deckService.chat(deckId, chatMessageRequest.message());
     return chatMessageRestMapper.toChatMessageResponse(chatMessageResponses);
   }

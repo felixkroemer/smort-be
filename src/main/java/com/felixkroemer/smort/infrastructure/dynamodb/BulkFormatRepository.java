@@ -62,9 +62,7 @@ public class BulkFormatRepository {
                         status,
                         BulkFormatKeys.analysisBulkFormatSk()),
                     queryIndex(
-                        statusDeckBulkFormatIndex,
-                        status,
-                        BulkFormatKeys.deckBulkFormatSk())))
+                        statusDeckBulkFormatIndex, status, BulkFormatKeys.deckBulkFormatSk())))
         .toList();
   }
 
@@ -74,7 +72,8 @@ public class BulkFormatRepository {
         .query(
             QueryEnhancedRequest.builder()
                 .queryConditional(
-                    QueryConditional.keyEqualTo(Key.builder().partitionValue(status.name()).build()))
+                    QueryConditional.keyEqualTo(
+                        Key.builder().partitionValue(status.name()).build()))
                 .filterExpression(
                     Expression.builder()
                         .expression("#sk = :sk")
@@ -113,13 +112,11 @@ public class BulkFormatRepository {
                       .putExpressionValue(
                           ":cancelled", AttributeValue.fromS(BulkFormatStatus.CANCELLED.name()))
                       .putExpressionValue(
-                          ":newCreatedAt",
-                          AttributeValue.fromS(entity.getCreatedAt().toString()))
+                          ":newCreatedAt", AttributeValue.fromS(entity.getCreatedAt().toString()))
                       .build())
               .build());
     } catch (ConditionalCheckFailedException e) {
-      throw new BulkFormatCancelledException(
-          "Bulk format was cancelled. pk={}", entity.getPk());
+      throw new BulkFormatCancelledException("Bulk format was cancelled. pk={}", entity.getPk());
     }
   }
 

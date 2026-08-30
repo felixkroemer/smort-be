@@ -170,8 +170,8 @@ public class DeckService {
             .findDeckMetaByDeckId(deckId)
             .orElseThrow(() -> new NotFoundException("Could not find deck. deckId={}", deckId));
 
-    
-    var notes = deckRepository.findNotesByDeckId(deckId).stream().map(NoteEntity::getFront).toList();
+    var notes =
+        deckRepository.findNotesByDeckId(deckId).stream().map(NoteEntity::getFront).toList();
 
     var ctx = new DeckChatContext(deckId, deck.getName(), notes);
 
@@ -180,8 +180,7 @@ public class DeckService {
             DraftNoteToolChatMessage.class,
             (tx, toolCall) -> {
               var m = (DraftNoteToolChatMessage) toolCall;
-              draftNoteRepository.saveInTx(
-                  tx, new DraftNoteEntity(deckId, m.front(), m.back()));
+              draftNoteRepository.saveInTx(tx, new DraftNoteEntity(deckId, m.front(), m.back()));
             });
 
     return chatOrchestrationService.deckChat(DeckKeys.deckPk(deckId), ctx, message, toolHandlers);

@@ -4,7 +4,8 @@ import java.time.Instant;
 
 public final class ChatKeys {
 
-  public static String chatMessageSk(String entityId, Instant createdAt, String responseId, boolean userInitiated) {
+  public static String chatMessageSk(
+      String entityId, Instant createdAt, String responseId, boolean userInitiated) {
     return "CHAT#" + (userInitiated ? "U#" : "C#") + entityId + "#" + createdAt + "#" + responseId;
   }
 

@@ -50,8 +50,7 @@ public class BulkFormatCron {
     } else if (BulkFormatKeys.deckBulkFormatSk().equals(job.getSk())) {
       deckBulkFormatService.resumeBulkFormat((DeckBulkFormatEntity) job);
     } else {
-      throw new IllegalArgumentException(
-          "Unknown bulk format job sort key: " + job.getSk());
+      throw new IllegalArgumentException("Unknown bulk format job sort key: " + job.getSk());
     }
   }
 }
