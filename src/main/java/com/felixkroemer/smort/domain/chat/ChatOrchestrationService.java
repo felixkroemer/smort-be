@@ -107,8 +107,11 @@ public class ChatOrchestrationService {
             .findLatestChatMessage(pk, ctx.deckId())
             .map(AbstractChatMessageEntity::getResponseId);
 
+    var userActionContext = userActionContextService.buildContext(pk, ctx.deckId());
+
     var chatMessage =
-        deckChatService.chat(ctx, message, formatInstructions, latestChatMessageResponseId);
+        deckChatService.chat(
+            ctx, message, formatInstructions, latestChatMessageResponseId, userActionContext);
 
     return switch (chatMessage) {
       case TextChatMessage r ->
