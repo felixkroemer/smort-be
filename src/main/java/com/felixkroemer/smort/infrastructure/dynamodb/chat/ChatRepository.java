@@ -43,7 +43,7 @@ public class ChatRepository {
         .toList();
   }
 
-  private <T> List<ChatMessageEntity> queryByPrefix(String pk, String sortKeyPrefix) {
+  private List<ChatMessageEntity> queryByPrefix(String pk, String sortKeyPrefix) {
     QueryEnhancedRequest request =
         QueryEnhancedRequest.builder()
             .queryConditional(
