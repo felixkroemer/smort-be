@@ -9,6 +9,7 @@ import com.felixkroemer.smort.domain.anki.AnkiNoteTypeService;
 import com.felixkroemer.smort.domain.chat.ChatMessage;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.domain.chat.DeckChatContext;
+import com.felixkroemer.smort.domain.chat.DeckChatToolType;
 import com.felixkroemer.smort.domain.chat.DraftNoteToolChatMessage;
 import com.felixkroemer.smort.domain.chat.ToolCallHandler;
 import com.felixkroemer.smort.domain.common.NoteSchema;
@@ -40,6 +41,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
+import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -58,6 +61,7 @@ public class DeckService {
   private final BulkFormatEntityMapper bulkFormatEntityMapper;
   private final DeckEntityMapper deckEntityMapper;
   private final DraftNoteEntityMapper draftNoteEntityMapper;
+  private final DynamoDbEnhancedClient enhancedClient;
 
   public List<NoteEntity> getNotes(UUID deckId) {
     return deckRepository.findNotesByDeckId(deckId);
@@ -239,6 +243,39 @@ public class DeckService {
 
   public void clearDraftNote(UUID deckId) {
     draftNoteRepository.delete(deckId);
+  }
+
+  public List<ChatMessageEntity> storeDraftNote(UUID deckId) {
+    var draft =
+        draftNoteRepository
+            .findDraftNote(deckId)
+            .orElseThrow(
+                () -> new NotFoundException("Could not find draft note. deckId={}", deckId));
+
+    var note =
+        noteEntityMapper.toNoteEntity(
+            deckId, UUID.randomUUID(), new NoteSchema(draft.getFront(), draft.getBack()));
+
+    var addNoteMessageEntity =
+        ChatMessageEntity.toolCall(
+            DeckKeys.deckPk(deckId),
+            deckId,
+            Optional.empty(),
+            UUID.randomUUID().toString(),
+            Optional.empty(),
+            UUID.randomUUID().toString(),
+            DeckChatToolType.ADD_NOTE.name(),
+            Optional.empty(),
+            true,
+            Map.of("front", draft.getFront(), "back", draft.getBack()));
+
+    var txBuilder = TransactWriteItemsEnhancedRequest.builder();
+    deckRepository.saveNoteInTx(txBuilder, note);
+    draftNoteRepository.deleteInTx(txBuilder, deckId);
+    chatRepository.saveInTx(txBuilder, addNoteMessageEntity);
+    enhancedClient.transactWriteItems(txBuilder.build());
+
+    return List.of(addNoteMessageEntity);
   }
 
   private DeckMetaEntity getMeta(UUID deckId) {
