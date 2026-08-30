@@ -41,6 +41,7 @@ public class DeckChatService {
       Current draft note:
       %s
 
+      Recent user actions, listed in chronological order (oldest first):
       %s
       """;
 

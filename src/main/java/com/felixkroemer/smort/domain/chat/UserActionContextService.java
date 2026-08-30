@@ -44,7 +44,7 @@ public class UserActionContextService {
     }
 
     try {
-      return "Recent user actions:\n" + mapper.writeValueAsString(entries);
+      return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(entries);
     } catch (JsonProcessingException e) {
       throw new SmortException("Could not serialize user action context", e);
     }

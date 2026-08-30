@@ -36,6 +36,7 @@ public class NoteChatService {
       For the formatting, consider these rules:
       %s
 
+      Recent user actions, listed in chronological order (oldest first):
       %s
       """;
 
