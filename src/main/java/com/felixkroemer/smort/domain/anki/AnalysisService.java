@@ -196,17 +196,6 @@ public class AnalysisService {
     var analysis = getMeta(analysisId);
     analysis.setStatus(AnalysisStatus.MARKED_FOR_DELETION);
     analysisMetaRepository.save(analysis);
-    try {
-      if (analysis.getDbPath() != null) {
-        Files.deleteIfExists(Path.of(analysis.getDbPath()));
-      }
-      // TODO: bulk
-      derivedNoteRepository.deleteAnalysisDerivedNotes(analysisId);
-      bulkFormatRepository.delete(analysisId);
-      analysisMetaRepository.delete(analysisId);
-    } catch (Exception e) {
-      log.warn("Could not fully delete analysis. analysisId={}", analysisId, e);
-    }
   }
 
   private AnalysisMetaEntity getMeta(UUID analysisId) {
