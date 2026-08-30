@@ -24,6 +24,8 @@ public class DeckChatService {
       Your task is to assist the user in learning about and improving their Anki deck.
       You can discuss the deck's content, help identify gaps, and suggest improvements.
 
+      Deck: %s
+
       When the user asks you to draft a new note for the deck, use the DraftNote tool.
       The "front" should be the question or term, the "back" the answer or explanation.
       Take the conversation into account: if the topic was discussed before, or the user asked
@@ -35,6 +37,9 @@ public class DeckChatService {
 
       The deck currently contains these notes:
       %s
+
+      Current draft note:
+      %s
       """;
 
   private static final String DRAFT_ACK_INSTRUCTIONS =
@@ -45,14 +50,20 @@ public class DeckChatService {
 
   public ChatMessage chat(
       DeckChatContext ctx, String message, Optional<String> previousResponseId) {
-    String fullInput = "Deck: " + ctx.deckName() + "\n\n" + message;
+    var draftSection =
+        ctx.draft()
+            .map(d -> "Front: %s\nBack: %s".formatted(d.front(), d.back()))
+            .orElse("No draft note exists right now.");
 
     ResponseCreateParams params =
         ResponseCreateParams.builder()
             .instructions(
                 CHAT_INSTRUCTIONS.formatted(
-                    ChatUtil.formattingRules(), String.join("\n", ctx.notes())))
-            .input(fullInput)
+                    ctx.deckName(),
+                    ChatUtil.formattingRules(),
+                    String.join("\n", ctx.notes()),
+                    draftSection))
+            .input(message)
             .previousResponseId(previousResponseId)
             .model(model)
             .addTool(DeckChatTools.DraftNoteTool.class)
