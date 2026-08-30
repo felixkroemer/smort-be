@@ -173,7 +173,12 @@ public class DeckService {
     var notes =
         deckRepository.findNotesByDeckId(deckId).stream().map(NoteEntity::getFront).toList();
 
-    var ctx = new DeckChatContext(deckId, deck.getName(), notes);
+    var draft =
+        draftNoteRepository
+            .findDraftNote(deckId)
+            .map(d -> new NoteSchema(d.getFront(), d.getBack()));
+
+    var ctx = new DeckChatContext(deckId, deck.getName(), notes, draft);
 
     Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
         Map.of(

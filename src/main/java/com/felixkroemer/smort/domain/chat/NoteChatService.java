@@ -26,11 +26,20 @@ public class NoteChatService {
   private static final String CHAT_INSTRUCTIONS =
       """
       Your task is to assist the user in fact-checking, learning about, and improving the anki ankiNote provided in the form of its fields.
+
+      The ankiNote has these fields:
+      %s
+
       When you are asked to edit one or multiple fields in any way, use the tool for updating notes.
       Then acknowledge with a short summary.
 
       For the formatting, consider these rules:
       %s
+      """;
+
+  private static final String NOTE_ACK_INSTRUCTIONS =
+      """
+      Confirm to the user that the note was updated. Keep it to one short sentence.
       """;
 
   public StoreNoteToolChatMessage formatNote(
@@ -67,7 +76,7 @@ public class NoteChatService {
   public ChatMessage acknowledgeStoreNoteToolCall(String callId, String previousResponseId) {
     ResponseCreateParams params =
         ResponseCreateParams.builder()
-            .instructions(CHAT_INSTRUCTIONS.formatted(ChatUtil.formatInstructions()))
+            .instructions(NOTE_ACK_INSTRUCTIONS)
             .input(
                 ResponseCreateParams.Input.ofResponse(
                     List.of(
@@ -98,20 +107,17 @@ public class NoteChatService {
 
   public ChatMessage chat(
       NoteChatContext<?> ctx, String message, Optional<String> previousResponseId) {
-    String fullInput =
-        "Fields:\n"
-            + String.join(
-                "\n",
-                ctx.fields().entrySet().stream()
-                    .map(e -> e.getKey() + ": " + e.getValue())
-                    .toList())
-            + "\n\n"
-            + message;
+    String fieldsBlock =
+        String.join(
+            "\n",
+            ctx.fields().entrySet().stream()
+                .map(e -> e.getKey() + ": " + e.getValue())
+                .toList());
 
     ResponseCreateParams params =
         ResponseCreateParams.builder()
-            .instructions(CHAT_INSTRUCTIONS.formatted(ChatUtil.formatInstructions()))
-            .input(fullInput)
+            .instructions(CHAT_INSTRUCTIONS.formatted(fieldsBlock, ChatUtil.formatInstructions()))
+            .input(message)
             .previousResponseId(previousResponseId)
             .model(model)
             .addTool(NoteChatTools.StoreNoteTool.class)
