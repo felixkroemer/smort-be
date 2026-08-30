@@ -81,7 +81,6 @@ public class ChatOrchestrationService {
             .map(AbstractChatMessageEntity::getResponseId);
 
     var userActionContext = userActionContextService.buildContext(pk, ctx.noteId());
-
     var chatMessage =
         noteChatService.chat(
             ctx, message, formatInstructions, latestChatMessageResponseId, userActionContext);
@@ -108,7 +107,6 @@ public class ChatOrchestrationService {
             .map(AbstractChatMessageEntity::getResponseId);
 
     var userActionContext = userActionContextService.buildContext(pk, ctx.deckId());
-
     var chatMessage =
         deckChatService.chat(
             ctx, message, formatInstructions, latestChatMessageResponseId, userActionContext);
