@@ -48,8 +48,8 @@ public class DeckController {
 
   @GetMapping
   public List<DeckResponse> getDecks() {
-    var deckMetaEntities = deckService.getDecks();
-    return deckRestMapper.toDeckResponse(deckMetaEntities);
+    var decks = deckService.getDecks();
+    return deckRestMapper.toDeckResponse(decks);
   }
 
   @GetMapping("/{deckId}/notes/{noteId}")

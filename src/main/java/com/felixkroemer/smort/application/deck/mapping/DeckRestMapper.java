@@ -1,7 +1,7 @@
 package com.felixkroemer.smort.application.deck.mapping;
 
 import com.felixkroemer.smort.application.deck.dto.DeckResponse;
-import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckMetaEntity;
+import com.felixkroemer.smort.domain.deck.Deck;
 import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
@@ -9,7 +9,7 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface DeckRestMapper {
 
-  DeckResponse toDeckResponse(DeckMetaEntity deckMetaEntity);
+  DeckResponse toDeckResponse(Deck deck);
 
-  List<DeckResponse> toDeckResponse(List<DeckMetaEntity> deckMetaEntity);
+  List<DeckResponse> toDeckResponse(List<Deck> decks);
 }
