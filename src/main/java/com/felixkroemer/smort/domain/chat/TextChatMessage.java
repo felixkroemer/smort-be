@@ -1,3 +1,3 @@
 package com.felixkroemer.smort.domain.chat;
 
-public record TextChatMessage(String text, ChatMessageMeta meta) implements ChatMessage {}
+public record TextChatMessage(String response, ChatMessageMeta meta) implements ChatMessage {}

@@ -2,6 +2,7 @@ package com.felixkroemer.smort.infrastructure.dynamodb.chat;
 
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.ChatKeys;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -35,14 +36,16 @@ public class ChatMessageEntity extends AbstractChatMessageEntity {
       Optional<String> response,
       Optional<String> callId,
       Optional<String> toolName,
+      Map<String, String> arguments,
       boolean userInitiated) {
     super(
         type,
         response,
+        message,
         callId,
         toolName,
+        arguments,
         userInitiated,
-        message,
         responseId,
         previousResponseId,
         createdAt);
@@ -57,7 +60,8 @@ public class ChatMessageEntity extends AbstractChatMessageEntity {
       Optional<String> message,
       String responseId,
       Optional<String> previousResponseId,
-      String text) {
+      String response,
+      Map<String, String> arguments) {
     return new ChatMessageEntity(
         pk,
         String.valueOf(entityId),
@@ -66,26 +70,28 @@ public class ChatMessageEntity extends AbstractChatMessageEntity {
         previousResponseId,
         Instant.now(),
         ChatMessageType.TEXT,
-        Optional.of(text),
+        Optional.of(response),
         Optional.empty(),
         Optional.empty(),
+        arguments,
         false);
   }
 
   public static <T> ChatMessageEntity toolCall(
       String pk,
       T entityId,
-      String message,
+      Optional<String> message,
       String responseId,
       Optional<String> previousResponseId,
       String callId,
       String toolName,
       Optional<String> response,
-      boolean userInitiated) {
+      boolean userInitiated,
+      Map<String, String> arguments) {
     return new ChatMessageEntity(
         pk,
         String.valueOf(entityId),
-        Optional.of(message),
+        message,
         responseId,
         previousResponseId,
         Instant.now(),
@@ -93,6 +99,7 @@ public class ChatMessageEntity extends AbstractChatMessageEntity {
         response,
         Optional.of(callId),
         Optional.of(toolName),
+        arguments,
         userInitiated);
   }
 }

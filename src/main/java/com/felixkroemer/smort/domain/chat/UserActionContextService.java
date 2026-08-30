@@ -1,0 +1,52 @@
+package com.felixkroemer.smort.domain.chat;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.felixkroemer.smort.common.exception.SmortException;
+import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageType;
+import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatRepository;
+import java.util.ArrayList;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class UserActionContextService {
+
+  private final ChatRepository chatRepository;
+  private final ObjectMapper mapper;
+
+  public <T> String buildContext(String pk, T entityId) {
+    var messages = chatRepository.findAll(pk, entityId);
+
+    var userInitiatedMessages = new ArrayList<ChatMessageEntity>();
+    for (var message : messages) {
+      if (!message.isUserInitiated()) {
+        break;
+      }
+      userInitiatedMessages.add(message);
+    }
+
+    var entries =
+        userInitiatedMessages.reversed().stream()
+            .filter(m -> m.getType() == ChatMessageType.TOOL_CALL)
+            .map(
+                m ->
+                    Map.of(
+                        "toolName", m.getToolName().get(),
+                        "arguments", m.getArguments().toString()))
+            .toList();
+
+    if (entries.isEmpty()) {
+      return "no user initiated messages";
+    }
+
+    try {
+      return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(entries);
+    } catch (JsonProcessingException e) {
+      throw new SmortException("Could not serialize user action context", e);
+    }
+  }
+}

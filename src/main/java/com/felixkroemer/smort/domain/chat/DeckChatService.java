@@ -40,6 +40,9 @@ public class DeckChatService {
 
       Current draft note:
       %s
+
+      Recent user actions, listed in chronological order (oldest first):
+      %s
       """;
 
   private static final String DRAFT_ACK_INSTRUCTIONS =
@@ -52,7 +55,8 @@ public class DeckChatService {
       DeckChatContext ctx,
       String message,
       Optional<String> formatInstructions,
-      Optional<String> previousResponseId) {
+      Optional<String> previousResponseId,
+      String userActionContext) {
     var draftSection =
         ctx.draft()
             .map(d -> "Front: %s\nBack: %s".formatted(d.front(), d.back()))
@@ -65,7 +69,8 @@ public class DeckChatService {
                     ctx.deckName(),
                     ChatUtil.formatInstructions(formatInstructions),
                     String.join("\n", ctx.notes()),
-                    draftSection))
+                    draftSection,
+                    userActionContext))
             .input(message)
             .previousResponseId(previousResponseId)
             .model(model)

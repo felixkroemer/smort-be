@@ -35,6 +35,9 @@ public class NoteChatService {
 
       For the formatting, consider these rules:
       %s
+
+      Recent user actions, listed in chronological order (oldest first):
+      %s
       """;
 
   private static final String NOTE_ACK_INSTRUCTIONS =
@@ -109,7 +112,8 @@ public class NoteChatService {
       NoteChatContext<?> ctx,
       String message,
       Optional<String> formatInstructions,
-      Optional<String> previousResponseId) {
+      Optional<String> previousResponseId,
+      String userActionContext) {
     String fieldsBlock =
         String.join(
             "\n",
@@ -120,7 +124,10 @@ public class NoteChatService {
     ResponseCreateParams params =
         ResponseCreateParams.builder()
             .instructions(
-                CHAT_INSTRUCTIONS.formatted(fieldsBlock, ChatUtil.formatInstructions(formatInstructions)))
+                CHAT_INSTRUCTIONS.formatted(
+                    fieldsBlock,
+                    ChatUtil.formatInstructions(formatInstructions),
+                    userActionContext))
             .input(message)
             .previousResponseId(previousResponseId)
             .model(model)
