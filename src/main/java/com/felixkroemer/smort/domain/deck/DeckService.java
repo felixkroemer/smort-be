@@ -6,8 +6,11 @@ import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.AnalysisService;
 import com.felixkroemer.smort.domain.anki.AnkiNote;
 import com.felixkroemer.smort.domain.anki.AnkiNoteTypeService;
+import com.felixkroemer.smort.domain.chat.ChatMessage;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.domain.chat.DeckChatContext;
+import com.felixkroemer.smort.domain.chat.DraftNoteToolChatMessage;
+import com.felixkroemer.smort.domain.chat.ToolCallHandler;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.domain.deck.mapping.NoteEntityMapper;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
@@ -16,6 +19,8 @@ import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckMetaEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckStatus;
+import com.felixkroemer.smort.infrastructure.dynamodb.deck.DraftNoteEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.deck.DraftNoteRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteTypeEntity;
@@ -40,6 +45,7 @@ public class DeckService {
   private final AnkiNoteTypeService ankiNoteTypeService;
   private final ChatOrchestrationService chatOrchestrationService;
   private final DeckRepository deckRepository;
+  private final DraftNoteRepository draftNoteRepository;
   private final NoteEntityMapper noteEntityMapper;
 
   public List<NoteEntity> getNotes(UUID deckId) {
@@ -168,10 +174,26 @@ public class DeckService {
     var notes = deckRepository.findNotesByDeckId(deckId).stream().map(NoteEntity::getFront).toList();
 
     var ctx = new DeckChatContext(deckId, deck.getName(), notes);
-    return chatOrchestrationService.deckChat(DeckKeys.deckPk(deckId), ctx, message, Map.of());
+
+    Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+        Map.of(
+            DraftNoteToolChatMessage.class,
+            (tx, toolCall) -> {
+              var m = (DraftNoteToolChatMessage) toolCall;
+              draftNoteRepository.saveInTx(
+                  tx, new DraftNoteEntity(deckId, m.front(), m.back()));
+            });
+
+    return chatOrchestrationService.deckChat(DeckKeys.deckPk(deckId), ctx, message, toolHandlers);
   }
 
   public List<ChatMessageEntity> getChat(UUID deckId) {
     return chatOrchestrationService.getChat(DeckKeys.deckPk(deckId), deckId);
+  }
+
+  public DraftNoteEntity getDraftNote(UUID deckId) {
+    return draftNoteRepository
+        .findDraftNote(deckId)
+        .orElseThrow(() -> new NotFoundException("Could not find draft note. deckId={}", deckId));
   }
 }
