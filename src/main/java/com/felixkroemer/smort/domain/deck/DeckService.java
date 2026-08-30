@@ -195,4 +195,8 @@ public class DeckService {
         .findDraftNote(deckId)
         .orElseThrow(() -> new NotFoundException("Could not find draft note. deckId={}", deckId));
   }
+
+  public void clearDraftNote(UUID deckId) {
+    draftNoteRepository.delete(deckId);
+  }
 }

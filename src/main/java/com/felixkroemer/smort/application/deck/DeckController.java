@@ -113,6 +113,12 @@ public class DeckController {
     return draftNoteRestMapper.toDraftNoteResponse(deckService.getDraftNote(deckId));
   }
 
+  @DeleteMapping("/{deckId}/draft-note")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void clearDraftNote(@PathVariable("deckId") UUID deckId) {
+    deckService.clearDraftNote(deckId);
+  }
+
   @PostMapping("/{deckId}/chat")
   public List<ChatMessageResponse> postDeckChatMessage(
       @PathVariable("deckId") UUID deckId, @RequestBody ChatMessageRequest chatMessageRequest) {
