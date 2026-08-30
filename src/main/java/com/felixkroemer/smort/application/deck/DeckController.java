@@ -134,6 +134,12 @@ public class DeckController {
     deckService.clearDraftNote(deckId);
   }
 
+  @PostMapping("/{deckId}/draft-note/store")
+  public List<ChatMessageResponse> storeDraftNote(@PathVariable("deckId") UUID deckId) {
+    var chatMessages = deckService.storeDraftNote(deckId);
+    return chatMessageRestMapper.toChatMessageResponse(chatMessages);
+  }
+
   @PostMapping("/{deckId}/chat")
   public List<ChatMessageResponse> postDeckChatMessage(
       @PathVariable("deckId") UUID deckId, @RequestBody ChatMessageRequest chatMessageRequest) {
