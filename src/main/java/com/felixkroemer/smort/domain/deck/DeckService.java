@@ -12,7 +12,11 @@ import com.felixkroemer.smort.domain.chat.DeckChatContext;
 import com.felixkroemer.smort.domain.chat.DraftNoteToolChatMessage;
 import com.felixkroemer.smort.domain.chat.ToolCallHandler;
 import com.felixkroemer.smort.domain.common.NoteSchema;
+import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
+import com.felixkroemer.smort.domain.deck.mapping.DeckEntityMapper;
+import com.felixkroemer.smort.domain.deck.mapping.DraftNoteEntityMapper;
 import com.felixkroemer.smort.domain.deck.mapping.NoteEntityMapper;
+import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
@@ -26,6 +30,7 @@ import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteTypeEntity;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.regex.MatchResult;
@@ -47,13 +52,17 @@ public class DeckService {
   private final DeckRepository deckRepository;
   private final DraftNoteRepository draftNoteRepository;
   private final NoteEntityMapper noteEntityMapper;
+  private final BulkFormatRepository bulkFormatRepository;
+  private final BulkFormatEntityMapper bulkFormatEntityMapper;
+  private final DeckEntityMapper deckEntityMapper;
+  private final DraftNoteEntityMapper draftNoteEntityMapper;
 
   public List<NoteEntity> getNotes(UUID deckId) {
     return deckRepository.findNotesByDeckId(deckId);
   }
 
   // TODO: clean up possible failed imports based on status and time passed
-  public DeckMetaEntity importDeck(UUID analysisId, Map<String, NoteTypeTemplate> templates) {
+  public Deck importDeck(UUID analysisId, Map<String, NoteTypeTemplate> templates) {
     var analysis = analysisService.getAnalysis(analysisId);
     var activeJob = analysis.getBulkFormat();
     if (activeJob.isPresent()
@@ -83,7 +92,7 @@ public class DeckService {
 
     deck.setStatus(DeckStatus.ACTIVE);
     deckRepository.saveDeckMeta(deck);
-    return deck;
+    return deckEntityMapper.toDeck(deck, Optional.empty(), Optional.empty());
   }
 
   private DeckMetaEntity createDeck(String deckName) {
@@ -147,15 +156,23 @@ public class DeckService {
     };
   }
 
-  public List<DeckMetaEntity> getDecks() {
-    return deckRepository.findDeckMetasByUserId("default");
+  public List<Deck> getDecks() {
+    return deckRepository.findDeckMetasByUserId("default").stream()
+        .map(
+            entity ->
+                deckEntityMapper.toDeck(
+                    entity,
+                    bulkFormatRepository
+                        .findBulkFormatByDeckId(entity.getDeckId())
+                        .map(bulkFormatEntityMapper::toBulkFormat),
+                    draftNoteRepository
+                        .findDraftNote(entity.getDeckId())
+                        .map(draftNoteEntityMapper::toDraftNote)))
+        .toList();
   }
 
   public void deleteDeck(UUID deckId) {
-    var deck =
-        deckRepository
-            .findDeckMetaByDeckId(deckId)
-            .orElseThrow(() -> new NotFoundException("Could not find deck. deckId={}", deckId));
+    var deck = getMeta(deckId);
     deck.setStatus(DeckStatus.MARKED_FOR_DELETION);
     deckRepository.saveDeckMeta(deck);
   }
@@ -165,10 +182,7 @@ public class DeckService {
   }
 
   public List<ChatMessageEntity> chat(UUID deckId, String message) {
-    var deck =
-        deckRepository
-            .findDeckMetaByDeckId(deckId)
-            .orElseThrow(() -> new NotFoundException("Could not find deck. deckId={}", deckId));
+    var deck = getMeta(deckId);
 
     var notes =
         deckRepository.findNotesByDeckId(deckId).stream().map(NoteEntity::getFront).toList();
@@ -203,5 +217,11 @@ public class DeckService {
 
   public void clearDraftNote(UUID deckId) {
     draftNoteRepository.delete(deckId);
+  }
+
+  private DeckMetaEntity getMeta(UUID deckId) {
+    return deckRepository
+        .findDeckMetaByDeckId(deckId)
+        .orElseThrow(() -> new NotFoundException("Could not find deck by id. deckId={}", deckId));
   }
 }
