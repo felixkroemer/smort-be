@@ -8,6 +8,10 @@ public final class DeckKeys {
     return "DECK#" + deckId;
   }
 
+  public static String deckPkPrefix() {
+    return "DECK#";
+  }
+
   public static String userDeckIndexGsiPk(String userId) {
     return "USER#" + userId;
   }

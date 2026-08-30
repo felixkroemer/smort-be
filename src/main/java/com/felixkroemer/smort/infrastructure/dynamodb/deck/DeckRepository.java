@@ -103,10 +103,12 @@ public class DeckRepository {
   public List<DeckMetaEntity> scanForDecksMarkedForDeletion() {
     Expression filter =
         Expression.builder()
-            .expression("#s = :status")
-            .expressionNames(Map.of("#s", "status"))
+            .expression("#s = :status AND begins_with(#pk, :pkPrefix)")
+            .expressionNames(Map.of("#s", "status", "#pk", "pk"))
             .expressionValues(
-                Map.of(":status", AttributeValue.fromS(DeckStatus.MARKED_FOR_DELETION.toString())))
+                Map.of(
+                    ":status", AttributeValue.fromS(DeckStatus.MARKED_FOR_DELETION.toString()),
+                    ":pkPrefix", AttributeValue.fromS(DeckKeys.deckPkPrefix())))
             .build();
 
     return deckMetaTable
