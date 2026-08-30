@@ -58,8 +58,4 @@ public final class ChatUtil {
         .outputText()
         .orElseThrow(() -> new SmortException("Expected output_text, got unknown content"));
   }
-
-  public static String appendUserActions(String instructions, Optional<String> userActionContext) {
-    return userActionContext.map(ctx -> instructions + "\n\n" + ctx).orElse(instructions);
-  }
 }

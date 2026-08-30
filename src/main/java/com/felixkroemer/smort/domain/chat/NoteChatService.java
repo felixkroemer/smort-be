@@ -35,6 +35,8 @@ public class NoteChatService {
 
       For the formatting, consider these rules:
       %s
+
+      %s
       """;
 
   private static final String NOTE_ACK_INSTRUCTIONS =
@@ -43,15 +45,11 @@ public class NoteChatService {
       """;
 
   public StoreNoteToolChatMessage formatNote(
-      Map<String, String> fields,
-      Optional<String> formatInstructions,
-      Optional<String> userActionContext) {
+      Map<String, String> fields, Optional<String> formatInstructions) {
     try {
       StructuredResponseCreateParams<NoteSchema> params =
           ResponseCreateParams.builder()
-              .instructions(
-                  ChatUtil.appendUserActions(
-                      ChatUtil.formatInstructions(formatInstructions), userActionContext))
+              .instructions(ChatUtil.formatInstructions(formatInstructions))
               .input(mapper.writeValueAsString(fields))
               .text(NoteSchema.class)
               .model(model)
@@ -125,10 +123,10 @@ public class NoteChatService {
     ResponseCreateParams params =
         ResponseCreateParams.builder()
             .instructions(
-                ChatUtil.appendUserActions(
-                    CHAT_INSTRUCTIONS.formatted(
-                        fieldsBlock, ChatUtil.formatInstructions(formatInstructions)),
-                    userActionContext))
+                CHAT_INSTRUCTIONS.formatted(
+                    fieldsBlock,
+                    ChatUtil.formatInstructions(formatInstructions),
+                    userActionContext.orElse("")))
             .input(message)
             .previousResponseId(previousResponseId)
             .model(model)

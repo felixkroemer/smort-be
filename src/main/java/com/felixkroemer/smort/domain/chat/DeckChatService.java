@@ -40,6 +40,8 @@ public class DeckChatService {
 
       Current draft note:
       %s
+
+      %s
       """;
 
   private static final String DRAFT_ACK_INSTRUCTIONS =
@@ -62,13 +64,12 @@ public class DeckChatService {
     ResponseCreateParams params =
         ResponseCreateParams.builder()
             .instructions(
-                ChatUtil.appendUserActions(
-                    CHAT_INSTRUCTIONS.formatted(
-                        ctx.deckName(),
-                        ChatUtil.formatInstructions(formatInstructions),
-                        String.join("\n", ctx.notes()),
-                        draftSection),
-                    userActionContext))
+                CHAT_INSTRUCTIONS.formatted(
+                    ctx.deckName(),
+                    ChatUtil.formatInstructions(formatInstructions),
+                    String.join("\n", ctx.notes()),
+                    draftSection,
+                    userActionContext.orElse("")))
             .input(message)
             .previousResponseId(previousResponseId)
             .model(model)

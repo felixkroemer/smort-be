@@ -44,9 +44,7 @@ public class ChatOrchestrationService {
       Map<String, String> content,
       Optional<String> formatInstructions,
       Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
-    var userActionContext = userActionContextService.buildContext(pk, entityId);
-    var storeNoteToolChatMessage =
-        noteChatService.formatNote(content, formatInstructions, userActionContext);
+    var storeNoteToolChatMessage = noteChatService.formatNote(content, formatInstructions);
 
     var formatChatMessageEntity =
         ChatMessageEntity.toolCall(
