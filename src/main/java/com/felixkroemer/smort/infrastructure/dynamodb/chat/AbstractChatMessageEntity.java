@@ -2,6 +2,7 @@ package com.felixkroemer.smort.infrastructure.dynamodb.chat;
 
 import com.felixkroemer.smort.infrastructure.dynamodb.OptionalStringConverter;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,15 +24,17 @@ public abstract class AbstractChatMessageEntity {
   private Optional<String> response; // only populated for TEXT
 
   @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalStringConverter.class))
+  private Optional<String> message; // only populated for TEXT
+
+  @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalStringConverter.class))
   private Optional<String> callId; // only populated for TOOL_CALL
 
   @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalStringConverter.class))
   private Optional<String> toolName; // only populated for TOOL_CALL
 
-  private boolean userInitiated; // only relevant for TOOL_CALL
+  private Map<String, String> arguments; // only populated for TOOL_CALL
 
-  @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalStringConverter.class))
-  private Optional<String> message;
+  private boolean userInitiated; // only relevant for TOOL_CALL
 
   private String responseId;
 

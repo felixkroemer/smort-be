@@ -1,9 +1,6 @@
 package com.felixkroemer.smort.domain.chat;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.felixkroemer.smort.common.exception.SmortException;
-import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.AbstractChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatRepository;
@@ -24,7 +21,6 @@ public class ChatOrchestrationService {
   private final DeckChatService deckChatService;
   private final ChatRepository chatRepository;
   private final DynamoDbEnhancedClient enhancedClient;
-  private final ObjectMapper mapper;
 
   public <T> List<ChatMessageEntity> getChat(String pk, T entityId) {
     return chatRepository.findAll(pk, entityId);
@@ -49,26 +45,18 @@ public class ChatOrchestrationService {
       Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
     var storeNoteToolChatMessage = noteChatService.formatNote(content, formatInstructions);
 
-    String result;
-    try {
-      result =
-          mapper.writeValueAsString(
-              new NoteSchema(storeNoteToolChatMessage.front(), storeNoteToolChatMessage.back()));
-    } catch (JsonProcessingException e) {
-      throw new SmortException("Could not serialize formatted note", e);
-    }
-
     var formatChatMessageEntity =
         ChatMessageEntity.toolCall(
             pk,
             entityId,
-            result,
+            Optional.empty(),
             storeNoteToolChatMessage.meta().responseId(),
             Optional.empty(),
             storeNoteToolChatMessage.callId(),
             NoteChatToolType.STORE_NOTE.name(),
             Optional.empty(),
-            true);
+            true,
+            content);
 
     var txBuilder = TransactWriteItemsEnhancedRequest.builder();
     chatRepository.saveInTx(txBuilder, formatChatMessageEntity);
@@ -121,7 +109,7 @@ public class ChatOrchestrationService {
           handleChatMessageTextResponse(pk, ctx.deckId(), message, r, latestChatMessageResponseId);
       case DraftNoteToolChatMessage r ->
           handleDraftNoteToolResponse(
-              pk, ctx.deckId(), message, r, latestChatMessageResponseId, toolHandlers);
+              pk, ctx.deckId(), r, latestChatMessageResponseId, toolHandlers);
       default -> throw new SmortException("Unexpected message type received");
     };
   }
@@ -133,28 +121,44 @@ public class ChatOrchestrationService {
       StoreNoteToolChatMessage storeNoteToolChatMessageResponse,
       Optional<String> latestChatMessageResponseId,
       Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
-    var toolCallChatMessageEntity =
-        ChatMessageEntity.toolCall(
-            pk,
-            entityId,
-            message,
-            storeNoteToolChatMessageResponse.meta().responseId(),
-            latestChatMessageResponseId,
-            storeNoteToolChatMessageResponse.callId(),
-            NoteChatToolType.STORE_NOTE.name(),
-            Optional.empty(),
-            false);
     var ackResponse =
         noteChatService.acknowledgeStoreNoteToolCall(
             storeNoteToolChatMessageResponse.callId(),
             storeNoteToolChatMessageResponse.meta().responseId());
-    if (ackResponse instanceof TextChatMessage(String text, ChatMessageMeta meta)) {
+    if (ackResponse instanceof TextChatMessage(String response, ChatMessageMeta meta)) {
+
+      // (message -> tool call response) -> (ackMessage -> ackMessage response)
+
+      var txBuilder = TransactWriteItemsEnhancedRequest.builder();
+      var toolCallChatMessageEntity =
+          ChatMessageEntity.toolCall(
+              pk,
+              entityId,
+              Optional.of(message),
+              storeNoteToolChatMessageResponse.meta().responseId(),
+              latestChatMessageResponseId,
+              storeNoteToolChatMessageResponse.callId(),
+              NoteChatToolType.STORE_NOTE.name(),
+              Optional.empty(),
+              false,
+              Map.of(
+                  "front",
+                  storeNoteToolChatMessageResponse.front(),
+                  "back",
+                  storeNoteToolChatMessageResponse.back()));
+      chatRepository.saveInTx(txBuilder, toolCallChatMessageEntity);
+
       var chatMessageEntity =
           ChatMessageEntity.text(
-              pk, entityId, Optional.empty(), meta.responseId(), latestChatMessageResponseId, text);
-      var txBuilder = TransactWriteItemsEnhancedRequest.builder();
-      chatRepository.saveInTx(txBuilder, toolCallChatMessageEntity);
+              pk,
+              entityId,
+              Optional.empty(), // could include ackResponse message here, but not necessary
+              meta.responseId(),
+              latestChatMessageResponseId,
+              response,
+              Map.of());
       chatRepository.saveInTx(txBuilder, chatMessageEntity);
+
       applyToolEffect(txBuilder, storeNoteToolChatMessageResponse, toolHandlers);
       enhancedClient.transactWriteItems(txBuilder.build());
       return List.of(toolCallChatMessageEntity, chatMessageEntity);
@@ -166,32 +170,44 @@ public class ChatOrchestrationService {
   private @NonNull <T> List<ChatMessageEntity> handleDraftNoteToolResponse(
       String pk,
       T entityId,
-      String message,
       DraftNoteToolChatMessage draftNoteToolChatMessageResponse,
       Optional<String> latestChatMessageResponseId,
       Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
-    var toolCallChatMessageEntity =
-        ChatMessageEntity.toolCall(
-            pk,
-            entityId,
-            message,
-            draftNoteToolChatMessageResponse.meta().responseId(),
-            latestChatMessageResponseId,
-            draftNoteToolChatMessageResponse.callId(),
-            DeckChatToolType.DRAFT_NOTE.name(),
-            Optional.empty(),
-            false);
     var ackResponse =
         deckChatService.acknowledgeDraftNoteToolCall(
             draftNoteToolChatMessageResponse.callId(),
             draftNoteToolChatMessageResponse.meta().responseId());
-    if (ackResponse instanceof TextChatMessage(String text, ChatMessageMeta meta)) {
+    if (ackResponse instanceof TextChatMessage(String response, ChatMessageMeta meta)) {
+      var txBuilder = TransactWriteItemsEnhancedRequest.builder();
+      var toolCallChatMessageEntity =
+          ChatMessageEntity.toolCall(
+              pk,
+              entityId,
+              Optional.empty(),
+              draftNoteToolChatMessageResponse.meta().responseId(),
+              latestChatMessageResponseId,
+              draftNoteToolChatMessageResponse.callId(),
+              DeckChatToolType.DRAFT_NOTE.name(),
+              Optional.empty(),
+              false,
+              Map.of(
+                  "front",
+                  draftNoteToolChatMessageResponse.front(),
+                  "back",
+                  draftNoteToolChatMessageResponse.back()));
+      chatRepository.saveInTx(txBuilder, toolCallChatMessageEntity);
+
       var chatMessageEntity =
           ChatMessageEntity.text(
-              pk, entityId, Optional.empty(), meta.responseId(), latestChatMessageResponseId, text);
-      var txBuilder = TransactWriteItemsEnhancedRequest.builder();
-      chatRepository.saveInTx(txBuilder, toolCallChatMessageEntity);
+              pk,
+              entityId,
+              Optional.empty(),
+              meta.responseId(),
+              latestChatMessageResponseId,
+              response,
+              Map.of());
       chatRepository.saveInTx(txBuilder, chatMessageEntity);
+
       applyToolEffect(txBuilder, draftNoteToolChatMessageResponse, toolHandlers);
       enhancedClient.transactWriteItems(txBuilder.build());
       return List.of(toolCallChatMessageEntity, chatMessageEntity);
@@ -224,7 +240,8 @@ public class ChatOrchestrationService {
             Optional.of(message),
             r.meta().responseId(),
             latestChatMessageResponseId,
-            r.text());
+            r.response(),
+            Map.of());
     chatRepository.save(chatMessageEntity);
     return List.of(chatMessageEntity);
   }
