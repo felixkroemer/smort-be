@@ -132,6 +132,19 @@ public class DeckController {
     return chatMessageRestMapper.toChatMessageResponse(chatMessageResponses);
   }
 
+  @DeleteMapping("/{deckId}/chat")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void clearChat(@PathVariable("deckId") UUID deckId) {
+    deckService.clearChat(deckId);
+  }
+
+  @DeleteMapping("/{deckId}/notes/{noteId}/chat")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void clearNoteChat(
+      @PathVariable("deckId") UUID deckId, @PathVariable("noteId") UUID noteId) {
+    noteService.clearChat(deckId, noteId);
+  }
+
   @DeleteMapping("/{deckId}")
   public void deleteDeck(@PathVariable("deckId") UUID deckId) {
     deckService.deleteDeck(deckId);

@@ -204,6 +204,13 @@ public class AnalysisController {
     return chatMessageRestMapper.toChatMessageResponse(chatMessageResponses);
   }
 
+  @DeleteMapping("/{analysisId}/notes/{noteId}/chat")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void clearChat(
+      @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
+    ankiNoteService.clearChat(analysisId, noteId);
+  }
+
   @PostMapping("/{analysisId}/format")
   @ResponseStatus(HttpStatus.ACCEPTED)
   public void startBulkFormat(

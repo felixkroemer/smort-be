@@ -5,6 +5,7 @@ import com.felixkroemer.smort.domain.chat.*;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
 import java.time.Instant;
@@ -24,6 +25,7 @@ public class AnkiNoteService {
   private final AnkiNoteRepository ankiNoteRepository;
   private final DerivedNoteRepository derivedNoteRepository;
   private final ChatOrchestrationService chatOrchestrationService;
+  private final ChatRepository chatRepository;
   private final AnkiNoteTypeService noteTypeService;
   private final AnalysisService analysisService;
   private final DerivedNoteEntityMapper derivedNoteEntityMapper;
@@ -104,5 +106,9 @@ public class AnkiNoteService {
 
     return chatOrchestrationService.noteChat(
         AnalysisKeys.analysisPk(analysisId), ctx, message, toolHandlers);
+  }
+
+  public void clearChat(UUID analysisId, Long noteId) {
+    chatRepository.deleteChat(AnalysisKeys.analysisPk(analysisId), noteId);
   }
 }

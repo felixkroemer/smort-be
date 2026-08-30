@@ -5,6 +5,7 @@ import com.felixkroemer.smort.domain.chat.*;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.domain.deck.mapping.NoteEntityMapper;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
@@ -23,6 +24,7 @@ public class NoteService {
 
   private final DeckRepository deckRepository;
   private final ChatOrchestrationService chatOrchestrationService;
+  private final ChatRepository chatRepository;
   private final NoteEntityMapper noteEntityMapper;
 
   public Optional<NoteEntity> getNote(UUID deckId, UUID noteId) {
@@ -79,5 +81,9 @@ public class NoteService {
             });
 
     return chatOrchestrationService.noteChat(DeckKeys.deckPk(deckId), ctx, message, toolHandlers);
+  }
+
+  public void clearChat(UUID deckId, UUID noteId) {
+    chatRepository.deleteChat(DeckKeys.deckPk(deckId), noteId);
   }
 }

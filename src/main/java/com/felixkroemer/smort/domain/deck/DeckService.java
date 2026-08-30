@@ -20,6 +20,7 @@ import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckMetaEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckStatus;
@@ -49,6 +50,7 @@ public class DeckService {
   private final AnalysisService analysisService;
   private final AnkiNoteTypeService ankiNoteTypeService;
   private final ChatOrchestrationService chatOrchestrationService;
+  private final ChatRepository chatRepository;
   private final DeckRepository deckRepository;
   private final DraftNoteRepository draftNoteRepository;
   private final NoteEntityMapper noteEntityMapper;
@@ -207,6 +209,10 @@ public class DeckService {
 
   public List<ChatMessageEntity> getChat(UUID deckId) {
     return chatOrchestrationService.getChat(DeckKeys.deckPk(deckId), deckId);
+  }
+
+  public void clearChat(UUID deckId) {
+    chatRepository.deleteChat(DeckKeys.deckPk(deckId), deckId);
   }
 
   public DraftNoteEntity getDraftNote(UUID deckId) {
