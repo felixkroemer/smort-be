@@ -21,6 +21,15 @@ public class DraftNoteRepository {
     txBuilder.addPutItem(draftNoteTable, entity);
   }
 
+  public void deleteInTx(TransactWriteItemsEnhancedRequest.Builder txBuilder, UUID deckId) {
+    txBuilder.addDeleteItem(
+        draftNoteTable,
+        Key.builder()
+            .partitionValue(DeckKeys.deckPk(deckId))
+            .sortValue(DraftNoteKeys.draftNoteSk())
+            .build());
+  }
+
   public Optional<DraftNoteEntity> findDraftNote(UUID deckId) {
     var key =
         Key.builder()
