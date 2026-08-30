@@ -82,13 +82,15 @@ public class ChatOrchestrationService {
       String pk,
       NoteChatContext<?> ctx,
       String message,
+      Optional<String> formatInstructions,
       Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
     var latestChatMessageResponseId =
         chatRepository
             .findLatestChatMessage(pk, ctx.noteId())
             .map(AbstractChatMessageEntity::getResponseId);
 
-    var chatMessage = noteChatService.chat(ctx, message, latestChatMessageResponseId);
+    var chatMessage =
+        noteChatService.chat(ctx, message, formatInstructions, latestChatMessageResponseId);
 
     return switch (chatMessage) {
       case TextChatMessage r ->
@@ -104,13 +106,15 @@ public class ChatOrchestrationService {
       String pk,
       DeckChatContext ctx,
       String message,
+      Optional<String> formatInstructions,
       Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
     var latestChatMessageResponseId =
         chatRepository
             .findLatestChatMessage(pk, ctx.deckId())
             .map(AbstractChatMessageEntity::getResponseId);
 
-    var chatMessage = deckChatService.chat(ctx, message, latestChatMessageResponseId);
+    var chatMessage =
+        deckChatService.chat(ctx, message, formatInstructions, latestChatMessageResponseId);
 
     return switch (chatMessage) {
       case TextChatMessage r ->

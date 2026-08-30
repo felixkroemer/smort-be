@@ -106,7 +106,10 @@ public class NoteChatService {
   }
 
   public ChatMessage chat(
-      NoteChatContext<?> ctx, String message, Optional<String> previousResponseId) {
+      NoteChatContext<?> ctx,
+      String message,
+      Optional<String> formatInstructions,
+      Optional<String> previousResponseId) {
     String fieldsBlock =
         String.join(
             "\n",
@@ -116,7 +119,8 @@ public class NoteChatService {
 
     ResponseCreateParams params =
         ResponseCreateParams.builder()
-            .instructions(CHAT_INSTRUCTIONS.formatted(fieldsBlock, ChatUtil.formatInstructions()))
+            .instructions(
+                CHAT_INSTRUCTIONS.formatted(fieldsBlock, ChatUtil.formatInstructions(formatInstructions)))
             .input(message)
             .previousResponseId(previousResponseId)
             .model(model)

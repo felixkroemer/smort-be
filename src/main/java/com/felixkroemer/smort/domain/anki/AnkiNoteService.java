@@ -91,6 +91,8 @@ public class AnkiNoteService {
   public List<ChatMessageEntity> chat(UUID analysisId, Long noteId, String message) {
     var content = getContent(analysisId, noteId);
 
+    var formatInstructions = analysisService.getAnalysisSettings(analysisId).formatInstructions();
+
     var ctx = new NoteChatContext<>(noteId, content);
 
     Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
@@ -105,7 +107,7 @@ public class AnkiNoteService {
             });
 
     return chatOrchestrationService.noteChat(
-        AnalysisKeys.analysisPk(analysisId), ctx, message, toolHandlers);
+        AnalysisKeys.analysisPk(analysisId), ctx, message, formatInstructions, toolHandlers);
   }
 
   public void clearChat(UUID analysisId, Long noteId) {
