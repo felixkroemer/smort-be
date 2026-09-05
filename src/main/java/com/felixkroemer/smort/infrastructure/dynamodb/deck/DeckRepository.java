@@ -114,6 +114,29 @@ public class DeckRepository {
     noteTable.deleteItem(key);
   }
 
+  public void deleteNotesByDeckIdAndNoteIds(UUID deckId, List<UUID> noteIds) {
+    var uniqueNoteIds = noteIds.stream().distinct().toList();
+
+    IntStream.range(0, (uniqueNoteIds.size() + 24) / 25)
+        .mapToObj(i -> uniqueNoteIds.subList(i * 25, Math.min((i + 1) * 25, uniqueNoteIds.size())))
+        .forEach(
+            batch -> {
+              WriteBatch.Builder<NoteEntity> writeBatch =
+                  WriteBatch.builder(NoteEntity.class).mappedTableResource(noteTable);
+              batch.forEach(
+                  noteId ->
+                      writeBatch.addDeleteItem(
+                          Key.builder()
+                              .partitionValue(DeckKeys.deckPk(deckId))
+                              .sortValue(NoteSortKeys.noteSk(noteId))
+                              .build()));
+              dynamoDbEnhancedClient.batchWriteItem(
+                  BatchWriteItemEnhancedRequest.builder().writeBatches(writeBatch.build()).build());
+            });
+
+    log.info("Deleted deck notes. deckId={}, noteIds={}", deckId, uniqueNoteIds);
+  }
+
   public List<DeckMetaEntity> scanForDecksMarkedForDeletion() {
     Expression filter =
         Expression.builder()
