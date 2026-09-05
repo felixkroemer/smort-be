@@ -12,11 +12,13 @@ import com.felixkroemer.smort.domain.chat.DeckChatContext;
 import com.felixkroemer.smort.domain.chat.DeckChatToolType;
 import com.felixkroemer.smort.domain.chat.DraftNoteToolChatMessage;
 import com.felixkroemer.smort.domain.chat.ToolCallHandler;
+import com.felixkroemer.smort.domain.common.FormattingMode;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
 import com.felixkroemer.smort.domain.deck.mapping.DeckEntityMapper;
 import com.felixkroemer.smort.domain.deck.mapping.DraftNoteEntityMapper;
 import com.felixkroemer.smort.domain.deck.mapping.NoteEntityMapper;
+import com.felixkroemer.smort.domain.user.FormattingSettingsResolver;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
@@ -62,6 +64,7 @@ public class DeckService {
   private final DeckEntityMapper deckEntityMapper;
   private final DraftNoteEntityMapper draftNoteEntityMapper;
   private final DynamoDbEnhancedClient enhancedClient;
+  private final FormattingSettingsResolver formattingSettingsResolver;
 
   public List<NoteEntity> getNotes(UUID deckId) {
     return deckRepository.findNotesByDeckId(deckId);
@@ -188,16 +191,23 @@ public class DeckService {
   }
 
   public DeckSettings getDeckSettings(UUID deckId) {
-    return new DeckSettings(getMeta(deckId).getFormatInstructions());
+    var meta = getMeta(deckId);
+    return new DeckSettings(meta.getFormattingMode(), meta.getTemplateId(), meta.getFormatInstructions());
   }
 
-  public DeckSettings updateDeckSettings(UUID deckId, Optional<String> formatInstructions) {
+  public DeckSettings updateDeckSettings(
+      UUID deckId,
+      FormattingMode formattingMode,
+      String templateId,
+      String formatInstructions) {
     var deck = getMeta(deckId);
-    if (formatInstructions != null) {
-      deck.setFormatInstructions(formatInstructions);
+    if (formattingMode != null) deck.setFormattingMode(formattingMode);
+    if (templateId != null) deck.setTemplateId(templateId);
+    if (formatInstructions != null) deck.setFormatInstructions(formatInstructions);
+    if (formattingMode != null || templateId != null || formatInstructions != null) {
       deckRepository.saveDeckMeta(deck);
     }
-    return new DeckSettings(deck.getFormatInstructions());
+    return new DeckSettings(deck.getFormattingMode(), deck.getTemplateId(), deck.getFormatInstructions());
   }
 
   public void deleteNote(UUID deckId, UUID noteId) {
@@ -207,7 +217,7 @@ public class DeckService {
   public List<ChatMessageEntity> chat(UUID deckId, String message) {
     var deck = getMeta(deckId);
 
-    var formatInstructions = getDeckSettings(deckId).formatInstructions();
+    String formatInstructions = formattingSettingsResolver.resolve(getDeckSettings(deckId));
 
     var notes =
         deckRepository.findNotesByDeckId(deckId).stream().map(NoteEntity::getFront).toList();

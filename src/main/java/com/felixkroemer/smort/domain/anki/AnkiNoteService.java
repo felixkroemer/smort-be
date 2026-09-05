@@ -3,6 +3,7 @@ package com.felixkroemer.smort.domain.anki;
 import com.felixkroemer.smort.domain.anki.mapping.DerivedNoteEntityMapper;
 import com.felixkroemer.smort.domain.chat.*;
 import com.felixkroemer.smort.domain.common.NoteSchema;
+import com.felixkroemer.smort.domain.user.FormattingSettingsResolver;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatRepository;
@@ -29,6 +30,7 @@ public class AnkiNoteService {
   private final AnkiNoteTypeService noteTypeService;
   private final AnalysisService analysisService;
   private final DerivedNoteEntityMapper derivedNoteEntityMapper;
+  private final FormattingSettingsResolver formattingSettingsResolver;
 
   public AnkiNote getNote(UUID analysisId, Long noteId) {
     var note = ankiNoteRepository.findNoteByAnalysisIdAndNoteId(analysisId, noteId);
@@ -51,8 +53,9 @@ public class AnkiNoteService {
   }
 
   public List<ChatMessageEntity> formatNote(UUID analysisId, Long noteId) {
-    var analysis = analysisService.getAnalysis(analysisId);
     var content = getContent(analysisId, noteId);
+    var formatInstructions =
+        formattingSettingsResolver.resolve(analysisService.getAnalysisSettings(analysisId));
 
     Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
         Map.of(
@@ -80,7 +83,7 @@ public class AnkiNoteService {
             AnalysisKeys.analysisPk(analysisId),
             noteId,
             content,
-            analysis.getFormatInstructions(),
+            formatInstructions,
             toolHandlers);
 
     log.info("Formatted note. analysisId={}, noteId={}", analysisId, noteId);
@@ -91,7 +94,8 @@ public class AnkiNoteService {
   public List<ChatMessageEntity> chat(UUID analysisId, Long noteId, String message) {
     var content = getContent(analysisId, noteId);
 
-    var formatInstructions = analysisService.getAnalysisSettings(analysisId).formatInstructions();
+    var formatInstructions =
+        formattingSettingsResolver.resolve(analysisService.getAnalysisSettings(analysisId));
 
     var ctx = new NoteChatContext<>(noteId, content);
 

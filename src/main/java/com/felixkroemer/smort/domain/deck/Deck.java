@@ -20,5 +20,4 @@ public class Deck {
   private DeckStatus status;
   private Optional<BulkFormat> bulkFormat = Optional.empty();
   private Optional<DraftNote> draftNote = Optional.empty();
-  private Optional<String> formatInstructions = Optional.empty();
 }

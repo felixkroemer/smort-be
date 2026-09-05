@@ -1,5 +1,6 @@
 package com.felixkroemer.smort.domain.anki;
 
-import java.util.Optional;
+import com.felixkroemer.smort.domain.common.FormattingMode;
 
-public record AnalysisSettings(Optional<String> formatInstructions) {}
+public record AnalysisSettings(
+    FormattingMode formattingMode, String templateId, String formatInstructions) {}

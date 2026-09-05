@@ -54,7 +54,7 @@ public class DeckChatService {
   public ChatMessage chat(
       DeckChatContext ctx,
       String message,
-      Optional<String> formatInstructions,
+      String formatInstructions,
       Optional<String> previousResponseId,
       String userActionContext) {
     var draftSection =

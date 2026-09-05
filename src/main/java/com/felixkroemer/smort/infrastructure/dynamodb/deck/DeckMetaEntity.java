@@ -1,9 +1,9 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.deck;
 
-import com.felixkroemer.smort.infrastructure.dynamodb.OptionalStringConverter;
+import com.felixkroemer.smort.domain.common.FormattingMode;
+import com.felixkroemer.smort.domain.user.SystemFormattingTemplate;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.MetaKeys;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -36,8 +36,9 @@ public class DeckMetaEntity {
 
   private DeckStatus status;
 
-  @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalStringConverter.class))
-  private Optional<String> formatInstructions = Optional.empty();
+  private FormattingMode formattingMode;
+  private String templateId;
+  private String formatInstructions;
 
   public DeckMetaEntity(UUID deckId, String name, String userId) {
     this.pk = DeckKeys.deckPk(deckId);
@@ -47,5 +48,8 @@ public class DeckMetaEntity {
     this.deckId = deckId;
     this.name = name;
     this.status = DeckStatus.IMPORTING;
+    this.formattingMode = FormattingMode.DEFAULT;
+    this.templateId = SystemFormattingTemplate.DEFAULT.getId();
+    this.formatInstructions = "";
   }
 }

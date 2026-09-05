@@ -1,5 +1,6 @@
 package com.felixkroemer.smort.domain.deck;
 
-import java.util.Optional;
+import com.felixkroemer.smort.domain.common.FormattingMode;
 
-public record DeckSettings(Optional<String> formatInstructions) {}
+public record DeckSettings(
+    FormattingMode formattingMode, String templateId, String formatInstructions) {}

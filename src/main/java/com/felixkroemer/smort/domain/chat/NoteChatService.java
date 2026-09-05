@@ -46,7 +46,7 @@ public class NoteChatService {
       """;
 
   public StoreNoteToolChatMessage formatNote(
-      Map<String, String> fields, Optional<String> formatInstructions) {
+      Map<String, String> fields, String formatInstructions) {
     try {
       StructuredResponseCreateParams<NoteSchema> params =
           ResponseCreateParams.builder()
@@ -111,7 +111,7 @@ public class NoteChatService {
   public ChatMessage chat(
       NoteChatContext<?> ctx,
       String message,
-      Optional<String> formatInstructions,
+      String formatInstructions,
       Optional<String> previousResponseId,
       String userActionContext) {
     String fieldsBlock =

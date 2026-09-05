@@ -4,6 +4,7 @@ import com.felixkroemer.smort.common.config.SmortProperties;
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.mapping.AnalysisEntityMapper;
+import com.felixkroemer.smort.domain.common.FormattingMode;
 import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
@@ -67,18 +68,24 @@ public class AnalysisService {
   }
 
   public AnalysisSettings getAnalysisSettings(UUID analysisId) {
-    return new AnalysisSettings(getMeta(analysisId).getFormatInstructions());
+    var meta = getMeta(analysisId);
+    return new AnalysisSettings(meta.getFormattingMode(), meta.getTemplateId(), meta.getFormatInstructions());
   }
 
   public AnalysisSettings updateAnalysisSettings(
-      UUID analysisId, Optional<String> formatInstructions) {
+      UUID analysisId,
+      FormattingMode formattingMode,
+      String templateId,
+      String formatInstructions) {
     var analysis = getMeta(analysisId);
-    if (formatInstructions != null) {
-      analysis.setFormatInstructions(formatInstructions);
+    if (formattingMode != null) analysis.setFormattingMode(formattingMode);
+    if (templateId != null) analysis.setTemplateId(templateId);
+    if (formatInstructions != null) analysis.setFormatInstructions(formatInstructions);
+    if (formattingMode != null || templateId != null || formatInstructions != null) {
       analysis.setUpdatedAt(Instant.now());
       analysisMetaRepository.save(analysis);
     }
-    return new AnalysisSettings(analysis.getFormatInstructions());
+    return new AnalysisSettings(analysis.getFormattingMode(), analysis.getTemplateId(), analysis.getFormatInstructions());
   }
 
   public void uploadDB(UUID analysisId, byte[] bytes) {

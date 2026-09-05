@@ -1,5 +1,6 @@
 package com.felixkroemer.smort.application.anki.dto;
 
-import java.util.Optional;
+import com.felixkroemer.smort.domain.common.FormattingMode;
 
-public record AnalysisSettingsResponse(Optional<String> formatInstructions) {}
+public record AnalysisSettingsResponse(
+    FormattingMode formattingMode, String templateId, String formatInstructions) {}

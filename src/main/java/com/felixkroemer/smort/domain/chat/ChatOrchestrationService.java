@@ -32,7 +32,7 @@ public class ChatOrchestrationService {
       T entityId,
       String front,
       String back,
-      Optional<String> formatInstructions,
+      String formatInstructions,
       Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
     return formatNote(
         pk, entityId, Map.of("front", front, "back", back), formatInstructions, toolHandlers);
@@ -42,7 +42,7 @@ public class ChatOrchestrationService {
       String pk,
       T entityId,
       Map<String, String> content,
-      Optional<String> formatInstructions,
+      String formatInstructions,
       Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
     var storeNoteToolChatMessage = noteChatService.formatNote(content, formatInstructions);
 
@@ -71,7 +71,7 @@ public class ChatOrchestrationService {
       String pk,
       NoteChatContext<?> ctx,
       String message,
-      Optional<String> formatInstructions,
+      String formatInstructions,
       Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
     var latestChatMessageResponseId =
         chatRepository
@@ -97,7 +97,7 @@ public class ChatOrchestrationService {
       String pk,
       DeckChatContext ctx,
       String message,
-      Optional<String> formatInstructions,
+      String formatInstructions,
       Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
     var latestChatMessageResponseId =
         chatRepository
