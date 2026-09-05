@@ -50,7 +50,7 @@ public class NoteService {
               deckRepository.saveNoteInTx(tx, note);
             });
 
-    var formatInstructions = Optional.of(formattingSettingsResolver.resolve(deckService.getDeckSettings(deckId)));
+    String formatInstructions = formattingSettingsResolver.resolve(deckService.getDeckSettings(deckId));
     var chatMessages =
         chatOrchestrationService.formatNote(
             DeckKeys.deckPk(deckId),
@@ -71,7 +71,7 @@ public class NoteService {
             .findNoteByDeckIdAndNoteId(deckId, noteId)
             .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
 
-    var formatInstructions = Optional.of(formattingSettingsResolver.resolve(deckService.getDeckSettings(deckId)));
+    String formatInstructions = formattingSettingsResolver.resolve(deckService.getDeckSettings(deckId));
 
     var ctx = new NoteChatContext<>(noteId, note.getContent());
 

@@ -89,7 +89,7 @@ public class DeckBulkFormatService {
   }
 
   private void processNotes(DeckBulkFormatEntity job, List<NoteEntity> notesToProcess) {
-    var formatInstructions = Optional.of(formattingSettingsResolver.resolve(deckService.getDeckSettings(job.getDeckId())));
+    String formatInstructions = formattingSettingsResolver.resolve(deckService.getDeckSettings(job.getDeckId()));
     bulkFormatEngine.process(
         job,
         notesToProcess,

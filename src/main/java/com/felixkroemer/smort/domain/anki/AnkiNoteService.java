@@ -55,7 +55,7 @@ public class AnkiNoteService {
   public List<ChatMessageEntity> formatNote(UUID analysisId, Long noteId) {
     var content = getContent(analysisId, noteId);
     var formatInstructions =
-        Optional.of(formattingSettingsResolver.resolve(analysisService.getAnalysisSettings(analysisId)));
+        formattingSettingsResolver.resolve(analysisService.getAnalysisSettings(analysisId));
 
     Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
         Map.of(
@@ -95,7 +95,7 @@ public class AnkiNoteService {
     var content = getContent(analysisId, noteId);
 
     var formatInstructions =
-        Optional.of(formattingSettingsResolver.resolve(analysisService.getAnalysisSettings(analysisId)));
+        formattingSettingsResolver.resolve(analysisService.getAnalysisSettings(analysisId));
 
     var ctx = new NoteChatContext<>(noteId, content);
 

@@ -105,10 +105,10 @@ public class AnalysisBulkFormatService {
 
   private void processNotes(AnalysisBulkFormatEntity job, List<NoteToProcess> notesToProcess) {
     var analysisId = job.getAnalysisId();
-    Optional<String> formatInstructions;
+    String formatInstructions;
     try {
       formatInstructions =
-          Optional.of(formattingSettingsResolver.resolve(analysisService.getAnalysisSettings(analysisId)));
+          formattingSettingsResolver.resolve(analysisService.getAnalysisSettings(analysisId));
     } catch (NotFoundException e) {
       throw e.withSeverity(LogSeverity.ERROR);
     }

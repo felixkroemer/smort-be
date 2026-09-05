@@ -217,7 +217,7 @@ public class DeckService {
   public List<ChatMessageEntity> chat(UUID deckId, String message) {
     var deck = getMeta(deckId);
 
-    var formatInstructions = Optional.of(formattingSettingsResolver.resolve(getDeckSettings(deckId)));
+    String formatInstructions = formattingSettingsResolver.resolve(getDeckSettings(deckId));
 
     var notes =
         deckRepository.findNotesByDeckId(deckId).stream().map(NoteEntity::getFront).toList();
