@@ -1,3 +1,5 @@
 package com.felixkroemer.smort.application.anki.dto;
 
-public record DerivedNoteResponse(Long id, String front, String back) {}
+import java.time.Instant;
+
+public record DerivedNoteResponse(Long id, String front, String back, Instant lastFormattedAt) {}
