@@ -69,6 +69,13 @@ public class UserSettingsService {
   }
 
   public FormattingTemplate updateTemplate(String id, String name, String content) {
+    if (SystemFormattingTemplate.fromId(id).isPresent()) {
+      throw new SmortException(
+          HttpStatus.CONFLICT,
+          LogSeverity.INFO,
+          "Cannot update a system formatting template. id={}",
+          id);
+    }
     var entity = getTemplate(id);
     entity.setName(name);
     entity.setContent(content);
