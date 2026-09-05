@@ -8,6 +8,8 @@ import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckBulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckMetaEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DraftNoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.user.UserFormattingTemplateEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.user.UserSettingsEntity;
 import java.net.URI;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -76,6 +78,18 @@ public class DynamoDbClientConfig {
   @Bean
   DynamoDbTable<AnalysisMetaEntity> analysisMetaTable(DynamoDbEnhancedClient enhancedClient) {
     return enhancedClient.table(COMMON_TABLE_NAME, TableSchema.fromBean(AnalysisMetaEntity.class));
+  }
+
+  @Bean
+  DynamoDbTable<UserSettingsEntity> userSettingsTable(DynamoDbEnhancedClient enhancedClient) {
+    return enhancedClient.table(COMMON_TABLE_NAME, TableSchema.fromBean(UserSettingsEntity.class));
+  }
+
+  @Bean
+  DynamoDbTable<UserFormattingTemplateEntity> userFormattingTemplateTable(
+      DynamoDbEnhancedClient enhancedClient) {
+    return enhancedClient.table(
+        COMMON_TABLE_NAME, TableSchema.fromBean(UserFormattingTemplateEntity.class));
   }
 
   @Bean
