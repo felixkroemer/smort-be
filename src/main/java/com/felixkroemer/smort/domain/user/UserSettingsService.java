@@ -46,7 +46,16 @@ public class UserSettingsService {
   }
 
   public String getTemplateContent(String templateId) {
-    return getUserSettings().getTemplates().stream()
+    return getTemplateContent(getUserSettings(), templateId);
+  }
+
+  public String getDefaultTemplateContent() {
+    var userSettings = getUserSettings();
+    return getTemplateContent(userSettings, userSettings.getDefaultTemplateId());
+  }
+
+  private String getTemplateContent(UserSettings userSettings, String templateId) {
+    return userSettings.getTemplates().stream()
         .filter(t -> t.id().equals(templateId))
         .findFirst()
         .map(FormattingTemplate::content)
@@ -55,10 +64,6 @@ public class UserSettingsService {
                 new NotFoundException(
                     "Referenced formatting template does not exist. Please choose a valid template. id={}",
                     templateId));
-  }
-
-  public String getDefaultTemplateContent() {
-    return getTemplateContent(getUserSettings().getDefaultTemplateId());
   }
 
   public UserSettings updateUserSettings(String defaultTemplateId) {
