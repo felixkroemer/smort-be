@@ -36,7 +36,7 @@ public class UserSettingsService {
             .toList();
     var systemTemplates =
         Arrays.stream(SystemFormattingTemplate.values())
-            .map(s -> new FormattingTemplate(s.id(), s.name(), s.content(), TemplateSource.SYSTEM))
+            .map(s -> new FormattingTemplate(s.getId(), s.getName(), s.getContent(), TemplateSource.SYSTEM))
             .toList();
     return userSettingsEntityMapper.toUserSettings(
         settings, Stream.concat(systemTemplates.stream(), userTemplates.stream()).toList());
@@ -50,7 +50,7 @@ public class UserSettingsService {
     if (defaultTemplateId != null) {
       settings.setDefaultTemplateId(
           defaultTemplateId.isBlank()
-              ? SystemFormattingTemplate.DEFAULT.id()
+              ? SystemFormattingTemplate.DEFAULT.getId()
               : defaultTemplateId);
       userSettingsRepository.save(settings);
     }

@@ -27,6 +27,6 @@ public class UserSettingsEntity {
   public UserSettingsEntity(String userId) {
     this.pk = UserKeys.userPk(userId);
     this.sk = UserSettingsKeys.settingsSk();
-    this.defaultTemplateId = SystemFormattingTemplate.DEFAULT.id();
+    this.defaultTemplateId = SystemFormattingTemplate.DEFAULT.getId();
   }
 }
