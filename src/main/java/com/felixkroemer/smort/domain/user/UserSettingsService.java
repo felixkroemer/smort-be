@@ -9,7 +9,6 @@ import com.felixkroemer.smort.infrastructure.dynamodb.user.UserSettingsEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.user.UserSettingsRepository;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -43,14 +42,16 @@ public class UserSettingsService {
         settings, Stream.concat(systemTemplates.stream(), userTemplates.stream()).toList());
   }
 
-  public UserSettings updateUserSettings(Optional<String> defaultTemplateId) {
+  public UserSettings updateUserSettings(String defaultTemplateId) {
     var settings =
         userSettingsRepository
             .findByUserId(CURRENT_USER)
             .orElseGet(() -> new UserSettingsEntity(CURRENT_USER));
     if (defaultTemplateId != null) {
       settings.setDefaultTemplateId(
-          defaultTemplateId.orElse(SystemFormattingTemplate.DEFAULT.id()));
+          defaultTemplateId.isBlank()
+              ? SystemFormattingTemplate.DEFAULT.id()
+              : defaultTemplateId);
       userSettingsRepository.save(settings);
     }
     return getUserSettings();
