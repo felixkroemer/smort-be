@@ -2,8 +2,7 @@
 
 ## Git workflow
 - Never start implementation on main/master. Always create a feature branch
-  for any plan or task before writing code. Do NOT use git worktrees.
-- Ignore the using-git-worktrees skill bundled with superpowers; do not invoke it.
+  for any plan or task before writing code.
 - Commit all work to the feature branch; leave main untouched.
 - When a task or plan is complete, push the feature branch to origin. Do not
   present the finishing-a-development-branch menu; pushing to origin is the
