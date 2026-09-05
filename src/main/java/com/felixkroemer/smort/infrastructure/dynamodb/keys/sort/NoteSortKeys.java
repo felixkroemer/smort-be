@@ -2,7 +2,7 @@ package com.felixkroemer.smort.infrastructure.dynamodb.keys.sort;
 
 import java.util.UUID;
 
-public final class NoteKeys {
+public final class NoteSortKeys {
 
   public static String noteSk(Long noteId) {
     return "NOTE#" + noteId;
@@ -14,9 +14,5 @@ public final class NoteKeys {
 
   public static String notePrefix() {
     return "NOTE#";
-  }
-
-  public static String userNoteIndexGsiPk(String userId) {
-    return "USER#" + userId;
   }
 }

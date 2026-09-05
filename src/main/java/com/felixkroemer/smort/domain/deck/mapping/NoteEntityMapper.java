@@ -3,7 +3,8 @@ package com.felixkroemer.smort.domain.deck.mapping;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
-import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.NoteKeys;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.NotePartitionKeys;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.NoteSortKeys;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,17 +38,17 @@ public interface NoteEntityMapper {
 
   @Named("noteSk")
   default String toNoteSk(UUID noteId) {
-    return NoteKeys.noteSk(noteId);
+    return NoteSortKeys.noteSk(noteId);
   }
 
   @Named("userNoteIndexGsiPk")
   default String toUserNoteIndexGsiPk(String userId) {
-    return NoteKeys.userNoteIndexGsiPk(userId);
+    return NotePartitionKeys.userNoteIndexGsiPk(userId);
   }
 
   @Named("userNoteIndexGsiSk")
   default String toUserNoteIndexGsiSk(UUID noteId) {
-    return NoteKeys.noteSk(noteId);
+    return NoteSortKeys.noteSk(noteId);
   }
 
   @Named("emptyLastFormattedAt")

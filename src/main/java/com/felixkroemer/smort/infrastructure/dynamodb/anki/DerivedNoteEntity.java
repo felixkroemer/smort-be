@@ -2,7 +2,7 @@ package com.felixkroemer.smort.infrastructure.dynamodb.anki;
 
 import com.felixkroemer.smort.infrastructure.dynamodb.OptionalInstantConverter;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
-import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.NoteKeys;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.NoteSortKeys;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -39,7 +39,7 @@ public class DerivedNoteEntity {
     this.front = front;
     this.back = back;
     this.pk = AnalysisKeys.analysisPk(analysisId);
-    this.sk = NoteKeys.noteSk(noteId);
+    this.sk = NoteSortKeys.noteSk(noteId);
   }
 
   public Map<String, String> getContent() {

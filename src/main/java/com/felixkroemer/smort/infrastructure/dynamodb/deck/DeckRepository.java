@@ -1,8 +1,9 @@
 package com.felixkroemer.smort.infrastructure.dynamodb.deck;
 
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.NotePartitionKeys;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.MetaKeys;
-import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.NoteKeys;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.NoteSortKeys;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,7 +30,7 @@ public class DeckRepository {
   public List<NoteEntity> findNotesByUserId(String userId) {
     var condition =
         QueryConditional.keyEqualTo(
-            Key.builder().partitionValue(NoteKeys.userNoteIndexGsiPk(userId)).build());
+            Key.builder().partitionValue(NotePartitionKeys.userNoteIndexGsiPk(userId)).build());
 
     return userNoteIndex
         .query(QueryEnhancedRequest.builder().queryConditional(condition).build())
@@ -77,7 +78,7 @@ public class DeckRepository {
     var key =
         Key.builder()
             .partitionValue(DeckKeys.deckPk(deckId))
-            .sortValue(NoteKeys.noteSk(noteId))
+            .sortValue(NoteSortKeys.noteSk(noteId))
             .build();
 
     return Optional.ofNullable(noteTable.getItem(key));
@@ -88,7 +89,7 @@ public class DeckRepository {
         QueryConditional.sortBeginsWith(
             Key.builder()
                 .partitionValue(DeckKeys.deckPk(deckId))
-                .sortValue(NoteKeys.notePrefix())
+                .sortValue(NoteSortKeys.notePrefix())
                 .build());
 
     return noteTable.query(condition).items().stream().toList();
@@ -108,7 +109,7 @@ public class DeckRepository {
     var key =
         Key.builder()
             .partitionValue(DeckKeys.deckPk(deckId))
-            .sortValue(NoteKeys.noteSk(noteId))
+            .sortValue(NoteSortKeys.noteSk(noteId))
             .build();
     noteTable.deleteItem(key);
   }
@@ -136,7 +137,7 @@ public class DeckRepository {
         QueryConditional.sortBeginsWith(
             Key.builder()
                 .partitionValue(DeckKeys.deckPk(deckId))
-                .sortValue(NoteKeys.notePrefix())
+                .sortValue(NoteSortKeys.notePrefix())
                 .build());
 
     List<NoteEntity> keys =

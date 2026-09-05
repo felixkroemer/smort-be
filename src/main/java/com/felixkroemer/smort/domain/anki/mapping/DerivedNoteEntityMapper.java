@@ -3,7 +3,7 @@ package com.felixkroemer.smort.domain.anki.mapping;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
-import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.NoteKeys;
+import com.felixkroemer.smort.infrastructure.dynamodb.keys.sort.NoteSortKeys;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,6 +37,6 @@ public interface DerivedNoteEntityMapper {
 
   @Named("noteSk")
   default String toNoteSk(Long noteId) {
-    return NoteKeys.noteSk(noteId);
+    return NoteSortKeys.noteSk(noteId);
   }
 }
