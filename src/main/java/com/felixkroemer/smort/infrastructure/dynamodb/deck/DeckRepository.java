@@ -24,6 +24,19 @@ public class DeckRepository {
   private final DynamoDbTable<DeckMetaEntity> deckMetaTable;
   private final DynamoDbIndex<DeckMetaEntity> deckMetaUserDeckIndex;
   private final DynamoDbEnhancedClient dynamoDbEnhancedClient;
+  private final DynamoDbIndex<NoteEntity> userNoteIndex;
+
+  public List<NoteEntity> findNotesByUserId(String userId) {
+    var condition =
+        QueryConditional.keyEqualTo(
+            Key.builder().partitionValue(NoteKeys.userNoteIndexGsiPk(userId)).build());
+
+    return userNoteIndex
+        .query(QueryEnhancedRequest.builder().queryConditional(condition).build())
+        .items()
+        .stream()
+        .toList();
+  }
 
   public void saveNote(NoteEntity entity) {
     noteTable.putItem(entity);

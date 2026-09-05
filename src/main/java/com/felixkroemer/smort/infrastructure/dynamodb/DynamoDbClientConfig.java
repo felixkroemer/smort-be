@@ -98,6 +98,11 @@ public class DynamoDbClientConfig {
   }
 
   @Bean
+  DynamoDbIndex<NoteEntity> userNoteIndex(DynamoDbTable<NoteEntity> noteTable) {
+    return noteTable.index("UserNoteIndex");
+  }
+
+  @Bean
   DynamoDbIndex<AnalysisMetaEntity> userAnalysisIndex(
       DynamoDbTable<AnalysisMetaEntity> analysisMetaTable) {
     return analysisMetaTable.index("UserAnalysisIndex");
