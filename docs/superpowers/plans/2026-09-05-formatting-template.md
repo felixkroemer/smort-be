@@ -69,3 +69,68 @@ Do not run the build (per AGENTS.md).
 git add src/main/java/com/felixkroemer/smort/domain/user/SystemFormattingTemplate.java
 git commit -m "feat: improve default system formatting rules"
 ```
+
+---
+
+### Task 2: Add Default (Concise) formatting template
+
+**Files:**
+- Modify: `src/main/java/com/felixkroemer/smort/domain/user/SystemFormattingTemplate.java`
+- Modify: `docs/superpowers/specs/2026-09-05-formatting-template-design.md`
+
+**Interfaces:**
+- Consumes: Task 1 (existing `DEFAULT_FORMATTING_RULES` and `DEFAULT` enum constant).
+- Produces: new `CONCISE("CONCISE", "Default (Concise)", SystemFormattingTemplateRules.CONCISE_FORMATTING_RULES)` enum constant, resolved by `fromId`/`values()` like all others.
+
+- [ ] **Step 1: Update the design doc**
+
+Add a "New DEFAULT (Concise) formatting rules" section to the spec containing the Concise content (see the approved block in the spec's "New DEFAULT (Concise) formatting rules" section), and update the Decisions/Scope sections to reflect the two-template model.
+
+- [ ] **Step 2: Add the CONCISE enum constant**
+
+In `SystemFormattingTemplate.java`, add after the `DEFAULT` constant:
+
+```java
+  CONCISE("CONCISE", "Default (Concise)", SystemFormattingTemplateRules.CONCISE_FORMATTING_RULES);
+```
+
+(change the `DEFAULT` line's trailing `;` to `,`)
+
+- [ ] **Step 3: Add the CONCISE_FORMATTING_RULES text block**
+
+In the nested `SystemFormattingTemplateRules` class, after `DEFAULT_FORMATTING_RULES`, add:
+
+```java
+    private static final String CONCISE_FORMATTING_RULES =
+        """
+        Output must be plain markdown. Never output HTML tags — not even a single one.
+        Convert all HTML in the input to its markdown equivalent before outputting (e.g. <strong> → **, <ul>/<li> → - lists, <code> → `code`).
+        Fix any obvious spelling and punctuation mistakes as long as the intended meaning remains unchanged.
+
+        FRONT field:
+        - Keep it short and scannable: a single term or a concise question, never a paragraph.
+        - Title "what is X" / "difference between X and Y" cards with the term or the two compared terms.
+
+        BACK field:
+        - Open with a single concise definition or purpose statement.
+        - Keep the answer brief and flat. Prefer short bullet lists (-) over long prose.
+        - Use numbered lists only for sequential steps.
+        - Bold key terms to emphasize them.
+        - Use arrows (→) for mappings or cause-effect, and "Term: explanation" for definitions.
+        - Keep comparisons and distinctions in parallel structure.
+        - Keep the whole answer to a few sentences or a handful of bullets. Do not add sub-topic labels, item counts, or emoji markers.
+        """;
+```
+
+- [ ] **Step 4: Verify no build runs and no other files changed**
+
+Run: `git diff --stat`
+Expected: only `SystemFormattingTemplate.java` and the design doc modified.
+Do not run the build (per AGENTS.md).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/main/java/com/felixkroemer/smort/domain/user/SystemFormattingTemplate.java docs/superpowers/specs/2026-09-05-formatting-template-design.md
+git commit -m "feat: add Default (Concise) formatting template"
+```
