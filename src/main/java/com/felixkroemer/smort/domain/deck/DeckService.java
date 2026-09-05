@@ -112,7 +112,7 @@ public class DeckService {
         .map(
             d ->
                 noteEntityMapper.toNoteEntity(
-                    deckId, UUID.randomUUID(), new NoteSchema(d.getFront(), d.getBack())))
+                    deckId, UUID.randomUUID(), new NoteSchema(d.getFront(), d.getBack()), "default"))
         .forEach(deckRepository::saveNote);
   }
 
@@ -141,7 +141,7 @@ public class DeckService {
     }
     var schema =
         getNoteSchema(ankiNote.getContent(), template.frontTemplate(), template.backTemplate());
-    return noteEntityMapper.toNoteEntity(deckId, UUID.randomUUID(), schema);
+    return noteEntityMapper.toNoteEntity(deckId, UUID.randomUUID(), schema, "default");
   }
 
   private NoteSchema getNoteSchema(
@@ -250,7 +250,7 @@ public class DeckService {
 
     var note =
         noteEntityMapper.toNoteEntity(
-            deckId, UUID.randomUUID(), new NoteSchema(draft.getFront(), draft.getBack()));
+            deckId, UUID.randomUUID(), new NoteSchema(draft.getFront(), draft.getBack()), "default");
 
     var addNoteMessageEntity =
         ChatMessageEntity.toolCall(

@@ -81,7 +81,7 @@ public class NoteService {
               deckRepository.saveNoteInTx(
                   tx,
                   noteEntityMapper.toNoteEntity(
-                      deckId, noteId, new NoteSchema(m.front(), m.back())));
+                      deckId, noteId, new NoteSchema(m.front(), m.back()), "default"));
             });
 
     return chatOrchestrationService.noteChat(
