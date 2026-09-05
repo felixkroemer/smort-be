@@ -13,9 +13,7 @@ public class FormattingSettingsResolver {
 
   public String resolve(DeckSettings settings) {
     return switch (settings.formattingMode()) {
-      case DEFAULT ->
-          userSettingsService.getTemplateContent(
-              userSettingsService.getUserSettings().getDefaultTemplateId());
+      case DEFAULT -> userSettingsService.getDefaultTemplateContent();
       case TEMPLATE -> userSettingsService.getTemplateContent(settings.templateId());
       case CUSTOM -> settings.formatInstructions();
     };
@@ -23,9 +21,7 @@ public class FormattingSettingsResolver {
 
   public String resolve(AnalysisSettings settings) {
     return switch (settings.formattingMode()) {
-      case DEFAULT ->
-          userSettingsService.getTemplateContent(
-              userSettingsService.getUserSettings().getDefaultTemplateId());
+      case DEFAULT -> userSettingsService.getDefaultTemplateContent();
       case TEMPLATE -> userSettingsService.getTemplateContent(settings.templateId());
       case CUSTOM -> settings.formatInstructions();
     };

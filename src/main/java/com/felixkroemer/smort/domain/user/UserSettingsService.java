@@ -57,6 +57,10 @@ public class UserSettingsService {
                     templateId));
   }
 
+  public String getDefaultTemplateContent() {
+    return getTemplateContent(getUserSettings().getDefaultTemplateId());
+  }
+
   public UserSettings updateUserSettings(String defaultTemplateId) {
     var settings =
         userSettingsRepository
