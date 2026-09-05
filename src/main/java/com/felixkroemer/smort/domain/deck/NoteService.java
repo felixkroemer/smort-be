@@ -4,6 +4,7 @@ import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.domain.chat.*;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.domain.deck.mapping.NoteEntityMapper;
+import com.felixkroemer.smort.domain.user.FormattingSettingsResolver;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckRepository;
@@ -27,6 +28,7 @@ public class NoteService {
   private final ChatRepository chatRepository;
   private final NoteEntityMapper noteEntityMapper;
   private final DeckService deckService;
+  private final FormattingSettingsResolver formattingSettingsResolver;
 
   public Optional<NoteEntity> getNote(UUID deckId, UUID noteId) {
     return deckRepository.findNoteByDeckIdAndNoteId(deckId, noteId);
@@ -48,7 +50,7 @@ public class NoteService {
               deckRepository.saveNoteInTx(tx, note);
             });
 
-    var formatInstructions = deckService.getDeckSettings(deckId).formatInstructions();
+    var formatInstructions = Optional.of(formattingSettingsResolver.resolve(deckService.getDeckSettings(deckId)));
     var chatMessages =
         chatOrchestrationService.formatNote(
             DeckKeys.deckPk(deckId),
@@ -69,7 +71,7 @@ public class NoteService {
             .findNoteByDeckIdAndNoteId(deckId, noteId)
             .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
 
-    var formatInstructions = deckService.getDeckSettings(deckId).formatInstructions();
+    var formatInstructions = Optional.of(formattingSettingsResolver.resolve(deckService.getDeckSettings(deckId)));
 
     var ctx = new NoteChatContext<>(noteId, note.getContent());
 

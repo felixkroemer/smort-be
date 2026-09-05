@@ -18,6 +18,7 @@ import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
 import com.felixkroemer.smort.domain.deck.mapping.DeckEntityMapper;
 import com.felixkroemer.smort.domain.deck.mapping.DraftNoteEntityMapper;
 import com.felixkroemer.smort.domain.deck.mapping.NoteEntityMapper;
+import com.felixkroemer.smort.domain.user.FormattingSettingsResolver;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
@@ -63,6 +64,7 @@ public class DeckService {
   private final DeckEntityMapper deckEntityMapper;
   private final DraftNoteEntityMapper draftNoteEntityMapper;
   private final DynamoDbEnhancedClient enhancedClient;
+  private final FormattingSettingsResolver formattingSettingsResolver;
 
   public List<NoteEntity> getNotes(UUID deckId) {
     return deckRepository.findNotesByDeckId(deckId);
@@ -215,7 +217,7 @@ public class DeckService {
   public List<ChatMessageEntity> chat(UUID deckId, String message) {
     var deck = getMeta(deckId);
 
-    var formatInstructions = getDeckSettings(deckId).formatInstructions();
+    var formatInstructions = Optional.of(formattingSettingsResolver.resolve(getDeckSettings(deckId)));
 
     var notes =
         deckRepository.findNotesByDeckId(deckId).stream().map(NoteEntity::getFront).toList();

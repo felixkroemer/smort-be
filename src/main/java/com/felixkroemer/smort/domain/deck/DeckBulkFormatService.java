@@ -10,6 +10,7 @@ import com.felixkroemer.smort.domain.chat.ToolCallHandler;
 import com.felixkroemer.smort.domain.common.BulkFormat;
 import com.felixkroemer.smort.domain.common.BulkFormatEngine;
 import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
+import com.felixkroemer.smort.domain.user.FormattingSettingsResolver;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
@@ -38,6 +39,7 @@ public class DeckBulkFormatService {
   private final BulkFormatEntityMapper bulkFormatEntityMapper;
   private final BulkFormatEngine bulkFormatEngine;
   private final DeckService deckService;
+  private final FormattingSettingsResolver formattingSettingsResolver;
 
   public void startBulkFormat(UUID deckId, boolean reformatAlreadyFormatted) {
     var existing = bulkFormatRepository.findBulkFormatByDeckId(deckId);
@@ -87,7 +89,7 @@ public class DeckBulkFormatService {
   }
 
   private void processNotes(DeckBulkFormatEntity job, List<NoteEntity> notesToProcess) {
-    var formatInstructions = deckService.getDeckSettings(job.getDeckId()).formatInstructions();
+    var formatInstructions = Optional.of(formattingSettingsResolver.resolve(deckService.getDeckSettings(job.getDeckId())));
     bulkFormatEngine.process(
         job,
         notesToProcess,
