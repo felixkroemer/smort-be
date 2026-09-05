@@ -67,6 +67,10 @@ public class DeckService {
     return deckRepository.findNotesByDeckId(deckId);
   }
 
+  public List<NoteEntity> getAllNotes() {
+    return deckRepository.findNotesByUserId("default");
+  }
+
   // TODO: clean up possible failed imports based on status and time passed
   public Deck importDeck(UUID analysisId, Map<String, NoteTypeTemplate> templates) {
     var analysis = analysisService.getAnalysis(analysisId);
