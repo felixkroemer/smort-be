@@ -32,7 +32,7 @@ The codebase has no auth yet, so the current user is the hardcoded dummy user
    - `userNoteIndexGsiPk` = `@DynamoDbSecondaryPartitionKey(indexNames = "UserNoteIndex")`
    - `userNoteIndexGsiSk` = `@DynamoDbSecondarySortKey(indexNames = "UserNoteIndex")`
 
-2. **Keys** — `DeckKeys` gains `userNoteIndexGsiPk(String userId)` returning
+2. **Keys** — `NoteKeys` gains `userNoteIndexGsiPk(String userId)` returning
    `"USER#" + userId`. The GSI sort key reuses `NoteKeys.noteSk(UUID noteId)`
    (already returns `"NOTE#" + noteId`).
 
