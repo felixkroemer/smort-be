@@ -7,6 +7,7 @@ import com.felixkroemer.smort.application.chat.dto.ChatMessageResponse;
 import com.felixkroemer.smort.application.chat.mapping.ChatMessageRestMapper;
 import com.felixkroemer.smort.application.deck.dto.DeckResponse;
 import com.felixkroemer.smort.application.deck.dto.DeckSettingsResponse;
+import com.felixkroemer.smort.application.deck.dto.DeleteNotesRequest;
 import com.felixkroemer.smort.application.deck.dto.DraftNoteResponse;
 import com.felixkroemer.smort.application.deck.dto.ImportAnalysisRequest;
 import com.felixkroemer.smort.application.deck.dto.NoteResponse;
@@ -173,6 +174,13 @@ public class DeckController {
   @DeleteMapping("/{deckId}")
   public void deleteDeck(@PathVariable("deckId") UUID deckId) {
     deckService.deleteDeck(deckId);
+  }
+
+  @DeleteMapping("/{deckId}/notes")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteNotes(
+      @PathVariable("deckId") UUID deckId, @RequestBody DeleteNotesRequest request) {
+    deckService.deleteNotes(deckId, request.noteIds());
   }
 
   @DeleteMapping("/{deckId}/notes/{noteId}")
