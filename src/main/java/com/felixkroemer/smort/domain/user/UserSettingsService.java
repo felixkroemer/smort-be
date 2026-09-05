@@ -91,21 +91,24 @@ public class UserSettingsService {
           "Cannot delete a system formatting template. id={}",
           id);
     }
-    getTemplate(id);
-    var defaultTemplateId =
+    if (userFormattingTemplateRepository.findByUserIdAndTemplateId(CURRENT_USER, id).isEmpty()) {
+      throw new NotFoundException("Could not find formatting template. id={}", id);
+    }
+    var settings =
         userSettingsRepository
             .findByUserId(CURRENT_USER)
-            .map(UserSettingsEntity::getDefaultTemplateId)
             .orElseThrow(
-                () -> new NotFoundException("Could not find user settings. userId={}", CURRENT_USER));
-    if (defaultTemplateId.equals(id)) {
+                () ->
+                    new NotFoundException("Could not find user settings. userId={}", CURRENT_USER));
+    if (settings.getDefaultTemplateId().equals(id)) {
       throw new SmortException(
           HttpStatus.CONFLICT,
           LogSeverity.INFO,
           "Cannot delete the default formatting template. id={}",
           id);
+    } else {
+      userFormattingTemplateRepository.delete(CURRENT_USER, id);
     }
-    userFormattingTemplateRepository.delete(CURRENT_USER, id);
   }
 
   private UserFormattingTemplateEntity getTemplate(String id) {
