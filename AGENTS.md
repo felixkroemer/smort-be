@@ -1,6 +1,9 @@
 # AGENTS.md
 
 ## Git workflow
+- Before starting any plan or task, set up an isolated git worktree under
+  .worktrees/ (see the using-git-worktrees skill) and do all work there. Never
+  work directly in the main checkout or on main/master.
 - Never start implementation on main/master. Always create a feature branch
   for any plan or task before writing code.
 - Commit all work to the feature branch; leave main untouched.
