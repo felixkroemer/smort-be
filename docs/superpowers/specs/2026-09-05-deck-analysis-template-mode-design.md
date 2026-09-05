@@ -67,17 +67,15 @@ and out of scope here.
 `UpdateDeckSettingsRequest` / `UpdateAnalysisSettingsRequest`:
 ```java
 public record UpdateDeckSettingsRequest(
-    Optional<FormattingMode> formattingMode,
-    Optional<String> templateId,
-    Optional<String> formatInstructions) {}
+    FormattingMode formattingMode,
+    String templateId,
+    String formatInstructions) {}
 ```
-Each field is optional; a `null` field means "don't change" (existing `!= null`
-guard pattern). Only the fields present in the body are applied and persisted.
-Because all three stored settings are always non-null, `Optional.empty()` and
-`null` currently have the same effect ("don't change") — there is no
-clear/unset operation today. The `Optional` shape is kept so a future setting
-that can be explicitly unset can express that via `Optional.empty()`. Response
-records return the full three-field settings.
+Each field is a plain nullable type; a `null` field means "don't change" (the
+service treats `null` as ignore), so only the fields present in the body are
+applied and persisted. A non-null value sets the field (including an empty
+`formatInstructions` string, which is distinct from `null`). Response records
+return the full three-field settings.
 
 ## Resolution — `FormattingSettingsResolver`
 

@@ -13,7 +13,7 @@
 - No tests are written and no build is run (AGENTS.md / spec). Implementing subagents must NOT run `./mvnw compile`, `./mvnw test`, etc. Compilation is owned by the human; note "compilation skipped" in each task report.
 - Current user is the hardcoded `"default"` (no auth). Never pass a userId from controllers.
 - `FormattingMode { DEFAULT, TEMPLATE, CUSTOM }`. `DEFAULT` resolves to the user's default template id (from user settings); `TEMPLATE` resolves `templateId` (throws `NotFoundException` if the referenced user template was deleted); `CUSTOM` returns the `formatInstructions` string verbatim (empty string is the user's problem).
-- The three stored settings are always non-null. In the update request, each field is `Optional<T>`; a `null` field or `Optional.empty()` means "don't change"; `Optional.of(value)` sets it.
+- The three stored settings are always non-null. In the update request, each field is a plain nullable type; a `null` field means "don't change"; a non-null value sets it.
 - `SystemFormattingTemplate.fromId(String)` and `SystemFormattingTemplate.DEFAULT.getId()` already exist in `domain.user`.
 - Existing custom `formatInstructions` rows are not migrated.
 - Work on branch `feat/deck-analysis-template-settings` in the worktree `.worktrees/feat-deck-analysis-template-settings`; commit after each task.
@@ -118,8 +118,8 @@ git commit -m "feat: store formattingMode, templateId and formatInstructions on 
   - `AnalysisSettings(FormattingMode formattingMode, String templateId, String formatInstructions)`
   - `DeckSettingsResponse(FormattingMode formattingMode, String templateId, String formatInstructions)`
   - `AnalysisSettingsResponse(FormattingMode formattingMode, String templateId, String formatInstructions)`
-  - `UpdateDeckSettingsRequest(Optional<FormattingMode> formattingMode, Optional<String> templateId, Optional<String> formatInstructions)`
-  - `UpdateAnalysisSettingsRequest(Optional<FormattingMode> formattingMode, Optional<String> templateId, Optional<String> formatInstructions)`
+  - `UpdateDeckSettingsRequest(FormattingMode formattingMode, String templateId, String formatInstructions)`
+  - `UpdateAnalysisSettingsRequest(FormattingMode formattingMode, String templateId, String formatInstructions)`
 
 - [ ] **Step 1: Settings records**
 
@@ -172,12 +172,9 @@ public record AnalysisSettingsResponse(
 package com.felixkroemer.smort.application.deck.dto;
 
 import com.felixkroemer.smort.domain.common.FormattingMode;
-import java.util.Optional;
 
 public record UpdateDeckSettingsRequest(
-    Optional<FormattingMode> formattingMode,
-    Optional<String> templateId,
-    Optional<String> formatInstructions) {}
+    FormattingMode formattingMode, String templateId, String formatInstructions) {}
 ```
 
 `UpdateAnalysisSettingsRequest.java`:
@@ -185,13 +182,11 @@ public record UpdateDeckSettingsRequest(
 package com.felixkroemer.smort.application.anki.dto;
 
 import com.felixkroemer.smort.domain.common.FormattingMode;
-import java.util.Optional;
 
 public record UpdateAnalysisSettingsRequest(
-    Optional<FormattingMode> formattingMode,
-    Optional<String> templateId,
-    Optional<String> formatInstructions) {}
+    FormattingMode formattingMode, String templateId, String formatInstructions) {}
 ```
+Each field is nullable; a `null` value means "don't change".
 
 - [ ] **Step 4: Commit**
 
@@ -249,8 +244,8 @@ git commit -m "refactor: remove formatInstructions from deck and analysis aggreg
 **Interfaces:**
 - Consumes: `FormattingMode`, `SystemFormattingTemplate`, settings/DTOs (Tasks 1–3).
 - Produces:
-  - `DeckService.getDeckSettings(UUID)` → `DeckSettings` (3 fields); `DeckService.updateDeckSettings(UUID, Optional<FormattingMode>, Optional<String>, Optional<String>)` → `DeckSettings`.
-  - `AnalysisService.getAnalysisSettings(UUID)` → `AnalysisSettings` (3 fields); `AnalysisService.updateAnalysisSettings(UUID, Optional<FormattingMode>, Optional<String>, Optional<String>)` → `AnalysisSettings`.
+  - `DeckService.getDeckSettings(UUID)` → `DeckSettings` (3 fields); `DeckService.updateDeckSettings(UUID, FormattingMode, String, String)` → `DeckSettings`.
+  - `AnalysisService.getAnalysisSettings(UUID)` → `AnalysisSettings` (3 fields); `AnalysisService.updateAnalysisSettings(UUID, FormattingMode, String, String)` → `AnalysisSettings`.
 
 - [ ] **Step 1: `DeckService` settings methods**
 
@@ -264,17 +259,14 @@ public DeckSettings getDeckSettings(UUID deckId) {
 
 public DeckSettings updateDeckSettings(
     UUID deckId,
-    Optional<FormattingMode> formattingMode,
-    Optional<String> templateId,
-    Optional<String> formatInstructions) {
+    FormattingMode formattingMode,
+    String templateId,
+    String formatInstructions) {
   var deck = getMeta(deckId);
-  var formattingModePresent = formattingMode != null && formattingMode.isPresent();
-  var templateIdPresent = templateId != null && templateId.isPresent();
-  var formatInstructionsPresent = formatInstructions != null && formatInstructions.isPresent();
-  if (formattingModePresent) deck.setFormattingMode(formattingMode.get());
-  if (templateIdPresent) deck.setTemplateId(templateId.get());
-  if (formatInstructionsPresent) deck.setFormatInstructions(formatInstructions.get());
-  if (formattingModePresent || templateIdPresent || formatInstructionsPresent) {
+  if (formattingMode != null) deck.setFormattingMode(formattingMode);
+  if (templateId != null) deck.setTemplateId(templateId);
+  if (formatInstructions != null) deck.setFormatInstructions(formatInstructions);
+  if (formattingMode != null || templateId != null || formatInstructions != null) {
     deckRepository.saveDeckMeta(deck);
   }
   return new DeckSettings(deck.getFormattingMode(), deck.getTemplateId(), deck.getFormatInstructions());
@@ -295,17 +287,14 @@ public AnalysisSettings getAnalysisSettings(UUID analysisId) {
 
 public AnalysisSettings updateAnalysisSettings(
     UUID analysisId,
-    Optional<FormattingMode> formattingMode,
-    Optional<String> templateId,
-    Optional<String> formatInstructions) {
+    FormattingMode formattingMode,
+    String templateId,
+    String formatInstructions) {
   var analysis = getMeta(analysisId);
-  var formattingModePresent = formattingMode != null && formattingMode.isPresent();
-  var templateIdPresent = templateId != null && templateId.isPresent();
-  var formatInstructionsPresent = formatInstructions != null && formatInstructions.isPresent();
-  if (formattingModePresent) analysis.setFormattingMode(formattingMode.get());
-  if (templateIdPresent) analysis.setTemplateId(templateId.get());
-  if (formatInstructionsPresent) analysis.setFormatInstructions(formatInstructions.get());
-  if (formattingModePresent || templateIdPresent || formatInstructionsPresent) {
+  if (formattingMode != null) analysis.setFormattingMode(formattingMode);
+  if (templateId != null) analysis.setTemplateId(templateId);
+  if (formatInstructions != null) analysis.setFormatInstructions(formatInstructions);
+  if (formattingMode != null || templateId != null || formatInstructions != null) {
     analysis.setUpdatedAt(Instant.now());
     analysisMetaRepository.save(analysis);
   }
@@ -579,6 +568,6 @@ git commit -m "feat: resolve analysis formatting settings through FormattingSett
 ## Self-Review Notes
 
 - **Spec coverage:** `FormattingMode` enum (T1); entity storage (T2); settings records + DTOs (T3); aggregate mirror removal (T4); get/update endpoints with three independent optional fields (T5); resolver with DEFAULT/TEMPLATE/CUSTOM semantics and throw on deleted template (T6); all call sites routed through the resolver — deck (T7) and analysis, including the two formerly aggregate-based sites `AnkiNoteService.formatNote` and `AnalysisBulkFormatService` (T8).
-- **Type consistency:** `FormattingMode` and the three-field settings records are used consistently. `resolve(DeckSettings)`/`resolve(AnalysisSettings)` return `String`. The `Optional.empty()`/`null` = "don't change" semantics are implemented via the `!= null && isPresent()` guards in T5.
+- **Type consistency:** `FormattingMode` and the three-field settings records are used consistently. `resolve(DeckSettings)`/`resolve(AnalysisSettings)` return `String`. The "`null` = don't change" semantics are implemented via the `!= null` guards in T5.
 - **No placeholders:** every code step contains full code.
 - **Unused imports:** `OptionalStringConverter` stays (used by `AbstractChatMessageEntity`); removed only from the two meta entities. Check for and remove any now-unused imports flagged in each task (noted in T2 and T8).
