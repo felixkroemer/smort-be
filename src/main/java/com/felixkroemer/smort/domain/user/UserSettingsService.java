@@ -1,6 +1,8 @@
 package com.felixkroemer.smort.domain.user;
 
+import com.felixkroemer.smort.common.exception.LogSeverity;
 import com.felixkroemer.smort.common.exception.NotFoundException;
+import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.user.mapping.FormattingTemplateEntityMapper;
 import com.felixkroemer.smort.domain.user.mapping.UserSettingsEntityMapper;
 import com.felixkroemer.smort.infrastructure.dynamodb.user.UserFormattingTemplateEntity;
@@ -12,6 +14,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -75,6 +78,18 @@ public class UserSettingsService {
 
   public void deleteTemplate(String id) {
     getTemplate(id);
+    var defaultTemplateId =
+        userSettingsRepository
+            .findByUserId(CURRENT_USER)
+            .map(UserSettingsEntity::getDefaultTemplateId)
+            .orElse(SystemFormattingTemplate.DEFAULT.getId());
+    if (defaultTemplateId.equals(id)) {
+      throw new SmortException(
+          HttpStatus.CONFLICT,
+          LogSeverity.INFO,
+          "Cannot delete the default formatting template. id={}",
+          id);
+    }
     userFormattingTemplateRepository.delete(CURRENT_USER, id);
   }
 
