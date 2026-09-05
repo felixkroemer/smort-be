@@ -23,6 +23,14 @@ public class AnalysisMetaEntity {
   @Getter(onMethod_ = @DynamoDbSortKey)
   private String sk;
 
+  @Getter(onMethod_ = @DynamoDbSecondaryPartitionKey(indexNames = "UserAnalysisIndex"))
+  private String userAnalysisIndexGsiPk;
+
+  @Getter(onMethod_ = @DynamoDbSecondarySortKey(indexNames = "UserAnalysisIndex"))
+  private String userAnalysisIndexGsiSk;
+
+  private String userId;
+
   private String dbPath;
   private Long deckId;
   private int noteCount;
@@ -34,9 +42,12 @@ public class AnalysisMetaEntity {
   @Getter(onMethod_ = @DynamoDbConvertedBy(OptionalStringConverter.class))
   private Optional<String> formatInstructions = Optional.empty();
 
-  public AnalysisMetaEntity(UUID analysisId, AnalysisStatus status) {
+  public AnalysisMetaEntity(UUID analysisId, String userId, AnalysisStatus status) {
     this.pk = AnalysisKeys.analysisPk(analysisId);
     this.sk = MetaKeys.metaSk();
+    this.userAnalysisIndexGsiPk = AnalysisKeys.userAnalysisIndexGsiPk(userId);
+    this.userAnalysisIndexGsiSk = MetaKeys.userAnalysisIndexGsiSk(analysisId);
+    this.userId = userId;
     this.status = status;
     this.createdAt = Instant.now();
     this.updatedAt = Instant.now();
