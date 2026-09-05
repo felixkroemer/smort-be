@@ -12,6 +12,7 @@ import com.felixkroemer.smort.domain.common.BulkFormat;
 import com.felixkroemer.smort.domain.common.BulkFormatEngine;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
+import com.felixkroemer.smort.domain.user.FormattingSettingsResolver;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
@@ -41,6 +42,7 @@ public class AnalysisBulkFormatService {
   private final BulkFormatEntityMapper bulkFormatEntityMapper;
   private final DerivedNoteEntityMapper derivedNoteEntityMapper;
   private final BulkFormatEngine bulkFormatEngine;
+  private final FormattingSettingsResolver formattingSettingsResolver;
 
   public void startBulkFormat(UUID analysisId, boolean reformatAlreadyFormatted) {
     var existing = bulkFormatRepository.findBulkFormatByAnalysisId(analysisId);
@@ -103,9 +105,10 @@ public class AnalysisBulkFormatService {
 
   private void processNotes(AnalysisBulkFormatEntity job, List<NoteToProcess> notesToProcess) {
     var analysisId = job.getAnalysisId();
-    Analysis analysis;
+    Optional<String> formatInstructions;
     try {
-      analysis = analysisService.getAnalysis(analysisId);
+      formatInstructions =
+          Optional.of(formattingSettingsResolver.resolve(analysisService.getAnalysisSettings(analysisId)));
     } catch (NotFoundException e) {
       throw e.withSeverity(LogSeverity.ERROR);
     }
@@ -146,7 +149,7 @@ public class AnalysisBulkFormatService {
               AnalysisKeys.analysisPk(analysisId),
               noteEntity.getId(),
               content,
-              analysis.getFormatInstructions(),
+              formatInstructions,
               toolHandlers);
         });
   }
