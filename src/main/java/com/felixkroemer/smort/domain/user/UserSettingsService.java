@@ -45,6 +45,18 @@ public class UserSettingsService {
         settings, Stream.concat(systemTemplates.stream(), userTemplates.stream()).toList());
   }
 
+  public String getTemplateContent(String templateId) {
+    return getUserSettings().getTemplates().stream()
+        .filter(t -> t.id().equals(templateId))
+        .findFirst()
+        .map(FormattingTemplate::content)
+        .orElseThrow(
+            () ->
+                new NotFoundException(
+                    "Referenced formatting template does not exist. Please choose a valid template. id={}",
+                    templateId));
+  }
+
   public UserSettings updateUserSettings(String defaultTemplateId) {
     var settings =
         userSettingsRepository
