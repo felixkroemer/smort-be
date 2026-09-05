@@ -15,4 +15,8 @@ public final class NoteKeys {
   public static String notePrefix() {
     return "NOTE#";
   }
+
+  public static String userNoteIndexGsiPk(String userId) {
+    return "USER#" + userId;
+  }
 }
