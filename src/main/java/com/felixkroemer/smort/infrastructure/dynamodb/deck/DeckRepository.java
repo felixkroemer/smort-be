@@ -34,8 +34,8 @@ public class DeckRepository {
 
     return userNoteIndex
         .query(QueryEnhancedRequest.builder().queryConditional(condition).build())
-        .items()
         .stream()
+        .flatMap(page -> page.items().stream())
         .toList();
   }
 
