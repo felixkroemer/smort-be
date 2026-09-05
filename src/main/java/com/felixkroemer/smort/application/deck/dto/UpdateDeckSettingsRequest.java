@@ -1,5 +1,6 @@
 package com.felixkroemer.smort.application.deck.dto;
 
-import java.util.Optional;
+import com.felixkroemer.smort.domain.common.FormattingMode;
 
-public record UpdateDeckSettingsRequest(Optional<String> formatInstructions) {}
+public record UpdateDeckSettingsRequest(
+    FormattingMode formattingMode, String templateId, String formatInstructions) {}
