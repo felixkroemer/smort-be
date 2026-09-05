@@ -53,7 +53,7 @@ the endpoint is idempotent and returns `204 No Content` regardless.
 
 `DELETE /decks/{deckId}/notes {noteIds:[...]}` → `DeckService.deleteNotes` →
 per note `ChatRepository.deleteChat(DeckKeys.deckPk(deckId), noteId)` (removes
-`LLM_CHAT_MESSAGE#<noteId>#…` and `USER_CHAT_MESSAGE#<noteId>#…` keys) →
+`CHAT#C#<noteId>#` and `CHAT#U#<noteId>#` keys) →
 `DeckRepository.deleteNotesByDeckIdAndNoteIds` → one `batchWriteItem` per 25
 notes.
 
