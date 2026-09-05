@@ -20,6 +20,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public class AnalysisMetaRepository {
 
   private final DynamoDbTable<AnalysisMetaEntity> analysisMetaTable;
+  private final DynamoDbIndex<AnalysisMetaEntity> userAnalysisIndex;
 
   public Optional<AnalysisMetaEntity> findAnalysisMetaByAnalysisId(UUID analysisId) {
     var key =
@@ -31,22 +32,28 @@ public class AnalysisMetaRepository {
     return Optional.ofNullable(analysisMetaTable.getItem(key));
   }
 
-  public List<AnalysisMetaEntity> findAllAnalysisMetas() {
+  public List<AnalysisMetaEntity> findAnalysisMetasByUserId(String userId) {
+    var condition =
+        QueryConditional.keyEqualTo(
+            Key.builder().partitionValue(AnalysisKeys.userAnalysisIndexGsiPk(userId)).build());
+
     Expression filter =
         Expression.builder()
-            .expression("#sk = :sk AND begins_with(#pk, :pkPrefix) AND #status <> :status")
-            .expressionNames(Map.of("#sk", "sk", "#pk", "pk", "#status", "status"))
+            .expression("#status <> :status")
+            .expressionNames(Map.of("#status", "status"))
             .expressionValues(
                 Map.of(
-                    ":sk", AttributeValue.fromS(MetaKeys.metaSk()),
-                    ":pkPrefix", AttributeValue.fromS(AnalysisKeys.analysisPkPrefix()),
                     ":status", AttributeValue.fromS(AnalysisStatus.MARKED_FOR_DELETION.toString())))
             .build();
 
-    return analysisMetaTable
-        .scan(ScanEnhancedRequest.builder().filterExpression(filter).build())
-        .items()
+    return userAnalysisIndex
+        .query(
+            QueryEnhancedRequest.builder()
+                .queryConditional(condition)
+                .filterExpression(filter)
+                .build())
         .stream()
+        .flatMap(page -> page.items().stream())
         .toList();
   }
 
