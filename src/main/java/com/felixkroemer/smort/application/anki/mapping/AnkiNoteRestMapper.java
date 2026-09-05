@@ -6,7 +6,9 @@ import com.felixkroemer.smort.application.anki.dto.DerivedNoteResponse;
 import com.felixkroemer.smort.domain.anki.AnkiNote;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteEntity;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiDeckEntity;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
@@ -27,4 +29,8 @@ public interface AnkiNoteRestMapper {
   List<AnkiDeckResponse> toAnkiDeckResponse(List<AnkiDeckEntity> entities);
 
   AnkiDeckResponse toAnkiDeckResponse(AnkiDeckEntity entity);
+
+  default Instant map(Optional<Instant> value) {
+    return value.orElse(null);
+  }
 }
