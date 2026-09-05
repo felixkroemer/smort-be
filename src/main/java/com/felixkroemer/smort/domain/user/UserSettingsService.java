@@ -77,6 +77,13 @@ public class UserSettingsService {
   }
 
   public void deleteTemplate(String id) {
+    if (SystemFormattingTemplate.fromId(id).isPresent()) {
+      throw new SmortException(
+          HttpStatus.CONFLICT,
+          LogSeverity.INFO,
+          "Cannot delete a system formatting template. id={}",
+          id);
+    }
     getTemplate(id);
     var defaultTemplateId =
         userSettingsRepository

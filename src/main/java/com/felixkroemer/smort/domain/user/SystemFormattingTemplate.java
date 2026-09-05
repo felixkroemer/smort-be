@@ -1,5 +1,7 @@
 package com.felixkroemer.smort.domain.user;
 
+import java.util.Arrays;
+import java.util.Optional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -20,4 +22,8 @@ public enum SystemFormattingTemplate {
   private final String id;
   private final String name;
   private final String content;
+
+  public static Optional<SystemFormattingTemplate> fromId(String id) {
+    return Arrays.stream(values()).filter(t -> t.getId().equals(id)).findFirst();
+  }
 }
