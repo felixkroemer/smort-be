@@ -84,6 +84,12 @@ public class DynamoDbClientConfig {
   }
 
   @Bean
+  DynamoDbIndex<AnalysisMetaEntity> userAnalysisIndex(
+      DynamoDbTable<AnalysisMetaEntity> analysisMetaTable) {
+    return analysisMetaTable.index("UserAnalysisIndex");
+  }
+
+  @Bean
   DynamoDbIndex<AnalysisBulkFormatEntity> statusBulkFormatIndex(
       DynamoDbTable<AnalysisBulkFormatEntity> analysisBulkFormatTable) {
     return analysisBulkFormatTable.index("StatusBulkFormatIndex");
