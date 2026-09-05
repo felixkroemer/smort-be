@@ -211,13 +211,12 @@ public class DeckService {
   }
 
   public void deleteNotes(UUID deckId, List<UUID> noteIds) {
-    var pk = DeckKeys.deckPk(deckId);
-    noteIds.forEach(noteId -> chatRepository.deleteChat(pk, noteId));
-    deckRepository.deleteNotesByDeckIdAndNoteIds(deckId, noteIds);
+    noteIds.forEach(noteId -> deleteNote(deckId, noteId));
   }
 
   public void deleteNote(UUID deckId, UUID noteId) {
-    deleteNotes(deckId, List.of(noteId));
+    deckRepository.deleteNoteByDeckIdAndNoteId(deckId, noteId);
+    chatRepository.deleteChat(DeckKeys.deckPk(deckId), noteId);
   }
 
   public List<ChatMessageEntity> chat(UUID deckId, String message) {
