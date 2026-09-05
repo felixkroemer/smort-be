@@ -8,7 +8,8 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum SystemFormattingTemplate {
-  DEFAULT("DEFAULT", "Default", SystemFormattingTemplateRules.DEFAULT_FORMATTING_RULES);
+  DEFAULT("DEFAULT", "Default", SystemFormattingTemplateRules.DEFAULT_FORMATTING_RULES),
+  CONCISE("CONCISE", "Default (Concise)", SystemFormattingTemplateRules.CONCISE_FORMATTING_RULES);
 
   private final String id;
   private final String name;
@@ -40,6 +41,26 @@ public enum SystemFormattingTemplate {
         - Keep comparisons and distinctions in parallel structure so the two sides read consistently.
         - Label examples explicitly ("Example:", "e.g.") and keep them minimal but concrete.
         - You may use ✅ (correct/works), ❌ (wrong/fails), ⚠️ (caveat) to mark contrasts when it fits naturally, but do not force them.
+        """;
+
+    private static final String CONCISE_FORMATTING_RULES =
+        """
+        Output must be plain markdown. Never output HTML tags — not even a single one.
+        Convert all HTML in the input to its markdown equivalent before outputting (e.g. <strong> → **, <ul>/<li> → - lists, <code> → `code`).
+        Fix any obvious spelling and punctuation mistakes as long as the intended meaning remains unchanged.
+
+        FRONT field:
+        - Keep it short and scannable: a single term or a concise question, never a paragraph.
+        - Title "what is X" / "difference between X and Y" cards with the term or the two compared terms.
+
+        BACK field:
+        - Open with a single concise definition or purpose statement.
+        - Keep the answer brief and flat. Prefer short bullet lists (-) over long prose.
+        - Use numbered lists only for sequential steps.
+        - Bold key terms to emphasize them.
+        - Use arrows (→) for mappings or cause-effect, and "Term: explanation" for definitions.
+        - Keep comparisons and distinctions in parallel structure.
+        - Keep the whole answer to a few sentences or a handful of bullets. Do not add sub-topic labels, item counts, or emoji markers.
         """;
   }
 }
