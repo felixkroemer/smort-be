@@ -40,7 +40,7 @@ public class AnalysisService {
   private final BulkFormatEntityMapper bulkFormatEntityMapper;
 
   public UUID createAnalysis() {
-    var analysis = new AnalysisMetaEntity(UUID.randomUUID(), AnalysisStatus.NEW);
+    var analysis = new AnalysisMetaEntity(UUID.randomUUID(), "default", AnalysisStatus.NEW);
     analysisMetaRepository.save(analysis);
     log.info("Started new analysis. id={}", analysis.getAnalysisId());
     return analysis.getAnalysisId();
@@ -55,7 +55,7 @@ public class AnalysisService {
   }
 
   public List<Analysis> getAnalyses() {
-    return analysisMetaRepository.findAllAnalysisMetas().stream()
+    return analysisMetaRepository.findAnalysisMetasByUserId("default").stream()
         .map(
             entity ->
                 analysisEntityMapper.toAnalysis(
