@@ -93,7 +93,10 @@ public class AnalysisController {
       @RequestBody UpdateAnalysisSettingsRequest updateAnalysisSettingsRequest) {
     return analysisRestMapper.toAnalysisSettingsResponse(
         analysisService.updateAnalysisSettings(
-            analysisId, updateAnalysisSettingsRequest.formatInstructions()));
+            analysisId,
+            updateAnalysisSettingsRequest.formattingMode(),
+            updateAnalysisSettingsRequest.templateId(),
+            updateAnalysisSettingsRequest.formatInstructions()));
   }
 
   @DeleteMapping("/{analysisId}")

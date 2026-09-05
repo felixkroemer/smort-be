@@ -64,7 +64,11 @@ public class DeckController {
       @PathVariable("deckId") UUID deckId,
       @RequestBody UpdateDeckSettingsRequest updateDeckSettingsRequest) {
     return deckRestMapper.toDeckSettingsResponse(
-        deckService.updateDeckSettings(deckId, updateDeckSettingsRequest.formatInstructions()));
+        deckService.updateDeckSettings(
+            deckId,
+            updateDeckSettingsRequest.formattingMode(),
+            updateDeckSettingsRequest.templateId(),
+            updateDeckSettingsRequest.formatInstructions()));
   }
 
   @GetMapping("/{deckId}/notes/{noteId}")
