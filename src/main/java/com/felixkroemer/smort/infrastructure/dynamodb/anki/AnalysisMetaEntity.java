@@ -39,9 +39,9 @@ public class AnalysisMetaEntity {
   private Instant createdAt;
   private Instant updatedAt;
 
-  private FormattingMode formattingMode = FormattingMode.DEFAULT;
-  private String templateId = SystemFormattingTemplate.DEFAULT.getId();
-  private String formatInstructions = "";
+  private FormattingMode formattingMode;
+  private String templateId;
+  private String formatInstructions;
 
   public AnalysisMetaEntity(UUID analysisId, String userId, AnalysisStatus status) {
     this.pk = AnalysisKeys.analysisPk(analysisId);
@@ -52,6 +52,9 @@ public class AnalysisMetaEntity {
     this.status = status;
     this.createdAt = Instant.now();
     this.updatedAt = Instant.now();
+    this.formattingMode = FormattingMode.DEFAULT;
+    this.templateId = SystemFormattingTemplate.DEFAULT.getId();
+    this.formatInstructions = "";
   }
 
   public UUID getAnalysisId() {

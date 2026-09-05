@@ -36,9 +36,9 @@ public class DeckMetaEntity {
 
   private DeckStatus status;
 
-  private FormattingMode formattingMode = FormattingMode.DEFAULT;
-  private String templateId = SystemFormattingTemplate.DEFAULT.getId();
-  private String formatInstructions = "";
+  private FormattingMode formattingMode;
+  private String templateId;
+  private String formatInstructions;
 
   public DeckMetaEntity(UUID deckId, String name, String userId) {
     this.pk = DeckKeys.deckPk(deckId);
@@ -48,5 +48,8 @@ public class DeckMetaEntity {
     this.deckId = deckId;
     this.name = name;
     this.status = DeckStatus.IMPORTING;
+    this.formattingMode = FormattingMode.DEFAULT;
+    this.templateId = SystemFormattingTemplate.DEFAULT.getId();
+    this.formatInstructions = "";
   }
 }
