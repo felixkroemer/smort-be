@@ -34,7 +34,7 @@ public class UserSettingsService {
             .findByUserId(CURRENT_USER)
             .orElseGet(() -> new UserSettingsEntity(CURRENT_USER));
     var userTemplates =
-        userFormattingTemplateRepository.findByUserId(CURRENT_USER).stream()
+        getTemplates().stream()
             .map(formattingTemplateEntityMapper::toFormattingTemplate)
             .toList();
     var systemTemplates =
@@ -94,12 +94,7 @@ public class UserSettingsService {
     if (userFormattingTemplateRepository.findByUserIdAndTemplateId(CURRENT_USER, id).isEmpty()) {
       throw new NotFoundException("Could not find formatting template. id={}", id);
     }
-    var settings =
-        userSettingsRepository
-            .findByUserId(CURRENT_USER)
-            .orElseThrow(
-                () ->
-                    new NotFoundException("Could not find user settings. userId={}", CURRENT_USER));
+    var settings = getSettingsMeta();
     if (settings.getDefaultTemplateId().equals(id)) {
       throw new SmortException(
           HttpStatus.CONFLICT,
@@ -116,5 +111,16 @@ public class UserSettingsService {
         .findByUserIdAndTemplateId(CURRENT_USER, id)
         .orElseThrow(
             () -> new NotFoundException("Could not find formatting template. id={}", id));
+  }
+
+  private List<UserFormattingTemplateEntity> getTemplates() {
+    return userFormattingTemplateRepository.findByUserId(CURRENT_USER);
+  }
+
+  private UserSettingsEntity getSettingsMeta() {
+    return userSettingsRepository
+        .findByUserId(CURRENT_USER)
+        .orElseThrow(
+            () -> new NotFoundException("Could not find user settings. userId={}", CURRENT_USER));
   }
 }
