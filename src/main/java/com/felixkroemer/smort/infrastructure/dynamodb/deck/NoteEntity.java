@@ -11,6 +11,8 @@ import lombok.Setter;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondarySortKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
 @DynamoDbBean
@@ -28,6 +30,14 @@ public class NoteEntity {
   private UUID id;
   private String front;
   private String back;
+
+  @Getter(onMethod_ = @DynamoDbSecondaryPartitionKey(indexNames = "UserNoteIndex"))
+  private String userNoteIndexGsiPk;
+
+  @Getter(onMethod_ = @DynamoDbSecondarySortKey(indexNames = "UserNoteIndex"))
+  private String userNoteIndexGsiSk;
+
+  private String userId;
 
   // The enhanced client ignores explicit NUL values when reading, so the transformTo in the
   // converter is never
