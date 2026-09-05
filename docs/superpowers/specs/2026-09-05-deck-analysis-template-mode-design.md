@@ -58,6 +58,10 @@ public record DeckSettings(FormattingMode formattingMode, String templateId, Str
 public record AnalysisSettings(FormattingMode formattingMode, String templateId, String formatInstructions) {}
 ```
 
+The three settings remain stored directly on the meta entities for now (the
+existing pattern). Moving settings to dedicated storage is a future feature
+and out of scope here.
+
 ## Update endpoint — independent fields
 
 `UpdateDeckSettingsRequest` / `UpdateAnalysisSettingsRequest`:
