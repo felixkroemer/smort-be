@@ -96,7 +96,8 @@ public class UserSettingsService {
         userSettingsRepository
             .findByUserId(CURRENT_USER)
             .map(UserSettingsEntity::getDefaultTemplateId)
-            .orElse(SystemFormattingTemplate.DEFAULT.getId());
+            .orElseThrow(
+                () -> new NotFoundException("Could not find user settings. userId={}", CURRENT_USER));
     if (defaultTemplateId.equals(id)) {
       throw new SmortException(
           HttpStatus.CONFLICT,
