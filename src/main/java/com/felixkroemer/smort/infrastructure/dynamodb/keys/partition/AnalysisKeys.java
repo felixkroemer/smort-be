@@ -11,4 +11,8 @@ public final class AnalysisKeys {
   public static String analysisPkPrefix() {
     return "ANALYSIS#";
   }
+
+  public static String userAnalysisIndexGsiPk(String userId) {
+    return "USER#" + userId;
+  }
 }

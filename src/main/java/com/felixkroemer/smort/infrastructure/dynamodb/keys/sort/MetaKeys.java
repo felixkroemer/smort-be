@@ -15,4 +15,8 @@ public final class MetaKeys {
   public static String userDeckIndexGsiSk(UUID deckId) {
     return "DECK#" + deckId;
   }
+
+  public static String userAnalysisIndexGsiSk(UUID analysisId) {
+    return "ANALYSIS#" + analysisId;
+  }
 }
