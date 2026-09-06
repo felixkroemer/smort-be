@@ -71,7 +71,10 @@ public class DeckService {
   }
 
   public List<NoteEntity> getAllNotes() {
-    return deckRepository.findNotesByUserId("default");
+    var deckIds = getDecks().stream().map(Deck::getDeckId).collect(Collectors.toSet());
+    return deckRepository.findNotesByUserId("default").stream()
+        .filter(note -> deckIds.contains(note.getDeckId()))
+        .toList();
   }
 
   // TODO: clean up possible failed imports based on status and time passed

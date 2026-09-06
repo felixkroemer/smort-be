@@ -28,6 +28,7 @@ public class NoteEntity {
   private String sk;
 
   private UUID id;
+  private UUID deckId;
   private String front;
   private String back;
 
