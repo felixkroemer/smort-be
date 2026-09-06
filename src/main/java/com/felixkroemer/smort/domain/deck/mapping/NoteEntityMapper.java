@@ -17,6 +17,7 @@ import org.mapstruct.ReportingPolicy;
 public interface NoteEntityMapper {
 
   @Mapping(target = "id", source = "noteId")
+  @Mapping(target = "deckId", source = "deckId")
   @Mapping(target = "front", source = "noteSchema.front")
   @Mapping(target = "back", source = "noteSchema.back")
   @Mapping(
