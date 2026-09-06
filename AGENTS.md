@@ -4,6 +4,9 @@
 - Before starting any plan or task, set up an isolated git worktree under
   .worktrees/ (see the using-git-worktrees skill) and do all work there. Never
   work directly in the main checkout or on main/master.
+- Copy the main checkout's .idea/ folder into the new worktree (IDE config is
+  git-ignored and does not carry over into fresh worktrees). Never stage or
+  commit .idea/ or any of its contents.
 - Never start implementation on main/master. Always create a feature branch
   for any plan or task before writing code.
 - Commit all work to the feature branch; leave main untouched.
