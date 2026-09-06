@@ -210,8 +210,13 @@ public class DeckService {
     return new DeckSettings(deck.getFormattingMode(), deck.getTemplateId(), deck.getFormatInstructions());
   }
 
+  public void deleteNotes(UUID deckId, List<UUID> noteIds) {
+    noteIds.forEach(noteId -> deleteNote(deckId, noteId));
+  }
+
   public void deleteNote(UUID deckId, UUID noteId) {
     deckRepository.deleteNoteByDeckIdAndNoteId(deckId, noteId);
+    chatRepository.deleteChat(DeckKeys.deckPk(deckId), noteId);
   }
 
   public List<ChatMessageEntity> chat(UUID deckId, String message) {
