@@ -162,7 +162,7 @@ public class AnalysisBulkFormatService {
         .filter(
             note -> {
               var derivedNote = existingDerivedNotes.get(note.getId());
-              if (derivedNote == null) {
+              if (derivedNote == null || derivedNote.getLastFormattedAt().isEmpty()) {
                 return true;
               }
               if (!job.isReformatAlreadyFormatted()) {

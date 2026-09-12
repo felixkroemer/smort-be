@@ -19,15 +19,15 @@ public interface DerivedNoteEntityMapper {
   @Mapping(target = "front", source = "noteSchema.front")
   @Mapping(target = "back", source = "noteSchema.back")
   @Mapping(target = "content", ignore = true)
-  @Mapping(target = "lastFormattedAt", source = "lastFormattedAt")
+  @Mapping(target = "lastFormattedAt", source = "noteSchema", qualifiedByName = "newLastFormattedAt")
   @Mapping(target = "pk", source = "analysisId", qualifiedByName = "notePk")
   @Mapping(target = "sk", source = "noteId", qualifiedByName = "noteSk")
   DerivedNoteEntity toDerivedNoteEntity(
-      UUID analysisId, Long noteId, NoteSchema noteSchema, Optional<Instant> lastFormattedAt);
+      UUID analysisId, Long noteId, NoteSchema noteSchema);
 
-  default DerivedNoteEntity toDerivedNoteEntity(
-      UUID analysisId, Long noteId, NoteSchema noteSchema) {
-    return toDerivedNoteEntity(analysisId, noteId, noteSchema, Optional.of(Instant.now()));
+  @Named("newLastFormattedAt")
+  default Optional<Instant> newLastFormattedAt(NoteSchema noteSchema) {
+    return Optional.of(Instant.now());
   }
 
   @Named("notePk")
