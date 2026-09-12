@@ -89,7 +89,13 @@ public class DeckBulkFormatService {
   }
 
   private void processNotes(DeckBulkFormatEntity job, List<NoteEntity> notesToProcess) {
-    String formatInstructions = formattingSettingsResolver.resolve(deckService.getDeckSettings(job.getDeckId()));
+    String formatInstructions;
+    try {
+      formatInstructions =
+          formattingSettingsResolver.resolve(deckService.getDeckSettings(job.getDeckId()));
+    } catch (NotFoundException e) {
+      throw e.withSeverity(LogSeverity.ERROR);
+    }
     bulkFormatEngine.process(
         job,
         notesToProcess,
@@ -124,8 +130,9 @@ public class DeckBulkFormatService {
               }
               if (!job.isReformatAlreadyFormatted()) {
                 return false;
+              } else {
+                return lastFormattedAt.get().isBefore(job.getCreatedAt());
               }
-              return lastFormattedAt.get().isBefore(job.getCreatedAt());
             })
         .toList();
   }

@@ -22,9 +22,9 @@ public interface NoteEntityMapper {
   @Mapping(
       target = "lastFormattedAt",
       source = "noteSchema",
-      qualifiedByName = "emptyLastFormattedAt")
+      qualifiedByName = "newLastFormattedAt")
   @Mapping(target = "content", ignore = true)
-  @Mapping(target = "pk", source = "deckId", qualifiedByName = "notePk")
+  @Mapping(target = "pk", source = "deckId", qualifiedByName = "notePk")  
   @Mapping(target = "sk", source = "noteId", qualifiedByName = "noteSk")
   @Mapping(target = "userId", source = "userId")
   @Mapping(target = "userNoteIndexGsiPk", source = "userId", qualifiedByName = "userNoteIndexGsiPk")
@@ -51,8 +51,8 @@ public interface NoteEntityMapper {
     return NoteSortKeys.noteSk(noteId);
   }
 
-  @Named("emptyLastFormattedAt")
-  default Optional<Instant> emptyLastFormattedAt(NoteSchema noteSchema) {
-    return Optional.empty();
+  @Named("newLastFormattedAt")
+  default Optional<Instant> newLastFormattedAt(NoteSchema noteSchema) {
+    return Optional.of(Instant.now());
   }
 }

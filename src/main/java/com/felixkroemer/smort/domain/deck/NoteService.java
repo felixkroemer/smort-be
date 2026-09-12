@@ -10,6 +10,7 @@ import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -47,10 +48,12 @@ public class NoteService {
               var m = (StoreNoteToolChatMessage) toolCall;
               note.setFront(m.front());
               note.setBack(m.back());
+              note.setLastFormattedAt(Optional.of(Instant.now()));
               deckRepository.saveNoteInTx(tx, note);
             });
 
-    String formatInstructions = formattingSettingsResolver.resolve(deckService.getDeckSettings(deckId));
+    String formatInstructions =
+        formattingSettingsResolver.resolve(deckService.getDeckSettings(deckId));
     var chatMessages =
         chatOrchestrationService.formatNote(
             DeckKeys.deckPk(deckId),
@@ -71,7 +74,8 @@ public class NoteService {
             .findNoteByDeckIdAndNoteId(deckId, noteId)
             .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
 
-    String formatInstructions = formattingSettingsResolver.resolve(deckService.getDeckSettings(deckId));
+    String formatInstructions =
+        formattingSettingsResolver.resolve(deckService.getDeckSettings(deckId));
 
     var ctx = new NoteChatContext<>(noteId, note.getContent());
 
