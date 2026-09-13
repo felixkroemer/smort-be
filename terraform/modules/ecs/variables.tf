@@ -74,3 +74,8 @@ variable "auth0_client_id_arn" {
   type        = string
   description = "Secrets ARN for AUTH0_CLIENT_ID."
 }
+
+variable "dynamodb_table_arn" {
+  type        = string
+  description = "ARN of the DynamoDB table the task role is allowed to access."
+}

@@ -24,6 +24,40 @@ resource "aws_iam_role_policy_attachment" "execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+resource "aws_iam_role" "task" {
+  name = "${var.name}-ecs-task"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "task_dynamodb" {
+  name = "smort-ecs-task-dynamodb"
+  role = aws_iam_role.task.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "AccessDynamoDbTable"
+        Effect   = "Allow"
+        Action   = ["dynamodb:*"]
+        Resource = [var.dynamodb_table_arn]
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role_policy" "execution_ssm_secrets" {
   name = "smort-ecs-execution-ssm-secrets"
   role = aws_iam_role.execution.id
@@ -32,10 +66,10 @@ resource "aws_iam_role_policy" "execution_ssm_secrets" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid       = "ReadSSMParameters"
-        Effect    = "Allow"
-        Action    = ["ssm:GetParameters"]
-        Resource  = [
+        Sid    = "ReadSSMParameters"
+        Effect = "Allow"
+        Action = ["ssm:GetParameters"]
+        Resource = [
           var.base_data_dir_arn,
           var.analysis_db_directory_name_arn,
           var.analysis_max_db_size_arn,
@@ -45,9 +79,9 @@ resource "aws_iam_role_policy" "execution_ssm_secrets" {
         ]
       },
       {
-        Sid      = "ReadSecrets"
-        Effect   = "Allow"
-        Action   = ["secretsmanager:GetSecretValue"]
+        Sid    = "ReadSecrets"
+        Effect = "Allow"
+        Action = ["secretsmanager:GetSecretValue"]
         Resource = [
           var.openai_api_key_arn,
           var.auth0_client_id_arn,
@@ -85,6 +119,7 @@ resource "aws_ecs_task_definition" "this" {
   cpu                      = "256"
   memory                   = "512"
   execution_role_arn       = aws_iam_role.execution.arn
+  task_role_arn            = aws_iam_role.task.arn
 
   container_definitions = jsonencode([
     {

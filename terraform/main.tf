@@ -69,4 +69,5 @@ module "ecs" {
   openai_model_arn               = aws_ssm_parameter.openai_model.arn
   openai_api_key_arn             = aws_secretsmanager_secret.openai_api_key.arn
   auth0_client_id_arn            = aws_secretsmanager_secret.auth0_client_id.arn
+  dynamodb_table_arn             = module.dynamodb.table_arn
 }
