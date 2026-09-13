@@ -31,7 +31,7 @@ resource "aws_lb" "this" {
 
 resource "aws_lb_target_group" "this" {
   name     = "${var.name}-tg"
-  port     = 80
+  port     = 8080
   protocol = "HTTP"
   vpc_id   = var.vpc_id
 
@@ -40,9 +40,9 @@ resource "aws_lb_target_group" "this" {
   health_check {
     path                = "/"
     protocol            = "HTTP"
-    healthy_threshold   = 3
-    unhealthy_threshold = 3
-    interval            = 30
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    interval            = 10
     timeout             = 5
   }
 

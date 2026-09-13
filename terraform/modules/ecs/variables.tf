@@ -32,5 +32,5 @@ variable "container_image" {
 variable "container_port" {
   type        = number
   description = "Container port the task listens on."
-  default     = 80
+  default     = 8080
 }
