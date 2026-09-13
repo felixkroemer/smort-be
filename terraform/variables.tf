@@ -16,6 +16,7 @@ variable "analysis_db_directory_name" {
 variable "analysis_max_db_size" {
   type        = string
   description = "Max analysis DB size in bytes."
+  default     = "52428800"
 }
 
 variable "auth0_issuer_uri" {
