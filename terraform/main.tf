@@ -25,6 +25,12 @@ provider "aws" {
   }
 }
 
+variable "image_tag" {
+  type        = string
+  description = "Image tag to run from the ECR repository."
+  default     = "latest"
+}
+
 module "vpc" {
   source = "./modules/vpc"
 
@@ -40,6 +46,12 @@ module "alb" {
   public_subnet_ids = module.vpc.public_subnet_ids
 }
 
+module "ecr" {
+  source = "./modules/ecr"
+
+  name = "smort"
+}
+
 module "ecs" {
   source = "./modules/ecs"
 
@@ -48,4 +60,5 @@ module "ecs" {
   private_subnet_ids    = module.vpc.private_subnet_ids
   alb_security_group_id = module.alb.alb_security_group_id
   target_group_arn      = module.alb.target_group_arn
+  container_image       = "${module.ecr.repository_url}:${var.image_tag}"
 }
