@@ -18,6 +18,8 @@
   asks you to merge.
 - Implementation plans and spec documents (in docs/superpowers/) live on the
   feature branch only; do not merge them into main.
+- After a feature branch is merged into main/master, delete its worktree
+  (worktrees under .worktrees/ are disposable).
 
 ## Working preferences
 - Write tests only when explicitly asked (in the plan, or by the human).
