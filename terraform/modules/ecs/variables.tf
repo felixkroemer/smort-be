@@ -35,8 +35,42 @@ variable "container_port" {
   default     = 8080
 }
 
-variable "secret_arns" {
-  type        = map(string)
-  description = "Map of environment variable name to SSM/Secrets Manager ARN injected into the container."
-  default     = {}
+variable "base_data_dir_arn" {
+  type        = string
+  description = "SSM/Secrets ARN for BASE_DATA_DIR."
+}
+
+variable "analysis_db_directory_name_arn" {
+  type        = string
+  description = "SSM/Secrets ARN for ANALYSIS_DB_DIRECTORY_NAME."
+}
+
+variable "analysis_max_db_size_arn" {
+  type        = string
+  description = "SSM/Secrets ARN for ANALYSIS_MAX_DB_SIZE."
+}
+
+variable "auth0_issuer_uri_arn" {
+  type        = string
+  description = "SSM/Secrets ARN for AUTH0_ISSUER_URI."
+}
+
+variable "smort_allowed_email_arn" {
+  type        = string
+  description = "SSM/Secrets ARN for SMORT_ALLOWED_EMAIL."
+}
+
+variable "openai_model_arn" {
+  type        = string
+  description = "SSM/Secrets ARN for OPENAI_MODEL."
+}
+
+variable "openai_api_key_arn" {
+  type        = string
+  description = "Secrets ARN for OPENAI_API_KEY."
+}
+
+variable "auth0_client_id_arn" {
+  type        = string
+  description = "Secrets ARN for AUTH0_CLIENT_ID."
 }

@@ -10,6 +10,11 @@ SHA_TAG="${REPO_NAME}:${SHA}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(dirname "$SCRIPT_DIR")"
 
+# Load .env values into the shell environment.
+set -a
+source "$ROOT/.env"
+set +a
+
 echo "==> Building application jar"
 ( cd "$ROOT" && ./mvnw -DskipTests package )
 
@@ -29,6 +34,19 @@ docker tag "$SHA_TAG" "${REPO_URL}:${SHA}"
 docker push "${REPO_URL}:${SHA}"
 
 echo "==> Deploying with terraform (image_tag=${SHA})"
-( cd "$ROOT/terraform" && terraform init && terraform apply -auto-approve -var "image_tag=$SHA" )
+(
+  cd "$ROOT/terraform" &&
+  terraform init &&
+  terraform apply -auto-approve \
+    -var "image_tag=$SHA" \
+    -var "base_data_dir=$BASE_DATA_DIR" \
+    -var "analysis_db_directory_name=$ANALYSIS_DB_DIRECTORY_NAME" \
+    -var "analysis_max_db_size=$ANALYSIS_MAX_DB_SIZE" \
+    -var "auth0_issuer_uri=$AUTH0_ISSUER_URI" \
+    -var "smort_allowed_email=$SMORT_ALLOWED_EMAIL" \
+    -var "openai_model=${OPENAI_MODEL:-gpt-4o}" \
+    -var "openai_api_key=$OPENAI_API_KEY" \
+    -var "auth0_client_id=$AUTH0_CLIENT_ID"
+)
 
 echo "==> Deploy complete: ${REPO_URL}:${SHA}"

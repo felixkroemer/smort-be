@@ -54,25 +54,25 @@ resource "aws_ecs_task_definition" "this" {
   execution_role_arn       = aws_iam_role.execution.arn
 
   container_definitions = jsonencode([
-    merge(
-      {
-        name  = var.name
-        image = var.container_image
-        portMappings = [
-          {
-            containerPort = var.container_port
-          }
-        ]
-      },
-      length(var.secret_arns) > 0 ? {
-        secrets = [
-          for name, arn in var.secret_arns : {
-            name      = name
-            valueFrom = arn
-          }
-        ]
-      } : {}
-    )
+    {
+      name  = var.name
+      image = var.container_image
+      portMappings = [
+        {
+          containerPort = var.container_port
+        }
+      ]
+      secrets = [
+        { name = "BASE_DATA_DIR", valueFrom = var.base_data_dir_arn },
+        { name = "ANALYSIS_DB_DIRECTORY_NAME", valueFrom = var.analysis_db_directory_name_arn },
+        { name = "ANALYSIS_MAX_DB_SIZE", valueFrom = var.analysis_max_db_size_arn },
+        { name = "AUTH0_ISSUER_URI", valueFrom = var.auth0_issuer_uri_arn },
+        { name = "SMORT_ALLOWED_EMAIL", valueFrom = var.smort_allowed_email_arn },
+        { name = "OPENAI_MODEL", valueFrom = var.openai_model_arn },
+        { name = "OPENAI_API_KEY", valueFrom = var.openai_api_key_arn },
+        { name = "AUTH0_CLIENT_ID", valueFrom = var.auth0_client_id_arn },
+      ]
+    }
   ])
 
   tags = { Name = "${var.name}-task-definition" }

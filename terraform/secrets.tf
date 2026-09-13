@@ -1,49 +1,55 @@
-variable "secret_env_names" {
-  type        = list(string)
-  description = "Keys from .env stored in Secrets Manager instead of SSM."
-  default     = ["OPENAI_API_KEY", "AUTH0_CLIENT_ID"]
-}
-
-locals {
-  env_lines = [
-    for line in split("\n", file("${path.module}/../.env")) :
-    trimspace(line)
-    if trimspace(line) != "" && !startswith(trimspace(line), "#")
-  ]
-
-  env_vars = {
-    for line in local.env_lines :
-    regex("^([A-Za-z_][A-Za-z0-9_]*)=(.*)$", line)[0] => regex("^([A-Za-z_][A-Za-z0-9_]*)=(.*)$", line)[1]
-  }
-
-  secret_env_vars = { for k, v in local.env_vars : k => v if contains(var.secret_env_names, k) }
-  config_env_vars = { for k, v in local.env_vars : k => v if !contains(var.secret_env_names, k) }
-}
-
-resource "aws_ssm_parameter" "app" {
-  for_each = local.config_env_vars
-
-  name  = "/smort/${each.key}"
+# Config vars -> SSM Parameter Store (type String)
+resource "aws_ssm_parameter" "base_data_dir" {
+  name  = "/smort/BASE_DATA_DIR"
   type  = "String"
-  value = each.value
+  value = var.base_data_dir
 }
 
-resource "aws_secretsmanager_secret" "app" {
-  for_each = local.secret_env_vars
-
-  name = "smort-${lower(each.key)}"
+resource "aws_ssm_parameter" "analysis_db_directory_name" {
+  name  = "/smort/ANALYSIS_DB_DIRECTORY_NAME"
+  type  = "String"
+  value = var.analysis_db_directory_name
 }
 
-resource "aws_secretsmanager_secret_version" "app" {
-  for_each = local.secret_env_vars
-
-  secret_id     = aws_secretsmanager_secret.app[each.key].id
-  secret_string = each.value
+resource "aws_ssm_parameter" "analysis_max_db_size" {
+  name  = "/smort/ANALYSIS_MAX_DB_SIZE"
+  type  = "String"
+  value = var.analysis_max_db_size
 }
 
-locals {
-  secret_arns = merge(
-    { for k, p in aws_ssm_parameter.app : k => p.arn },
-    { for k, s in aws_secretsmanager_secret.app : k => s.arn },
-  )
+resource "aws_ssm_parameter" "auth0_issuer_uri" {
+  name  = "/smort/AUTH0_ISSUER_URI"
+  type  = "String"
+  value = var.auth0_issuer_uri
+}
+
+resource "aws_ssm_parameter" "smort_allowed_email" {
+  name  = "/smort/SMORT_ALLOWED_EMAIL"
+  type  = "String"
+  value = var.smort_allowed_email
+}
+
+resource "aws_ssm_parameter" "openai_model" {
+  name  = "/smort/OPENAI_MODEL"
+  type  = "String"
+  value = var.openai_model
+}
+
+# Secrets -> Secrets Manager
+resource "aws_secretsmanager_secret" "openai_api_key" {
+  name = "smort-openai_api_key"
+}
+
+resource "aws_secretsmanager_secret_version" "openai_api_key" {
+  secret_id     = aws_secretsmanager_secret.openai_api_key.id
+  secret_string = var.openai_api_key
+}
+
+resource "aws_secretsmanager_secret" "auth0_client_id" {
+  name = "smort-auth0_client_id"
+}
+
+resource "aws_secretsmanager_secret_version" "auth0_client_id" {
+  secret_id     = aws_secretsmanager_secret.auth0_client_id.id
+  secret_string = var.auth0_client_id
 }

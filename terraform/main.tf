@@ -49,11 +49,18 @@ module "ecr" {
 module "ecs" {
   source = "./modules/ecs"
 
-  name                  = "smort"
-  vpc_id                = module.vpc.vpc_id
-  private_subnet_ids    = module.vpc.private_subnet_ids
-  alb_security_group_id = module.alb.alb_security_group_id
-  target_group_arn      = module.alb.target_group_arn
-  container_image       = "${module.ecr.repository_url}:${var.image_tag}"
-  secret_arns           = local.secret_arns
+  name                           = "smort"
+  vpc_id                         = module.vpc.vpc_id
+  private_subnet_ids             = module.vpc.private_subnet_ids
+  alb_security_group_id          = module.alb.alb_security_group_id
+  target_group_arn               = module.alb.target_group_arn
+  container_image                = "${module.ecr.repository_url}:${var.image_tag}"
+  base_data_dir_arn              = aws_ssm_parameter.base_data_dir.arn
+  analysis_db_directory_name_arn = aws_ssm_parameter.analysis_db_directory_name.arn
+  analysis_max_db_size_arn       = aws_ssm_parameter.analysis_max_db_size.arn
+  auth0_issuer_uri_arn           = aws_ssm_parameter.auth0_issuer_uri.arn
+  smort_allowed_email_arn        = aws_ssm_parameter.smort_allowed_email.arn
+  openai_model_arn               = aws_ssm_parameter.openai_model.arn
+  openai_api_key_arn             = aws_secretsmanager_secret.openai_api_key.arn
+  auth0_client_id_arn            = aws_secretsmanager_secret.auth0_client_id.arn
 }
