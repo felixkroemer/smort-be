@@ -153,7 +153,6 @@ resource "aws_ecs_task_definition" "this" {
           "awslogs-group"         = aws_cloudwatch_log_group.this.name
           "awslogs-region"        = var.region
           "awslogs-stream-prefix" = var.name
-          "awslogs-create-group"  = "false"
         }
       }
     }
