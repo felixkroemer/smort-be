@@ -112,6 +112,13 @@ resource "aws_security_group" "task" {
   tags = { Name = "${var.name}-ecs-task" }
 }
 
+resource "aws_cloudwatch_log_group" "this" {
+  name              = "/ecs/${var.name}"
+  retention_in_days = 7
+
+  tags = { Name = "${var.name}-ecs-logs" }
+}
+
 resource "aws_ecs_task_definition" "this" {
   family                   = var.name
   network_mode             = "awsvpc"
@@ -140,6 +147,15 @@ resource "aws_ecs_task_definition" "this" {
         { name = "OPENAI_API_KEY", valueFrom = var.openai_api_key_arn },
         { name = "AUTH0_CLIENT_ID", valueFrom = var.auth0_client_id_arn },
       ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.this.name
+          "awslogs-region"        = var.region
+          "awslogs-stream-prefix" = var.name
+          "awslogs-create-group"  = "false"
+        }
+      }
     }
   ])
 
@@ -147,11 +163,12 @@ resource "aws_ecs_task_definition" "this" {
 }
 
 resource "aws_ecs_service" "this" {
-  name            = var.name
-  cluster         = aws_ecs_cluster.this.id
-  task_definition = aws_ecs_task_definition.this.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
+  name                              = var.name
+  cluster                           = aws_ecs_cluster.this.id
+  task_definition                   = aws_ecs_task_definition.this.arn
+  desired_count                     = 1
+  launch_type                       = "FARGATE"
+  health_check_grace_period_seconds = 120
 
   network_configuration {
     subnets         = var.private_subnet_ids

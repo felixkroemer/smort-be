@@ -56,6 +56,7 @@ module "ecs" {
   source = "./modules/ecs"
 
   name                           = "smort"
+  region                         = "eu-central-1"
   vpc_id                         = module.vpc.vpc_id
   private_subnet_ids             = module.vpc.private_subnet_ids
   alb_security_group_id          = module.alb.alb_security_group_id
