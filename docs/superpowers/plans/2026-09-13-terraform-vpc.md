@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a reusable `modules/vpc` Terraform submodule (VPC, public/private subnets, IGW, NAT gateway, routing, and a DynamoDB gateway endpoint) plus a thin `infra/vpc` root caller, with local state.
+**Goal:** Build a reusable `modules/vpc` Terraform submodule (VPC, public/private subnets, IGW, NAT gateway, routing, and a DynamoDB gateway endpoint) instantiated from a single shared `infra/` root caller, with local state.
 
 **Architecture:** A single-AZ VPC (`10.0.0.0/16`) split into a public subnet (`10.0.0.0/24`) hosting the IGW route and a NAT gateway (with Elastic IP), and a private subnet (`10.0.1.0/24`) for future app instances. The private route table routes `0.0.0.0/0` through the NAT and includes a DynamoDB gateway endpoint so DynamoDB traffic stays inside the AWS network.
 
@@ -13,8 +13,8 @@
 - Region: `eu-central-1` (Frankfurt).
 - VPC CIDR: `10.0.0.0/16`; public subnet `10.0.0.0/24`; private subnet `10.0.1.0/24`.
 - Single AZ — both subnets in the same `availability_zone` (input `az`).
-- Module named `vpc`; reusable submodule at `modules/vpc`, root caller at `infra/vpc`.
-- State is local (`terraform.tfstate` in `infra/vpc/`).
+- Module named `vpc`; reusable submodule at `modules/vpc`, single shared root caller at `infra/` (future modules added as `module "..."` blocks in `infra/main.tf`).
+- State is local (`terraform.tfstate` in `infra/`).
 - **No security groups** in this module (YAGNI); the follow-on compute module owns instance security groups.
 - AWS provider version `~> 5.0`.
 - **Terraform is NOT installed in the dev environment.** The implementing agent must NOT attempt to install or run Terraform (no `terraform apply`, `plan`, or `validate`). The human owns verification. Include the exact commands in each task for the human to run.
@@ -270,17 +270,17 @@ git commit -m "feat(vpc): add DynamoDB gateway endpoint on private route table"
 
 ---
 
-### Task 4: Root caller `infra/vpc` and provider setup
+### Task 4: Root caller `infra/` and provider setup
 
 **Files:**
-- Create: `infra/vpc/main.tf`
-- Create: `infra/vpc/variables.tf`
-- Create: `infra/vpc/outputs.tf`
+- Create: `infra/main.tf`
+- Create: `infra/variables.tf`
+- Create: `infra/outputs.tf`
 - Create: `infra/.gitignore`
 
 **Interfaces:**
 - Consumes: `modules/vpc` outputs (`vpc_id`, `public_subnet_id`, `private_subnet_id`, `public_route_table_id`, `private_route_table_id`, `nat_gateway_id`).
-- Produces: root-level outputs mirroring the module outputs for downstream modules.
+- Produces: root-level outputs mirroring the module outputs for downstream modules. Future modules (compute, DynamoDB tables) are added as additional `module "..."` blocks in `infra/main.tf`.
 
 - [ ] **Step 1: Create `infra/.gitignore`**
 
@@ -291,7 +291,7 @@ git commit -m "feat(vpc): add DynamoDB gateway endpoint on private route table"
 *.tfstate.lock.info
 ```
 
-- [ ] **Step 2: Create `infra/vpc/variables.tf`**
+- [ ] **Step 2: Create `infra/variables.tf`**
 
 ```hcl
 variable "name" {
@@ -310,7 +310,7 @@ variable "az" {
 }
 ```
 
-- [ ] **Step 3: Create `infra/vpc/main.tf`**
+- [ ] **Step 3: Create `infra/main.tf`**
 
 ```hcl
 terraform {
@@ -329,7 +329,7 @@ provider "aws" {
 }
 
 module "vpc" {
-  source = "../../modules/vpc"
+  source = "../modules/vpc"
 
   name   = var.name
   region = var.region
@@ -337,7 +337,7 @@ module "vpc" {
 }
 ```
 
-- [ ] **Step 4: Create `infra/vpc/outputs.tf`**
+- [ ] **Step 4: Create `infra/outputs.tf`**
 
 ```hcl
 output "vpc_id" {
@@ -385,17 +385,17 @@ git commit -m "feat(vpc): add root caller with provider and outputs"
 
 - [ ] **Step 1: Init, format, and validate**
 
-Run (from `infra/vpc/`):
+Run (from `infra/`):
 ```bash
 terraform init
-terraform fmt -check -recursive ../../
+terraform fmt -check -recursive ./
 terraform validate
 ```
 Expected: init downloads the AWS provider; fmt passes; validate reports `Success! The configuration is valid.`
 
 - [ ] **Step 2: Review the planned changes (does NOT apply)**
 
-Run (from `infra/vpc/`, requires AWS credentials):
+Run (from `infra/`, requires AWS credentials):
 ```bash
 terraform plan
 ```

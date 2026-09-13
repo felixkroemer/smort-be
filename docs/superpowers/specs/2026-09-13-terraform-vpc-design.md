@@ -28,7 +28,7 @@ DynamoDB traffic stays inside the AWS network instead of traversing the NAT/IGW.
 |----------|--------|
 | Availability | Single AZ (cheapest), suitable for a small single-user app |
 | State backend | Local state (`terraform.tfstate` in the root caller dir) |
-| Module structure | Reusable `modules/vpc` submodule + `infra/vpc` root caller |
+| Module structure | Reusable `modules/vpc` submodule + single shared `infra/` root caller |
 | Module name | `vpc` |
 | Region | `eu-central-1` (Frankfurt) |
 | VPC CIDR | `10.0.0.0/16` |
@@ -92,21 +92,24 @@ DynamoDB traffic stays inside the AWS network instead of traversing the NAT/IGW.
 - `private_route_table_id`
 - `nat_gateway_id`
 
-## Root caller (`infra/vpc`)
+## Root caller (`infra/`)
 
-- Local state: `terraform.tfstate` in `infra/vpc/`.
+- A single shared root that instantiates all modules, giving one state file
+  and letting module references resolve in one graph.
+- Local state: `terraform.tfstate` in `infra/`.
 - AWS provider pinned to `eu-central-1`.
 - Invokes `modules/vpc` with the default CIDRs and a name like `smort`.
+- Follow-on modules (compute, DynamoDB tables, etc.) are added as additional
+  `module "..."` blocks in `infra/main.tf`.
 
 ## File layout
 
 ```
 infra/
-├── vpc/                      # root caller
-│   ├── main.tf
-│   ├── variables.tf
-│   ├── outputs.tf
-│   └── terraform.tfstate     # local state
+├── main.tf                   # root caller: module "vpc" { ... }, future modules added here
+├── variables.tf
+├── outputs.tf
+├── terraform.tfstate         # local state
 └── modules/
     └── vpc/
         ├── main.tf
