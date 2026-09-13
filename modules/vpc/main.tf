@@ -74,3 +74,21 @@ resource "aws_route" "private_internet" {
   destination_cidr_block = "0.0.0.0/0"
   nat_gateway_id         = aws_nat_gateway.this.id
 }
+
+data "aws_vpc_endpoint_service" "dynamodb" {
+  service      = "dynamodb"
+  service_type = "Gateway"
+}
+
+resource "aws_vpc_endpoint" "dynamodb" {
+  vpc_id            = aws_vpc.this.id
+  service_name      = data.aws_vpc_endpoint_service.dynamodb.service_name
+  vpc_endpoint_type = "Gateway"
+
+  tags = merge(var.tags, { Name = "${var.name}-dynamodb" })
+}
+
+resource "aws_vpc_endpoint_route_table_association" "dynamodb" {
+  route_table_id  = aws_route_table.private.id
+  vpc_endpoint_id = aws_vpc_endpoint.dynamodb.id
+}
