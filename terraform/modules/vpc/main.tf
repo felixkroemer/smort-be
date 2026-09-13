@@ -9,17 +9,33 @@ resource "aws_vpc" "this" {
 resource "aws_subnet" "public" {
   vpc_id            = aws_vpc.this.id
   cidr_block        = "10.0.0.0/24"
-  availability_zone = var.az
+  availability_zone = var.azs[0]
 
-  tags = { Name = "${var.name}-subnet-public" }
+  tags = { Name = "${var.name}-subnet-public-a" }
+}
+
+resource "aws_subnet" "public_b" {
+  vpc_id            = aws_vpc.this.id
+  cidr_block        = "10.0.2.0/24"
+  availability_zone = var.azs[1]
+
+  tags = { Name = "${var.name}-subnet-public-b" }
 }
 
 resource "aws_subnet" "private" {
   vpc_id            = aws_vpc.this.id
   cidr_block        = "10.0.1.0/24"
-  availability_zone = var.az
+  availability_zone = var.azs[0]
 
-  tags = { Name = "${var.name}-subnet-private" }
+  tags = { Name = "${var.name}-subnet-private-a" }
+}
+
+resource "aws_subnet" "private_b" {
+  vpc_id            = aws_vpc.this.id
+  cidr_block        = "10.0.3.0/24"
+  availability_zone = var.azs[1]
+
+  tags = { Name = "${var.name}-subnet-private-b" }
 }
 
 resource "aws_route_table" "public" {
@@ -39,8 +55,18 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
+resource "aws_route_table_association" "public_b" {
+  subnet_id      = aws_subnet.public_b.id
+  route_table_id = aws_route_table.public.id
+}
+
 resource "aws_route_table_association" "private" {
   subnet_id      = aws_subnet.private.id
+  route_table_id = aws_route_table.private.id
+}
+
+resource "aws_route_table_association" "private_b" {
+  subnet_id      = aws_subnet.private_b.id
   route_table_id = aws_route_table.private.id
 }
 

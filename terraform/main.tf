@@ -29,15 +29,15 @@ module "vpc" {
   source = "./modules/vpc"
 
   name = "smort"
-  az   = "eu-central-1a"
+  azs  = ["eu-central-1a", "eu-central-1b"]
 }
 
 module "alb" {
   source = "./modules/alb"
 
-  name             = "smort"
-  vpc_id           = module.vpc.vpc_id
-  public_subnet_id = module.vpc.public_subnet_id
+  name              = "smort"
+  vpc_id            = module.vpc.vpc_id
+  public_subnet_ids = module.vpc.public_subnet_ids
 }
 
 module "ecs" {
@@ -45,7 +45,7 @@ module "ecs" {
 
   name                  = "smort"
   vpc_id                = module.vpc.vpc_id
-  private_subnet_id     = module.vpc.private_subnet_id
+  private_subnet_ids    = module.vpc.private_subnet_ids
   alb_security_group_id = module.alb.alb_security_group_id
   target_group_arn      = module.alb.target_group_arn
 }

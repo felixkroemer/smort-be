@@ -76,7 +76,7 @@ resource "aws_ecs_service" "this" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = [var.private_subnet_id]
+    subnets         = var.private_subnet_ids
     security_groups = [aws_security_group.task.id]
   }
 

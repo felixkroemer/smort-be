@@ -3,7 +3,7 @@ variable "name" {
   description = "Resource name prefix, used in Name tags."
 }
 
-variable "az" {
-  type        = string
-  description = "Availability zone for the single-AZ subnets."
+variable "azs" {
+  type        = list(string)
+  description = "Availability zones for the subnets (two AZs)."
 }

@@ -8,9 +8,9 @@ variable "vpc_id" {
   description = "VPC the ECS tasks run in."
 }
 
-variable "private_subnet_id" {
-  type        = string
-  description = "Private subnet the Fargate task runs in."
+variable "private_subnet_ids" {
+  type        = list(string)
+  description = "Private subnets the Fargate task runs in."
 }
 
 variable "alb_security_group_id" {
