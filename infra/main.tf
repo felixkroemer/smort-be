@@ -10,11 +10,11 @@ terraform {
 }
 
 provider "aws" {
-  region = var.region
+  region = "eu-central-1"
 
   default_tags {
     tags = {
-      Project = var.name
+      Project = "smort"
     }
   }
 }
@@ -22,7 +22,7 @@ provider "aws" {
 module "vpc" {
   source = "../modules/vpc"
 
-  name   = var.name
-  region = var.region
-  az     = var.az
+  name   = "smort"
+  region = "eu-central-1"
+  az     = "eu-central-1a"
 }
