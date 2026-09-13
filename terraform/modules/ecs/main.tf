@@ -24,6 +24,39 @@ resource "aws_iam_role_policy_attachment" "execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+resource "aws_iam_role_policy" "execution_ssm_secrets" {
+  name = "smort-ecs-execution-ssm-secrets"
+  role = aws_iam_role.execution.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "ReadSSMParameters"
+        Effect    = "Allow"
+        Action    = ["ssm:GetParameters"]
+        Resource  = [
+          var.base_data_dir_arn,
+          var.analysis_db_directory_name_arn,
+          var.analysis_max_db_size_arn,
+          var.auth0_issuer_uri_arn,
+          var.smort_allowed_email_arn,
+          var.openai_model_arn,
+        ]
+      },
+      {
+        Sid      = "ReadSecrets"
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
+        Resource = [
+          var.openai_api_key_arn,
+          var.auth0_client_id_arn,
+        ]
+      },
+    ]
+  })
+}
+
 resource "aws_security_group" "task" {
   name   = "${var.name}-ecs-task"
   vpc_id = var.vpc_id
