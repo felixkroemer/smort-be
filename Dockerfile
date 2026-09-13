@@ -1,8 +1,5 @@
-FROM eclipse-temurin:25-jdk
+FROM eclipse-temurin:25-jre
 WORKDIR /app
-COPY mvnw pom.xml ./
-RUN ./mvnw dependency:go-offline
-COPY src ./src
-RUN ./mvnw -DskipTests package
+COPY target/smort-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app/target/smort-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
