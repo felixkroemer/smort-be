@@ -43,6 +43,12 @@ public class DynamoDbClientConfig {
   }
 
   @Bean
+  @Profile("!local")
+  DynamoDbEnhancedClient createDynamoDbClient() {
+    return DynamoDbEnhancedClient.create();
+  }
+
+  @Bean
   public DynamoDbTable<DerivedNoteEntity> derivedNoteTable(DynamoDbEnhancedClient enhancedClient) {
     return enhancedClient.table(COMMON_TABLE_NAME, TableSchema.fromBean(DerivedNoteEntity.class));
   }

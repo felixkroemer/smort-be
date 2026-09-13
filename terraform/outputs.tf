@@ -41,3 +41,11 @@ output "ecr_repository_url" {
 output "ecr_repository_name" {
   value = module.ecr.repository_name
 }
+
+output "dynamodb_table_name" {
+  value = module.dynamodb.table_name
+}
+
+output "dynamodb_table_arn" {
+  value = module.dynamodb.table_arn
+}
