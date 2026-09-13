@@ -38,12 +38,8 @@ resource "aws_lb_target_group" "this" {
   target_type = "ip"
 
   health_check {
-    path                = "/"
-    protocol            = "HTTP"
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    interval            = 10
-    timeout             = 5
+    interval          = 10
+    healthy_threshold = 2
   }
 
   tags = { Name = "${var.name}-tg" }
