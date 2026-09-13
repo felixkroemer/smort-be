@@ -37,14 +37,12 @@ echo "==> Deploying with terraform (image_tag=${SHA})"
 (
   cd "$ROOT/terraform" &&
   terraform init &&
-  terraform apply -auto-approve \
+  terraform plan \
     -var "image_tag=$SHA" \
     -var "base_data_dir=$BASE_DATA_DIR" \
     -var "analysis_db_directory_name=$ANALYSIS_DB_DIRECTORY_NAME" \
-    -var "analysis_max_db_size=$ANALYSIS_MAX_DB_SIZE" \
     -var "auth0_issuer_uri=$AUTH0_ISSUER_URI" \
     -var "smort_allowed_email=$SMORT_ALLOWED_EMAIL" \
-    -var "openai_model=${OPENAI_MODEL:-gpt-4o}" \
     -var "openai_api_key=$OPENAI_API_KEY" \
     -var "auth0_client_id=$AUTH0_CLIENT_ID"
 )
