@@ -44,7 +44,7 @@ public class DynamoDbClientConfig {
 
   @Bean
   @Profile("!local")
-  DynamoDbEnhancedClient createDynamoDbClient() {
+  DynamoDbEnhancedClient createDynamoDbEnhancedClient() {
     return DynamoDbEnhancedClient.create();
   }
 
