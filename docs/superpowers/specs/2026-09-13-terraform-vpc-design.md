@@ -77,7 +77,8 @@ DynamoDB traffic stays inside the AWS network instead of traversing the NAT/IGW.
 
 ### `modules/vpc` inputs
 - `name` (string) — resource name prefix/tag.
-- `region` (string) — AWS region; used to build the DynamoDB endpoint service.
+- `region` (string) — AWS region.
+- `az` (string) — availability zone for the single-AZ public and private subnets.
 - `vpc_cidr` (string, default `10.0.0.0/16`).
 - `public_cidr` (string, default `10.0.0.0/24`).
 - `private_cidr` (string, default `10.0.1.0/24`).
