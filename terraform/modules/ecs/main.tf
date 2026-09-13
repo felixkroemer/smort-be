@@ -1,10 +1,5 @@
 resource "aws_ecs_cluster" "this" {
   name = var.name
-
-  setting {
-    name  = "containerInsights"
-    value = "disabled"
-  }
 }
 
 resource "aws_iam_role" "execution" {
@@ -60,13 +55,11 @@ resource "aws_ecs_task_definition" "this" {
 
   container_definitions = jsonencode([
     {
-      name      = var.name
-      image     = var.container_image
-      essential = true
+      name  = var.name
+      image = var.container_image
       portMappings = [
         {
           containerPort = var.container_port
-          protocol      = "tcp"
         }
       ]
     }
@@ -83,9 +76,8 @@ resource "aws_ecs_service" "this" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = [var.private_subnet_id]
-    security_groups  = [aws_security_group.task.id]
-    assign_public_ip = false
+    subnets         = [var.private_subnet_id]
+    security_groups = [aws_security_group.task.id]
   }
 
   load_balancer {
