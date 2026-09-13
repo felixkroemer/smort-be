@@ -46,6 +46,12 @@ module "ecr" {
   name = "smort"
 }
 
+module "dynamodb" {
+  source = "./modules/dynamodb"
+
+  table_name = "common-table"
+}
+
 module "ecs" {
   source = "./modules/ecs"
 
