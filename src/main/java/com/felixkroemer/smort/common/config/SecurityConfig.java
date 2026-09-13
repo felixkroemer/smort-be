@@ -31,7 +31,12 @@ public class SecurityConfig {
     return http.csrf(AbstractHttpConfigurer::disable)
         .cors(Customizer.withDefaults())
         .oauth2ResourceServer(rs -> rs.jwt(Customizer.withDefaults()))
-        .authorizeHttpRequests(auth -> auth.anyRequest().access(allowedEmailAuthorizationManager()))
+        .authorizeHttpRequests(
+            auth ->
+                auth.requestMatchers("/actuator/health")
+                    .permitAll()
+                    .anyRequest()
+                    .access(allowedEmailAuthorizationManager()))
         .build();
   }
 
