@@ -37,7 +37,7 @@ echo "==> Deploying with terraform (image_tag=${SHA})"
 (
   cd "$ROOT/terraform" &&
   terraform init &&
-  terraform plan \
+  terraform apply \
     -var "image_tag=$SHA" \
     -var "base_data_dir=$BASE_DATA_DIR" \
     -var "analysis_db_directory_name=$ANALYSIS_DB_DIRECTORY_NAME" \
