@@ -3,6 +3,11 @@ variable "name" {
   description = "Resource name prefix, used in Name tags."
 }
 
+variable "region" {
+  type        = string
+  description = "AWS region for the awslogs driver."
+}
+
 variable "vpc_id" {
   type        = string
   description = "VPC the ECS tasks run in."
