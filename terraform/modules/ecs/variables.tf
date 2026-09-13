@@ -34,3 +34,9 @@ variable "container_port" {
   description = "Container port the task listens on."
   default     = 8080
 }
+
+variable "secret_arns" {
+  type        = map(string)
+  description = "Map of environment variable name to SSM/Secrets Manager ARN injected into the container."
+  default     = {}
+}

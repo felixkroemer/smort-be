@@ -55,4 +55,5 @@ module "ecs" {
   alb_security_group_id = module.alb.alb_security_group_id
   target_group_arn      = module.alb.target_group_arn
   container_image       = "${module.ecr.repository_url}:${var.image_tag}"
+  secret_arns           = local.secret_arns
 }

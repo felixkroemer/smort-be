@@ -54,15 +54,25 @@ resource "aws_ecs_task_definition" "this" {
   execution_role_arn       = aws_iam_role.execution.arn
 
   container_definitions = jsonencode([
-    {
-      name  = var.name
-      image = var.container_image
-      portMappings = [
-        {
-          containerPort = var.container_port
-        }
-      ]
-    }
+    merge(
+      {
+        name  = var.name
+        image = var.container_image
+        portMappings = [
+          {
+            containerPort = var.container_port
+          }
+        ]
+      },
+      length(var.secret_arns) > 0 ? {
+        secrets = [
+          for name, arn in var.secret_arns : {
+            name      = name
+            valueFrom = arn
+          }
+        ]
+      } : {}
+    )
   ])
 
   tags = { Name = "${var.name}-task-definition" }
