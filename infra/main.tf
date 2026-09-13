@@ -22,6 +22,5 @@ provider "aws" {
 module "vpc" {
   source = "../modules/vpc"
 
-  name = "smort"
-  az   = "eu-central-1a"
+  az = "eu-central-1a"
 }
