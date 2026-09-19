@@ -56,6 +56,15 @@ module "dynamodb" {
   table_name = "common-table"
 }
 
+module "efs" {
+  source = "./modules/efs"
+
+  name                  = "smort"
+  vpc_id                = module.vpc.vpc_id
+  private_subnet_ids    = module.vpc.private_subnet_ids
+  ecs_security_group_id = module.ecs.task_security_group_id
+}
+
 module "ecs" {
   source = "./modules/ecs"
 
@@ -75,4 +84,7 @@ module "ecs" {
   openai_api_key_arn             = aws_secretsmanager_secret.openai_api_key.arn
   auth0_client_id_arn            = aws_secretsmanager_secret.auth0_client_id.arn
   dynamodb_table_arn             = module.dynamodb.table_arn
+  efs_file_system_id             = module.efs.file_system_id
+  efs_access_point_id            = module.efs.access_point_id
+  data_dir_path                  = aws_ssm_parameter.base_data_dir.value
 }
