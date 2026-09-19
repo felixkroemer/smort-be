@@ -37,7 +37,12 @@ upload and read on demand. Cost is negligible at DB sizes <= 50MB.
 
 ## Architecture
 
-New `terraform/modules/efs` module:
+EFS resources are defined directly inside the ECS module (chosen to avoid a
+module dependency cycle: the EFS SG needs the task SG id, and the task needs
+the EFS file system/access point ids — with both in one module the reference
+is internal and acyclic):
+
+`terraform/modules/ecs/main.tf` additions:
 
 - `aws_efs_file_system` — general purpose, bursting throughput, default KMS
   encryption enabled.
@@ -46,14 +51,16 @@ New `terraform/modules/efs` module:
   owned by uid 0. No `creation_info` (AWS rejects it with `path = "/"`).
 - `aws_efs_mount_target` — one per AZ in the existing private subnets
   (`eu-central-1a`, `eu-central-1b`).
-- `aws_security_group` — ingress TCP 2049 from the ECS task security group only.
-  Task egress is already all-open.
+- `aws_security_group` — ingress TCP 2049 from the ECS task security group
+  (`aws_security_group.task`, in the same module) only. Task egress is already
+  all-open.
 
-ECS task definition changes (`terraform/modules/ecs/main.tf`):
+ECS task definition changes (same file):
 
-- Add `volumes` entry:
-  - `efsVolumeConfiguration` with `fileSystemId`, `accessPointId`,
-    `transitEncryption = "ENABLED"` (TLS on port 2049), `iam = "DISABLED"`.
+- Add `volume` block:
+  - `efs_volume_configuration` with `file_system_id`, `transit_encryption =
+    "ENABLED"` (TLS on port 2049), and `authorization_config` with the
+    `access_point_id` + `iam = "DISABLED"`.
 - Add container `mountPoints`:
   - `sourceVolume = "efs-data"`, `containerPath` = the `BASE_DATA_DIR` value.
 
