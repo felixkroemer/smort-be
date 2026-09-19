@@ -54,9 +54,9 @@ resource "aws_iam_role_policy" "task_dynamodb" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid      = "AccessDynamoDbTable"
-        Effect   = "Allow"
-        Action   = ["dynamodb:*"]
+        Sid    = "AccessDynamoDbTable"
+        Effect = "Allow"
+        Action = ["dynamodb:*"]
         Resource = [
           var.dynamodb_table_arn,
           "${var.dynamodb_table_arn}/index/*",
@@ -136,6 +136,20 @@ resource "aws_ecs_task_definition" "this" {
   execution_role_arn       = aws_iam_role.execution.arn
   task_role_arn            = aws_iam_role.task.arn
 
+  volumes = [
+    {
+      name = "efs-data"
+      efsVolumeConfiguration = {
+        fileSystemId      = var.efs_file_system_id
+        transitEncryption = "ENABLED"
+        authorizationConfig = {
+          accessPointId = var.efs_access_point_id
+          iam           = "DISABLED"
+        }
+      }
+    }
+  ]
+
   container_definitions = jsonencode([
     {
       name  = var.name
@@ -163,6 +177,12 @@ resource "aws_ecs_task_definition" "this" {
           "awslogs-stream-prefix" = var.name
         }
       }
+      mountPoints = [
+        {
+          sourceVolume  = "efs-data"
+          containerPath = var.data_dir_path
+        }
+      ]
     }
   ])
 
