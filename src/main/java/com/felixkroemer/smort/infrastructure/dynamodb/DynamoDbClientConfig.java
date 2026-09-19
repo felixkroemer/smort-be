@@ -7,6 +7,7 @@ import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckBulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckMetaEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DraftNoteEntity;
+import com.felixkroemer.smort.infrastructure.dynamodb.deck.JottingEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.NoteEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.user.UserFormattingTemplateEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.user.UserSettingsEntity;
@@ -61,6 +62,11 @@ public class DynamoDbClientConfig {
   @Bean
   public DynamoDbTable<DraftNoteEntity> draftNoteTable(DynamoDbEnhancedClient enhancedClient) {
     return enhancedClient.table(COMMON_TABLE_NAME, TableSchema.fromBean(DraftNoteEntity.class));
+  }
+
+  @Bean
+  public DynamoDbTable<JottingEntity> jottingTable(DynamoDbEnhancedClient enhancedClient) {
+    return enhancedClient.table(COMMON_TABLE_NAME, TableSchema.fromBean(JottingEntity.class));
   }
 
   @Bean
