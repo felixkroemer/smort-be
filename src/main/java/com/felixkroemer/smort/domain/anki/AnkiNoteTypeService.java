@@ -7,7 +7,6 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -22,7 +21,7 @@ public class AnkiNoteTypeService {
 
   private final AnkiNoteRepository ankiNoteRepository;
   private final Cache<UUID, Map<Long, AnkiNoteTypeEntity>> noteTypeCache =
-      Caffeine.newBuilder().expireAfterAccess(30, TimeUnit.MINUTES).build();
+      Caffeine.newBuilder().build();
 
   public Map<Long, AnkiNoteTypeEntity> getNoteTypesByAnalysisId(UUID analysisId) {
     return noteTypeCache.get(
