@@ -125,10 +125,6 @@ resource "aws_efs_file_system" "this" {
 
   encrypted = true
 
-  lifecycle {
-    prevent_destroy = true
-  }
-
   tags = { Name = "${var.name}-data" }
 }
 

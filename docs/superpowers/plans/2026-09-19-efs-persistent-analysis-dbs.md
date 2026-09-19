@@ -29,6 +29,8 @@ The first plan version created a standalone `terraform/modules/efs` module and w
 
 The human chose structure **C**: define the EFS resources directly inside the `ecs` module (its SG ingress references `aws_security_group.task.id` in the same module, so no cross-module SG reference exists). The standalone `terraform/modules/efs/` module and the root `module "efs"` block are removed. Tasks below are rewritten for the chosen structure.
 
+Later the human requested `terraform destroy` be obstacle-free: the `lifecycle { prevent_destroy = true }` block on the EFS filesystem was removed (DynamoDB had none), and `force_delete = true` was added to `aws_ecr_repository` so a non-empty repository does not block destroy.
+
 ---
 
 ### Task 1: Integrate EFS into the ECS module
@@ -59,10 +61,6 @@ resource "aws_efs_file_system" "this" {
   creation_token = "${var.name}-data"
 
   encrypted = true
-
-  lifecycle {
-    prevent_destroy = true
-  }
 
   tags = { Name = "${var.name}-data" }
 }
