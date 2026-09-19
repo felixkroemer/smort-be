@@ -84,3 +84,8 @@ variable "dynamodb_table_arn" {
   type        = string
   description = "ARN of the DynamoDB table the task role is allowed to access."
 }
+
+variable "data_dir_path" {
+  type        = string
+  description = "Container path (BASE_DATA_DIR) to mount the EFS volume at."
+}
