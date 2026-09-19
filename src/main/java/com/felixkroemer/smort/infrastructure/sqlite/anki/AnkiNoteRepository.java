@@ -49,7 +49,7 @@ public class AnkiNoteRepository {
   public List<AnkiDeckEntity> findDecksByAnalysisId(UUID analysisId) {
     try (var entityManager = entityManagerFactoryCache.getOrCreate(analysisId)) {
       return entityManager
-          .createQuery("SELECT d FROM AnkiDeckEntity d", AnkiDeckEntity.class)
+          .createQuery("SELECT d FROM AnkiDeckEntity d JOIN FETCH d.cards", AnkiDeckEntity.class)
           .getResultList();
     }
   }
