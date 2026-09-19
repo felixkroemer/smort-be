@@ -9,7 +9,6 @@ import com.felixkroemer.smort.domain.chat.StoreNoteToolChatMessage;
 import com.felixkroemer.smort.domain.chat.ToolCallHandler;
 import com.felixkroemer.smort.domain.common.BulkFormat;
 import com.felixkroemer.smort.domain.common.BulkFormatEngine;
-import com.felixkroemer.smort.domain.common.BulkFormatEngine.ItemProcessor;
 import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
 import com.felixkroemer.smort.domain.user.FormattingSettingsResolver;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatEntity;
@@ -91,34 +90,32 @@ public class DeckBulkFormatService {
       throw e.withSeverity(LogSeverity.ERROR);
     }
 
-    bulkFormatEngine.dispatch(job, notesToProcess, createItemProcessor(job, formatInstructions));
+    bulkFormatEngine.dispatch(
+        job,
+        notesToProcess,
+        note -> {
+          Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+              Map.of(
+                  StoreNoteToolChatMessage.class,
+                  (tx, toolCall) -> {
+                    var m = (StoreNoteToolChatMessage) toolCall;
+                    note.setFront(m.front());
+                    note.setBack(m.back());
+                    note.setLastFormattedAt(Optional.of(Instant.now()));
+                    deckRepository.saveNoteInTx(tx, note);
+                  });
+          chatOrchestrationService.formatNote(
+              DeckKeys.deckPk(job.getDeckId()),
+              note.getId(),
+              note.getFront(),
+              note.getBack(),
+              formatInstructions,
+              toolHandlers);
+        });
   }
 
   private List<NoteEntity> computeNotesToProcess(DeckBulkFormatEntity job) {
     return getNotesToProcess(deckRepository.findNotesByDeckId(job.getDeckId()), job);
-  }
-
-  private ItemProcessor<NoteEntity> createItemProcessor(
-      DeckBulkFormatEntity job, String formatInstructions) {
-    return note -> {
-      Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
-          Map.of(
-              StoreNoteToolChatMessage.class,
-              (tx, toolCall) -> {
-                var m = (StoreNoteToolChatMessage) toolCall;
-                note.setFront(m.front());
-                note.setBack(m.back());
-                note.setLastFormattedAt(Optional.of(Instant.now()));
-                deckRepository.saveNoteInTx(tx, note);
-              });
-      chatOrchestrationService.formatNote(
-          DeckKeys.deckPk(job.getDeckId()),
-          note.getId(),
-          note.getFront(),
-          note.getBack(),
-          formatInstructions,
-          toolHandlers);
-    };
   }
 
   private List<NoteEntity> getNotesToProcess(List<NoteEntity> notes, BulkFormatEntity job) {
