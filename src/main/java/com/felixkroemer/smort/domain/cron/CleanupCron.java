@@ -6,6 +6,7 @@ import com.felixkroemer.smort.infrastructure.dynamodb.anki.DerivedNoteRepository
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DraftNoteRepository;
+import com.felixkroemer.smort.infrastructure.dynamodb.deck.JottingRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import java.nio.file.Files;
@@ -26,12 +27,14 @@ public class CleanupCron {
   private final ChatRepository chatRepository;
   private final AnalysisMetaRepository analysisMetaRepository;
   private final DerivedNoteRepository derivedNoteRepository;
+  private final JottingRepository jottingRepository;
 
   @Scheduled(cron = "${app.scheduling.delete-marked-decks-cron}")
   public void deleteDecksMarkedForDeletion() {
     for (var deck : deckRepository.scanForDecksMarkedForDeletion()) {
       try {
         deckRepository.deleteDeckNotes(deck.getDeckId());
+        jottingRepository.deleteAllJottings(deck.getDeckId());
         draftNoteRepository.delete(deck.getDeckId());
         bulkFormatRepository.deleteDeckJob(deck.getDeckId());
         chatRepository.deleteAll(DeckKeys.deckPk(deck.getDeckId()));
