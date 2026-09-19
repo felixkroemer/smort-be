@@ -18,6 +18,6 @@ public class SmortProperties {
   int analysisMaxDbSize;
 
   public Path getAnkiDbDirectory() {
-    return Path.of(System.getProperty("user.home"), baseDir, analysisDbDirectoryName);
+    return Path.of(baseDir, analysisDbDirectoryName);
   }
 }
