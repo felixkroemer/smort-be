@@ -57,7 +57,10 @@ resource "aws_iam_role_policy" "task_dynamodb" {
         Sid      = "AccessDynamoDbTable"
         Effect   = "Allow"
         Action   = ["dynamodb:*"]
-        Resource = [var.dynamodb_table_arn]
+        Resource = [
+          var.dynamodb_table_arn,
+          "${var.dynamodb_table_arn}/index/*",
+        ]
       }
     ]
   })
