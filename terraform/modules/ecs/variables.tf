@@ -85,16 +85,6 @@ variable "dynamodb_table_arn" {
   description = "ARN of the DynamoDB table the task role is allowed to access."
 }
 
-variable "efs_file_system_id" {
-  type        = string
-  description = "EFS filesystem ID for persistent analysis DBs."
-}
-
-variable "efs_access_point_id" {
-  type        = string
-  description = "EFS access point ID for persistent analysis DBs."
-}
-
 variable "data_dir_path" {
   type        = string
   description = "Container path (BASE_DATA_DIR) to mount the EFS volume at."
