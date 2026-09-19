@@ -36,8 +36,12 @@ resource "aws_ssm_parameter" "openai_model" {
 }
 
 # Secrets -> Secrets Manager
+resource "random_id" "secret_suffix" {
+  byte_length = 4
+}
+
 resource "aws_secretsmanager_secret" "openai_api_key" {
-  name = "smort-openai_api_key"
+  name = "smort-openai_api_key-${random_id.secret_suffix.hex}"
 }
 
 resource "aws_secretsmanager_secret_version" "openai_api_key" {
@@ -46,7 +50,7 @@ resource "aws_secretsmanager_secret_version" "openai_api_key" {
 }
 
 resource "aws_secretsmanager_secret" "auth0_client_id" {
-  name = "smort-auth0_client_id"
+  name = "smort-auth0_client_id-${random_id.secret_suffix.hex}"
 }
 
 resource "aws_secretsmanager_secret_version" "auth0_client_id" {
