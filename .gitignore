@@ -35,3 +35,6 @@ build/
 .env
 ### Git worktrees ###
 .worktrees/
+### Terraform ###
+*.tfstate
+*.tfstate.*
