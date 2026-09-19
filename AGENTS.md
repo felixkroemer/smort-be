@@ -36,3 +36,8 @@
   debug the build (`./mvnw compile`, `./mvnw test`, etc.). The human owns
   compilation and verifies it later. Skip build/compile verification steps
   and note in reports that compilation was skipped per this instruction.
+- Terraform usage is limited to `terraform validate` only. Never run
+  `terraform plan`, `terraform apply`, `terraform destroy`, or any other
+  command that creates, changes, or deletes infrastructure or Terraform
+  state. Inspect deployed resources via read-only AWS CLI calls only
+  (`aws ecs/efs/ssm/elbv2 describe/get/list`, etc.).
