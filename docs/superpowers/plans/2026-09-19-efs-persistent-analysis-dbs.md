@@ -80,11 +80,6 @@ resource "aws_efs_access_point" "this" {
 
   root_directory {
     path = "/"
-    creation_info {
-      owner_gid   = 0
-      owner_uid   = 0
-      permissions = "0755"
-    }
   }
 
   tags = { Name = "${var.name}-data" }

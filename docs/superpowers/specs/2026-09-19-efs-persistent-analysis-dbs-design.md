@@ -41,9 +41,9 @@ New `terraform/modules/efs` module:
 
 - `aws_efs_file_system` — general purpose, bursting throughput, default KMS
   encryption enabled.
-- `aws_efs_access_point` — single access point, root directory `/` with
-  `creation_info` UID/GID 0 so files have a stable owner regardless of how the
-  task runs.
+- `aws_efs_access_point` — single access point pointing at the filesystem root
+  (`posix_user` UID/GID 0); the container runs as root, so files are already
+  owned by uid 0. No `creation_info` (AWS rejects it with `path = "/"`).
 - `aws_efs_mount_target` — one per AZ in the existing private subnets
   (`eu-central-1a`, `eu-central-1b`).
 - `aws_security_group` — ingress TCP 2049 from the ECS task security group only.
