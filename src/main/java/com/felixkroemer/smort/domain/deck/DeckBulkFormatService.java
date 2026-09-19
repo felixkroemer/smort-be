@@ -11,7 +11,6 @@ import com.felixkroemer.smort.domain.common.BulkFormat;
 import com.felixkroemer.smort.domain.common.BulkFormatEngine;
 import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
 import com.felixkroemer.smort.domain.user.FormattingSettingsResolver;
-import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckBulkFormatEntity;
@@ -115,11 +114,7 @@ public class DeckBulkFormatService {
   }
 
   private List<NoteEntity> computeNotesToProcess(DeckBulkFormatEntity job) {
-    return getNotesToProcess(deckRepository.findNotesByDeckId(job.getDeckId()), job);
-  }
-
-  private List<NoteEntity> getNotesToProcess(List<NoteEntity> notes, BulkFormatEntity job) {
-    return notes.stream()
+    return deckRepository.findNotesByDeckId(job.getDeckId()).stream()
         .filter(
             note -> {
               var lastFormattedAt = note.getLastFormattedAt();

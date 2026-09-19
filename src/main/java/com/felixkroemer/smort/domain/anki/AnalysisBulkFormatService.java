@@ -13,7 +13,6 @@ import com.felixkroemer.smort.domain.common.BulkFormatEngine;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
 import com.felixkroemer.smort.domain.user.FormattingSettingsResolver;
-import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatStatus;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
@@ -143,13 +142,6 @@ public class AnalysisBulkFormatService {
             .collect(
                 Collectors.toMap(
                     DerivedNoteEntity::getNoteId, Function.identity(), (first, second) -> first));
-    return getNotesToProcess(notes, existingDerivedNotes, job);
-  }
-
-  private List<NoteToProcess> getNotesToProcess(
-      List<AnkiNote> notes,
-      Map<Long, DerivedNoteEntity> existingDerivedNotes,
-      BulkFormatEntity job) {
     return notes.stream()
         .filter(
             note -> {
