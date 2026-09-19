@@ -27,11 +27,12 @@ public class BulkFormatEngine {
     void process(T item) throws Exception;
   }
 
-  public void dispatch(BulkFormatEntity job, Runnable task) {
+  public <T> void dispatch(
+      BulkFormatEntity job, List<T> items, ItemProcessor<T> itemProcessor) {
     bulkFormatTaskExecutor.execute(
         () -> {
           try {
-            task.run();
+            process(job, items, itemProcessor);
           } catch (BulkFormatCancelledException e) {
             log.info("Bulk format cancelled. pk={}", job.getPk());
           } catch (Exception e) {
@@ -49,7 +50,7 @@ public class BulkFormatEngine {
     }
   }
 
-  public <T> void process(BulkFormatEntity job, List<T> items, ItemProcessor<T> itemProcessor) {
+  private <T> void process(BulkFormatEntity job, List<T> items, ItemProcessor<T> itemProcessor) {
     int processed = 0;
     int failed = 0;
     int consecutiveFailed = 0;

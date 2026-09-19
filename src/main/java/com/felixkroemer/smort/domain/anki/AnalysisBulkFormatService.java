@@ -10,6 +10,7 @@ import com.felixkroemer.smort.domain.chat.StoreNoteToolChatMessage;
 import com.felixkroemer.smort.domain.chat.ToolCallHandler;
 import com.felixkroemer.smort.domain.common.BulkFormat;
 import com.felixkroemer.smort.domain.common.BulkFormatEngine;
+import com.felixkroemer.smort.domain.common.BulkFormatEngine.ItemProcessor;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
 import com.felixkroemer.smort.domain.user.FormattingSettingsResolver;
@@ -56,15 +57,8 @@ public class AnalysisBulkFormatService {
       }
     }
 
-    var notes = analysisService.getNotes(analysisId);
-    var existingDerivedNotes =
-        analysisService.getDerivedNotes(analysisId).stream()
-            .collect(
-                Collectors.toMap(
-                    DerivedNoteEntity::getNoteId, Function.identity(), (first, second) -> first));
-
     var job = new AnalysisBulkFormatEntity(analysisId, reformatAlreadyFormatted);
-    var notesToProcess = getNotesToProcess(notes, existingDerivedNotes, job);
+    var notesToProcess = computeNotesToProcess(job);
 
     if (notesToProcess.isEmpty()) {
       throw new SmortException(
@@ -76,11 +70,11 @@ public class AnalysisBulkFormatService {
 
     job.setTotalNotes(notesToProcess.size());
     bulkFormatRepository.save(job);
-    bulkFormatEngine.dispatch(job, () -> processNotes(job, notesToProcess));
+    startProcessing(job, notesToProcess);
   }
 
-  public void resumeBulkFormat(AnalysisBulkFormatEntity bulkFormatEntity) {
-    bulkFormatEngine.dispatch(bulkFormatEntity, () -> processNotes(bulkFormatEntity));
+  public void resumeBulkFormat(AnalysisBulkFormatEntity job) {
+    startProcessing(job, computeNotesToProcess(job));
   }
 
   public void cancelBulkFormat(UUID analysisId) {
@@ -92,18 +86,7 @@ public class AnalysisBulkFormatService {
     bulkFormatEngine.cancel(job);
   }
 
-  private void processNotes(AnalysisBulkFormatEntity job) {
-    var notes = analysisService.getNotes(job.getAnalysisId());
-    var existingDerivedNotes =
-        analysisService.getDerivedNotes(job.getAnalysisId()).stream()
-            .collect(
-                Collectors.toMap(
-                    DerivedNoteEntity::getNoteId, Function.identity(), (first, second) -> first));
-    var notesToProcess = getNotesToProcess(notes, existingDerivedNotes, job);
-    processNotes(job, notesToProcess);
-  }
-
-  private void processNotes(AnalysisBulkFormatEntity job, List<NoteToProcess> notesToProcess) {
+  private void startProcessing(AnalysisBulkFormatEntity job, List<NoteToProcess> notesToProcess) {
     var analysisId = job.getAnalysisId();
     String formatInstructions;
     try {
@@ -113,45 +96,58 @@ public class AnalysisBulkFormatService {
       throw e.withSeverity(LogSeverity.ERROR);
     }
 
-    bulkFormatEngine.process(
-        job,
-        notesToProcess,
-        noteToProcess -> {
-          var noteEntity = noteToProcess.ankiNote();
-          var existingDerivedNote = noteToProcess.existingDerivedNote();
-          var content =
-              existingDerivedNote
-                  .map(DerivedNoteEntity::getContent)
-                  .orElse(noteEntity.getContent());
-          Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
-              Map.of(
-                  StoreNoteToolChatMessage.class,
-                  (tx, toolCall) -> {
-                    var m = (StoreNoteToolChatMessage) toolCall;
-                    var derivedNote =
-                        existingDerivedNote
-                            .map(
-                                d -> {
-                                  d.setFront(m.front());
-                                  d.setBack(m.back());
-                                  d.setLastFormattedAt(Optional.of(Instant.now()));
-                                  return d;
-                                })
-                            .orElseGet(
-                                () ->
-                                    derivedNoteEntityMapper.toDerivedNoteEntity(
-                                        analysisId,
-                                        noteEntity.getId(),
-                                        new NoteSchema(m.front(), m.back())));
-                    derivedNoteRepository.saveInTx(tx, derivedNote);
-                  });
-          chatOrchestrationService.formatNote(
-              AnalysisKeys.analysisPk(analysisId),
-              noteEntity.getId(),
-              content,
-              formatInstructions,
-              toolHandlers);
-        });
+    bulkFormatEngine.dispatch(job, notesToProcess, createItemProcessor(job, formatInstructions));
+  }
+
+  private List<NoteToProcess> computeNotesToProcess(AnalysisBulkFormatEntity job) {
+    var notes = analysisService.getNotes(job.getAnalysisId());
+    var existingDerivedNotes =
+        analysisService.getDerivedNotes(job.getAnalysisId()).stream()
+            .collect(
+                Collectors.toMap(
+                    DerivedNoteEntity::getNoteId, Function.identity(), (first, second) -> first));
+    return getNotesToProcess(notes, existingDerivedNotes, job);
+  }
+
+  private ItemProcessor<NoteToProcess> createItemProcessor(
+      AnalysisBulkFormatEntity job, String formatInstructions) {
+    var analysisId = job.getAnalysisId();
+    return noteToProcess -> {
+      var noteEntity = noteToProcess.ankiNote();
+      var existingDerivedNote = noteToProcess.existingDerivedNote();
+      var content =
+          existingDerivedNote
+              .map(DerivedNoteEntity::getContent)
+              .orElse(noteEntity.getContent());
+      Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+          Map.of(
+              StoreNoteToolChatMessage.class,
+              (tx, toolCall) -> {
+                var m = (StoreNoteToolChatMessage) toolCall;
+                var derivedNote =
+                    existingDerivedNote
+                        .map(
+                            d -> {
+                              d.setFront(m.front());
+                              d.setBack(m.back());
+                              d.setLastFormattedAt(Optional.of(Instant.now()));
+                              return d;
+                            })
+                        .orElseGet(
+                            () ->
+                                derivedNoteEntityMapper.toDerivedNoteEntity(
+                                    analysisId,
+                                    noteEntity.getId(),
+                                    new NoteSchema(m.front(), m.back())));
+                derivedNoteRepository.saveInTx(tx, derivedNote);
+              });
+      chatOrchestrationService.formatNote(
+          AnalysisKeys.analysisPk(analysisId),
+          noteEntity.getId(),
+          content,
+          formatInstructions,
+          toolHandlers);
+    };
   }
 
   private List<NoteToProcess> getNotesToProcess(

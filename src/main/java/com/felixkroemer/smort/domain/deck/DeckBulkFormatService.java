@@ -9,6 +9,7 @@ import com.felixkroemer.smort.domain.chat.StoreNoteToolChatMessage;
 import com.felixkroemer.smort.domain.chat.ToolCallHandler;
 import com.felixkroemer.smort.domain.common.BulkFormat;
 import com.felixkroemer.smort.domain.common.BulkFormatEngine;
+import com.felixkroemer.smort.domain.common.BulkFormatEngine.ItemProcessor;
 import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
 import com.felixkroemer.smort.domain.user.FormattingSettingsResolver;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatEntity;
@@ -52,9 +53,8 @@ public class DeckBulkFormatService {
       }
     }
 
-    var notes = deckRepository.findNotesByDeckId(deckId);
     var job = new DeckBulkFormatEntity(deckId, reformatAlreadyFormatted);
-    var notesToProcess = getNotesToProcess(notes, job);
+    var notesToProcess = computeNotesToProcess(job);
 
     if (notesToProcess.isEmpty()) {
       throw new SmortException(
@@ -66,11 +66,11 @@ public class DeckBulkFormatService {
 
     job.setTotalNotes(notesToProcess.size());
     bulkFormatRepository.save(job);
-    bulkFormatEngine.dispatch(job, () -> processNotes(job, notesToProcess));
+    startProcessing(job, notesToProcess);
   }
 
-  public void resumeBulkFormat(DeckBulkFormatEntity bulkFormatEntity) {
-    bulkFormatEngine.dispatch(bulkFormatEntity, () -> processNotes(bulkFormatEntity));
+  public void resumeBulkFormat(DeckBulkFormatEntity job) {
+    startProcessing(job, computeNotesToProcess(job));
   }
 
   public void cancelBulkFormat(UUID deckId) {
@@ -82,13 +82,7 @@ public class DeckBulkFormatService {
     bulkFormatEngine.cancel(job);
   }
 
-  private void processNotes(DeckBulkFormatEntity job) {
-    var notes = deckRepository.findNotesByDeckId(job.getDeckId());
-    var notesToProcess = getNotesToProcess(notes, job);
-    processNotes(job, notesToProcess);
-  }
-
-  private void processNotes(DeckBulkFormatEntity job, List<NoteEntity> notesToProcess) {
+  private void startProcessing(DeckBulkFormatEntity job, List<NoteEntity> notesToProcess) {
     String formatInstructions;
     try {
       formatInstructions =
@@ -96,28 +90,35 @@ public class DeckBulkFormatService {
     } catch (NotFoundException e) {
       throw e.withSeverity(LogSeverity.ERROR);
     }
-    bulkFormatEngine.process(
-        job,
-        notesToProcess,
-        note -> {
-          Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
-              Map.of(
-                  StoreNoteToolChatMessage.class,
-                  (tx, toolCall) -> {
-                    var m = (StoreNoteToolChatMessage) toolCall;
-                    note.setFront(m.front());
-                    note.setBack(m.back());
-                    note.setLastFormattedAt(Optional.of(Instant.now()));
-                    deckRepository.saveNoteInTx(tx, note);
-                  });
-          chatOrchestrationService.formatNote(
-              DeckKeys.deckPk(job.getDeckId()),
-              note.getId(),
-              note.getFront(),
-              note.getBack(),
-              formatInstructions,
-              toolHandlers);
-        });
+
+    bulkFormatEngine.dispatch(job, notesToProcess, createItemProcessor(job, formatInstructions));
+  }
+
+  private List<NoteEntity> computeNotesToProcess(DeckBulkFormatEntity job) {
+    return getNotesToProcess(deckRepository.findNotesByDeckId(job.getDeckId()), job);
+  }
+
+  private ItemProcessor<NoteEntity> createItemProcessor(
+      DeckBulkFormatEntity job, String formatInstructions) {
+    return note -> {
+      Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+          Map.of(
+              StoreNoteToolChatMessage.class,
+              (tx, toolCall) -> {
+                var m = (StoreNoteToolChatMessage) toolCall;
+                note.setFront(m.front());
+                note.setBack(m.back());
+                note.setLastFormattedAt(Optional.of(Instant.now()));
+                deckRepository.saveNoteInTx(tx, note);
+              });
+      chatOrchestrationService.formatNote(
+          DeckKeys.deckPk(job.getDeckId()),
+          note.getId(),
+          note.getFront(),
+          note.getBack(),
+          formatInstructions,
+          toolHandlers);
+    };
   }
 
   private List<NoteEntity> getNotesToProcess(List<NoteEntity> notes, BulkFormatEntity job) {
