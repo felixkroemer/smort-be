@@ -3,8 +3,11 @@ package com.felixkroemer.smort.domain.anki;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteEntity;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteTypeEntity;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -18,11 +21,15 @@ import org.springframework.stereotype.Service;
 public class AnkiNoteTypeService {
 
   private final AnkiNoteRepository ankiNoteRepository;
+  private final Cache<UUID, Map<Long, AnkiNoteTypeEntity>> noteTypeCache =
+      Caffeine.newBuilder().expireAfterAccess(30, TimeUnit.MINUTES).build();
 
   public Map<Long, AnkiNoteTypeEntity> getNoteTypesByAnalysisId(UUID analysisId) {
-    var noteTypes = ankiNoteRepository.findNoteTypesByAnalysisId(analysisId);
-    return noteTypes.stream()
-        .collect(Collectors.toMap(AnkiNoteTypeEntity::getId, Function.identity()));
+    return noteTypeCache.get(
+        analysisId,
+        id ->
+            ankiNoteRepository.findNoteTypesByAnalysisId(id).stream()
+                .collect(Collectors.toMap(AnkiNoteTypeEntity::getId, Function.identity())));
   }
 
   public Map<String, String> getContent(UUID analysisId, AnkiNoteEntity note) {
