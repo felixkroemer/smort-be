@@ -233,6 +233,9 @@ public class DeckService {
     getMeta(targetDeckId);
 
     var uniqueNoteIds = noteIds.stream().distinct().toList();
+    if (uniqueNoteIds.isEmpty()) {
+      return;
+    }
     var notesByNoteId =
         deckRepository.findNotesByDeckId(sourceDeckId).stream()
             .collect(Collectors.toMap(NoteEntity::getId, Function.identity()));
