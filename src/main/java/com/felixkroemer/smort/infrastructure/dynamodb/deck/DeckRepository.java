@@ -47,6 +47,16 @@ public class DeckRepository {
     txBuilder.addPutItem(noteTable, note);
   }
 
+  public void deleteNoteInTx(
+      TransactWriteItemsEnhancedRequest.Builder txBuilder, UUID deckId, UUID noteId) {
+    var key =
+        Key.builder()
+            .partitionValue(DeckKeys.deckPk(deckId))
+            .sortValue(NoteSortKeys.noteSk(noteId))
+            .build();
+    txBuilder.addDeleteItem(noteTable, key);
+  }
+
   public void saveDeckMeta(DeckMetaEntity entity) {
     deckMetaTable.putItem(entity);
   }
