@@ -5,20 +5,25 @@ import com.felixkroemer.smort.application.anki.mapping.BulkFormatRestMapper;
 import com.felixkroemer.smort.application.chat.dto.ChatMessageRequest;
 import com.felixkroemer.smort.application.chat.dto.ChatMessageResponse;
 import com.felixkroemer.smort.application.chat.mapping.ChatMessageRestMapper;
+import com.felixkroemer.smort.application.deck.dto.CreateJottingRequest;
 import com.felixkroemer.smort.application.deck.dto.DeckResponse;
 import com.felixkroemer.smort.application.deck.dto.DeckSettingsResponse;
 import com.felixkroemer.smort.application.deck.dto.DeleteNotesRequest;
 import com.felixkroemer.smort.application.deck.dto.DraftNoteResponse;
 import com.felixkroemer.smort.application.deck.dto.ImportAnalysisRequest;
+import com.felixkroemer.smort.application.deck.dto.JottingResponse;
 import com.felixkroemer.smort.application.deck.dto.NoteResponse;
 import com.felixkroemer.smort.application.deck.dto.UpdateDeckSettingsRequest;
+import com.felixkroemer.smort.application.deck.dto.UpdateJottingRequest;
 import com.felixkroemer.smort.application.deck.mapping.DeckRestMapper;
 import com.felixkroemer.smort.application.deck.mapping.DraftNoteRestMapper;
+import com.felixkroemer.smort.application.deck.mapping.JottingRestMapper;
 import com.felixkroemer.smort.application.deck.mapping.NoteRestMapper;
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.domain.deck.DeckBulkFormatService;
 import com.felixkroemer.smort.domain.deck.DeckService;
+import com.felixkroemer.smort.domain.deck.JottingService;
 import com.felixkroemer.smort.domain.deck.NoteService;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.DeckKeys;
 import java.util.List;
@@ -36,12 +41,14 @@ public class DeckController {
   private final NoteService noteService;
   private final ChatOrchestrationService chatOrchestrationService;
   private final DeckBulkFormatService deckBulkFormatService;
+  private final JottingService jottingService;
 
   private final DeckRestMapper deckRestMapper;
   private final BulkFormatRestMapper bulkFormatRestMapper;
   private final NoteRestMapper noteRestMapper;
   private final ChatMessageRestMapper chatMessageRestMapper;
   private final DraftNoteRestMapper draftNoteRestMapper;
+  private final JottingRestMapper jottingRestMapper;
 
   @PostMapping()
   public DeckResponse importAnalysis(@RequestBody ImportAnalysisRequest importAnalysisRequest) {
@@ -143,6 +150,43 @@ public class DeckController {
   public List<ChatMessageResponse> storeDraftNote(@PathVariable("deckId") UUID deckId) {
     var chatMessages = deckService.storeDraftNote(deckId);
     return chatMessageRestMapper.toChatMessageResponse(chatMessages);
+  }
+
+  @GetMapping("/{deckId}/jottings")
+  public List<JottingResponse> getJottings(@PathVariable("deckId") UUID deckId) {
+    return jottingRestMapper.toJottingResponse(jottingService.getJottings(deckId));
+  }
+
+  @PostMapping("/{deckId}/jottings")
+  @ResponseStatus(HttpStatus.CREATED)
+  public JottingResponse createJotting(
+      @PathVariable("deckId") UUID deckId,
+      @RequestBody CreateJottingRequest createJottingRequest) {
+    return jottingRestMapper.toJottingResponse(
+        jottingService.create(
+            deckId,
+            createJottingRequest.title(),
+            createJottingRequest.description()));
+  }
+
+  @PatchMapping("/{deckId}/jottings/{jottingId}")
+  public JottingResponse updateJotting(
+      @PathVariable("deckId") UUID deckId,
+      @PathVariable("jottingId") UUID jottingId,
+      @RequestBody UpdateJottingRequest updateJottingRequest) {
+    return jottingRestMapper.toJottingResponse(
+        jottingService.update(
+            deckId,
+            jottingId,
+            updateJottingRequest.title(),
+            updateJottingRequest.description()));
+  }
+
+  @DeleteMapping("/{deckId}/jottings/{jottingId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteJotting(
+      @PathVariable("deckId") UUID deckId, @PathVariable("jottingId") UUID jottingId) {
+    jottingService.delete(deckId, jottingId);
   }
 
   @PostMapping("/{deckId}/chat")
