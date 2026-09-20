@@ -76,6 +76,10 @@ orphaned chat under the source partition, which is harmless and matches how
 - `NotFoundException` (404): source or target deck missing; a requested note
   id not present in the source deck.
 - `SmortException` (400): `sourceDeckId == targetDeckId`.
+- Requests with more than 50 unique note ids are rejected with `SmortException`
+  (400); moving is capped to preserve the all-or-nothing guarantee (each note
+  uses 2 DynamoDB transaction actions, and `TransactWriteItems` allows at most
+  100).
 - Empty `noteIds` is a no-op success (204).
 - Duplicate note ids are deduped before building the transaction.
 

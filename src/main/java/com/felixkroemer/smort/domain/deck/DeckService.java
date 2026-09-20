@@ -225,17 +225,23 @@ public class DeckService {
   }
 
   public void moveNotes(UUID sourceDeckId, List<UUID> noteIds, UUID targetDeckId) {
+    if (noteIds == null) {
+      throw new SmortException("noteIds must not be null");
+    }
     if (sourceDeckId.equals(targetDeckId)) {
       throw new SmortException(
           "Cannot move notes within the same deck. deckId={}", sourceDeckId);
     }
-    getMeta(sourceDeckId);
-    getMeta(targetDeckId);
-
     var uniqueNoteIds = noteIds.stream().distinct().toList();
+    if (uniqueNoteIds.size() > 50) {
+      throw new SmortException(
+          "Cannot move more than 50 notes in one request. count={}", uniqueNoteIds.size());
+    }
     if (uniqueNoteIds.isEmpty()) {
       return;
     }
+    getMeta(sourceDeckId);
+    getMeta(targetDeckId);
     var notesByNoteId =
         deckRepository.findNotesByDeckId(sourceDeckId).stream()
             .collect(Collectors.toMap(NoteEntity::getId, Function.identity()));
