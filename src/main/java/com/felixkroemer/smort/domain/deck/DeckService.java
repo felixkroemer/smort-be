@@ -42,12 +42,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DeckService {
 
   private static final Pattern FIELD_PATTERN = Pattern.compile("\\$\\{([A-Za-z_]+)}");
@@ -220,6 +222,52 @@ public class DeckService {
   public void deleteNote(UUID deckId, UUID noteId) {
     deckRepository.deleteNoteByDeckIdAndNoteId(deckId, noteId);
     chatRepository.deleteChat(DeckKeys.deckPk(deckId), noteId);
+  }
+
+  public void moveNotes(UUID sourceDeckId, List<UUID> noteIds, UUID targetDeckId) {
+    if (sourceDeckId.equals(targetDeckId)) {
+      throw new SmortException(
+          "Cannot move notes within the same deck. deckId={}", sourceDeckId);
+    }
+    getMeta(sourceDeckId);
+    getMeta(targetDeckId);
+
+    var uniqueNoteIds = noteIds.stream().distinct().toList();
+    var notesByNoteId =
+        deckRepository.findNotesByDeckId(sourceDeckId).stream()
+            .collect(Collectors.toMap(NoteEntity::getId, Function.identity()));
+
+    var notes =
+        uniqueNoteIds.stream()
+            .map(
+                noteId ->
+                    Optional.ofNullable(notesByNoteId.get(noteId))
+                        .orElseThrow(
+                            () ->
+                                new NotFoundException(
+                                    "Could not find note in deck. deckId={}, noteId={}",
+                                    sourceDeckId,
+                                    noteId)))
+            .toList();
+
+    var txBuilder = TransactWriteItemsEnhancedRequest.builder();
+    notes.forEach(
+        note -> {
+          deckRepository.deleteNoteInTx(txBuilder, sourceDeckId, note.getId());
+          note.setPk(DeckKeys.deckPk(targetDeckId));
+          note.setDeckId(targetDeckId);
+          deckRepository.saveNoteInTx(txBuilder, note);
+        });
+    enhancedClient.transactWriteItems(txBuilder.build());
+
+    notes.forEach(
+        note -> chatRepository.deleteChat(DeckKeys.deckPk(sourceDeckId), note.getId()));
+
+    log.info(
+        "Moved notes. sourceDeckId={}, targetDeckId={}, noteIds={}",
+        sourceDeckId,
+        targetDeckId,
+        uniqueNoteIds);
   }
 
   public List<ChatMessageEntity> chat(UUID deckId, String message) {
