@@ -12,6 +12,7 @@ import com.felixkroemer.smort.application.deck.dto.DeleteNotesRequest;
 import com.felixkroemer.smort.application.deck.dto.DraftNoteResponse;
 import com.felixkroemer.smort.application.deck.dto.ImportAnalysisRequest;
 import com.felixkroemer.smort.application.deck.dto.JottingResponse;
+import com.felixkroemer.smort.application.deck.dto.MoveNotesRequest;
 import com.felixkroemer.smort.application.deck.dto.NoteResponse;
 import com.felixkroemer.smort.application.deck.dto.UpdateDeckSettingsRequest;
 import com.felixkroemer.smort.application.deck.dto.UpdateJottingRequest;
@@ -225,6 +226,13 @@ public class DeckController {
   public void deleteNotes(
       @PathVariable("deckId") UUID deckId, @RequestBody DeleteNotesRequest request) {
     deckService.deleteNotes(deckId, request.noteIds());
+  }
+
+  @PostMapping("/{deckId}/notes/move")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void moveNotes(
+      @PathVariable("deckId") UUID deckId, @RequestBody MoveNotesRequest request) {
+    deckService.moveNotes(deckId, request.noteIds(), request.targetDeckId());
   }
 
   @DeleteMapping("/{deckId}/notes/{noteId}")
