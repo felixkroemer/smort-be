@@ -8,10 +8,18 @@ Split the monolithic `com.felixkroemer.smort.domain.chat` package into two focus
 packages: one for orchestration (persistence/coordination) and one for the actual
 OpenAI chat. Pure reorganization — no behavior or logic changes.
 
+In addition, rename the `*ChatMessage` domain model classes to `*ChatResponse`:
+`ChatMessage` -> `ChatResponse`, `TextChatMessage` -> `TextChatResponse`,
+`StoreNoteToolChatMessage` -> `StoreNoteToolChatResponse`,
+`DraftNoteToolChatMessage` -> `DraftNoteToolChatResponse`.
+`ChatMessageMeta` and the infra `ChatMessageEntity` are NOT renamed.
+
 ## Target structure
 
 ### `domain.chat` — shared domain model (stays in root)
-- `ChatMessage` + `TextChatMessage` / `StoreNoteToolChatMessage` / `DraftNoteToolChatMessage`
+- `ChatResponse` (was `ChatMessage`) + `TextChatResponse` (was `TextChatMessage`) /
+  `StoreNoteToolChatResponse` (was `StoreNoteToolChatMessage`) /
+  `DraftNoteToolChatResponse` (was `DraftNoteToolChatMessage`)
 - `ChatMessageMeta`
 - `ChatContext` + `NoteChatContext` / `DeckChatContext`
 - `ChatUtil`
@@ -46,7 +54,11 @@ OpenAI chat. Pure reorganization — no behavior or logic changes.
 
 1. Move files into `orchestration` (2) and `llm` (4), updating each `package` declaration.
 2. Add imports for root model types in the moved files (they were same-package before).
-3. Update external consumers that reference moved classes:
+3. Rename the `*ChatMessage` domain classes to `*ChatResponse` (interface + 3 concrete
+   records), and update all `implements` clauses, the `ToolCallHandler.execute` parameter
+   type, and every reference across `domain` and `application`. `ChatMessageMeta` and the
+   infra `ChatMessageEntity` keep their names.
+4. Update external consumers that reference moved classes:
    - `ChatOrchestrationService` (used by `NoteService`, `DeckService`, `AnkiNoteService`,
      bulk-format services, controllers).
    - Tool-type enums / tool services used by `NoteService`, `DeckService`, `AnkiNoteService`,
