@@ -37,8 +37,10 @@ public class NoteService {
   private final FormattingSettingsResolver formattingSettingsResolver;
   private final DynamoDbEnhancedClient enhancedClient;
 
-  public Optional<NoteEntity> getNote(UUID deckId, UUID noteId) {
-    return deckRepository.findNoteByDeckIdAndNoteId(deckId, noteId);
+  public NoteEntity getNote(UUID deckId, UUID noteId) {
+    return deckRepository
+        .findNoteByDeckIdAndNoteId(deckId, noteId)
+        .orElseThrow(() -> new NotFoundException("Could not find note. id={}", noteId));
   }
 
   public List<NoteEntity> getNotes(UUID deckId) {
@@ -123,10 +125,7 @@ public class NoteService {
   }
 
   public List<ChatMessageEntity> formatNote(UUID deckId, UUID noteId) {
-    var note =
-        deckRepository
-            .findNoteByDeckIdAndNoteId(deckId, noteId)
-            .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
+    var note = getNote(deckId, noteId);
 
     Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
         Map.of(
@@ -156,10 +155,7 @@ public class NoteService {
   }
 
   public NoteEntity updateNote(UUID deckId, UUID noteId, String front, String back) {
-    var note =
-        deckRepository
-            .findNoteByDeckIdAndNoteId(deckId, noteId)
-            .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
+    var note = getNote(deckId, noteId);
 
     Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
         Map.of(
@@ -178,10 +174,7 @@ public class NoteService {
   }
 
   public List<ChatMessageEntity> chat(UUID deckId, UUID noteId, String message) {
-    var note =
-        deckRepository
-            .findNoteByDeckIdAndNoteId(deckId, noteId)
-            .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
+    var note = getNote(deckId, noteId);
 
     String formatInstructions =
         formattingSettingsResolver.resolve(deckService.getDeckSettings(deckId));

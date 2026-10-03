@@ -21,7 +21,6 @@ import com.felixkroemer.smort.application.deck.mapping.DraftNoteRestMapper;
 import com.felixkroemer.smort.application.deck.mapping.JottingRestMapper;
 import com.felixkroemer.smort.application.deck.mapping.NoteRestMapper;
 import com.felixkroemer.smort.application.note.dto.UpdateNoteRequest;
-import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.domain.deck.DeckBulkFormatService;
 import com.felixkroemer.smort.domain.deck.DeckImportService;
@@ -87,8 +86,7 @@ public class DeckController {
   public NoteResponse getNote(
       @PathVariable("deckId") UUID deckId, @PathVariable("noteId") UUID noteId) {
     var note = noteService.getNote(deckId, noteId);
-    return noteRestMapper.toNoteResponse(
-        note.orElseThrow(() -> new NotFoundException("Could not find note. id={}", noteId)));
+    return noteRestMapper.toNoteResponse(note);
   }
 
   @GetMapping("notes")

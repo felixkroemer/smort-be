@@ -69,7 +69,7 @@ public class AnalysisService {
     analysisMetaRepository.save(analysis);
   }
 
-  private AnalysisMetaEntity getMeta(UUID analysisId) {
+  public AnalysisMetaEntity getMeta(UUID analysisId) {
     return analysisMetaRepository
         .findAnalysisMetaByAnalysisId(analysisId)
         .orElseThrow(
