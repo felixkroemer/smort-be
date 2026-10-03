@@ -85,8 +85,9 @@ ever sent to OpenAI.
      translate that to `NotFoundException` (404) in the service.
    - Tool handler (`StoreNoteToolChatMessage`): upsert the derived note —
      update the existing one (preserving its `lastFormattedAt`) or create via
-     `derivedNoteEntityMapper` (empty `lastFormattedAt`), then
-     `derivedNoteRepository.saveInTx`.
+     the `DerivedNoteEntity(analysisId, noteId, front, back)` constructor
+     (empty `lastFormattedAt`; `derivedNoteEntityMapper` would stamp
+     `Instant.now()`), then `derivedNoteRepository.saveInTx`.
    - Call `chatOrchestrationService.storeNote(AnalysisKeys.analysisPk(analysisId),
      noteId, front, back, handlers)`.
    - Return the updated `DerivedNoteEntity`; the controller maps to
