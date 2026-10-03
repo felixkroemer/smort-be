@@ -112,9 +112,7 @@ public class UserSettingsService {
           "Cannot delete a system formatting template. id={}",
           id);
     }
-    if (userFormattingTemplateRepository.findByUserIdAndTemplateId(CURRENT_USER, id).isEmpty()) {
-      throw new NotFoundException("Could not find formatting template. id={}", id);
-    }
+    getTemplate(id);
     var settings = getSettingsMeta();
     if (settings.getDefaultTemplateId().equals(id)) {
       throw new SmortException(

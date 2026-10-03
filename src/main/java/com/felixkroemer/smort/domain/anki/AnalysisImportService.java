@@ -25,6 +25,7 @@ public class AnalysisImportService {
 
   private final AnalysisMetaRepository analysisMetaRepository;
   private final AnkiNoteRepository ankiNoteRepository;
+  private final AnalysisService analysisService;
 
   private final SmortProperties smortProperties;
 
@@ -36,7 +37,7 @@ public class AnalysisImportService {
   }
 
   public void uploadDB(UUID analysisId, byte[] bytes) {
-    var analysis = getMeta(analysisId);
+    var analysis = analysisService.getMeta(analysisId);
 
     if (bytes == null || bytes.length == 0) {
       throw new SmortException("Empty upload for analysis. id={}", analysisId);
@@ -83,7 +84,7 @@ public class AnalysisImportService {
   }
 
   public void setDeck(UUID analysisId, Long deckId) {
-    var analysis = getMeta(analysisId);
+    var analysis = analysisService.getMeta(analysisId);
 
     if (analysis.getStatus() != AnalysisStatus.DB_UPLOADED) {
       throw new SmortException(
@@ -105,12 +106,5 @@ public class AnalysisImportService {
     analysis.setDeckName(deck.getName());
     analysis.setNoteCount(deck.getCards().size());
     analysisMetaRepository.save(analysis);
-  }
-
-  private AnalysisMetaEntity getMeta(UUID analysisId) {
-    return analysisMetaRepository
-        .findAnalysisMetaByAnalysisId(analysisId)
-        .orElseThrow(
-            () -> new NotFoundException("Could not find analysis by id. id={}", analysisId));
   }
 }
