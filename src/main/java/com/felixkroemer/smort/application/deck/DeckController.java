@@ -20,6 +20,7 @@ import com.felixkroemer.smort.application.deck.mapping.DeckRestMapper;
 import com.felixkroemer.smort.application.deck.mapping.DraftNoteRestMapper;
 import com.felixkroemer.smort.application.deck.mapping.JottingRestMapper;
 import com.felixkroemer.smort.application.deck.mapping.NoteRestMapper;
+import com.felixkroemer.smort.application.note.dto.UpdateNoteRequest;
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.domain.deck.DeckBulkFormatService;
@@ -99,6 +100,15 @@ public class DeckController {
       @PathVariable("deckId") UUID deckId, @PathVariable("noteId") UUID noteId) {
     var chatMessages = noteService.formatNote(deckId, noteId);
     return chatMessageRestMapper.toChatMessageResponse(chatMessages);
+  }
+
+  @PatchMapping("/{deckId}/notes/{noteId}")
+  public NoteResponse updateNote(
+      @PathVariable("deckId") UUID deckId,
+      @PathVariable("noteId") UUID noteId,
+      @RequestBody UpdateNoteRequest request) {
+    var note = noteService.updateNote(deckId, noteId, request.front(), request.back());
+    return noteRestMapper.toNoteResponse(note);
   }
 
   @PostMapping("/{deckId}/format")

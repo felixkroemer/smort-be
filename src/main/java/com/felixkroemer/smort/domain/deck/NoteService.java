@@ -68,6 +68,28 @@ public class NoteService {
     return chatMessages;
   }
 
+  public NoteEntity updateNote(UUID deckId, UUID noteId, String front, String back) {
+    var note =
+        deckRepository
+            .findNoteByDeckIdAndNoteId(deckId, noteId)
+            .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
+
+    Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+        Map.of(
+            StoreNoteToolChatMessage.class,
+            (tx, toolCall) -> {
+              var m = (StoreNoteToolChatMessage) toolCall;
+              note.setFront(m.front());
+              note.setBack(m.back());
+              deckRepository.saveNoteInTx(tx, note);
+            });
+
+    chatOrchestrationService.storeNote(
+        DeckKeys.deckPk(deckId), noteId, front, back, toolHandlers);
+
+    return note;
+  }
+
   public List<ChatMessageEntity> chat(UUID deckId, UUID noteId, String message) {
     var note =
         deckRepository

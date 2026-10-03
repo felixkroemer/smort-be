@@ -37,6 +37,17 @@ public class AnkiNoteRepository {
     }
   }
 
+  public boolean noteExists(UUID analysisId, Long noteId) {
+    try (var entityManager = entityManagerFactoryCache.getOrCreate(analysisId)) {
+      Long count =
+          entityManager
+              .createQuery("SELECT COUNT(n) FROM AnkiNoteEntity n WHERE n.id = :noteId", Long.class)
+              .setParameter("noteId", noteId)
+              .getSingleResult();
+      return count != null && count > 0;
+    }
+  }
+
   public List<AnkiNoteEntity> findNotesByAnalysisIdAndNoteIdIn(UUID analysisId, Set<Long> noteIds) {
     try (var entityManager = entityManagerFactoryCache.getOrCreate(analysisId)) {
       return entityManager

@@ -4,9 +4,12 @@ import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.AbstractChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatRepository;
+import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
@@ -57,7 +60,11 @@ public class ChatOrchestrationService {
             NoteChatToolType.STORE_NOTE.name(),
             Optional.empty(),
             true,
-            content);
+            Map.of(
+                "front",
+                storeNoteToolChatMessage.front(),
+                "back",
+                storeNoteToolChatMessage.back()));
 
     var txBuilder = TransactWriteItemsEnhancedRequest.builder();
     chatRepository.saveInTx(txBuilder, formatChatMessageEntity);
@@ -65,6 +72,40 @@ public class ChatOrchestrationService {
     enhancedClient.transactWriteItems(txBuilder.build());
 
     return List.of(formatChatMessageEntity);
+  }
+
+  public <T> List<ChatMessageEntity> storeNote(
+      String pk,
+      T entityId,
+      String front,
+      String back,
+      Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
+    var meta = new ChatMessageMeta(UUID.randomUUID().toString(), Optional.empty(), Instant.now());
+    var storeNoteToolChatMessage = new StoreNoteToolChatMessage("", front, back, meta);
+
+    var arguments = new HashMap<String, String>();
+    arguments.put("front", front);
+    arguments.put("back", back);
+
+    var storeNoteChatMessageEntity =
+        ChatMessageEntity.toolCall(
+            pk,
+            entityId,
+            Optional.empty(),
+            meta.responseId(),
+            Optional.empty(),
+            storeNoteToolChatMessage.callId(),
+            NoteChatToolType.STORE_NOTE.name(),
+            Optional.empty(),
+            true,
+            arguments);
+
+    var txBuilder = TransactWriteItemsEnhancedRequest.builder();
+    chatRepository.saveInTx(txBuilder, storeNoteChatMessageEntity);
+    applyToolEffect(txBuilder, storeNoteToolChatMessage, toolHandlers);
+    enhancedClient.transactWriteItems(txBuilder.build());
+
+    return List.of(storeNoteChatMessageEntity);
   }
 
   public List<ChatMessageEntity> noteChat(

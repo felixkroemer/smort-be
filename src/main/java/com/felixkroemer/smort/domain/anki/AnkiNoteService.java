@@ -1,5 +1,6 @@
 package com.felixkroemer.smort.domain.anki;
 
+import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.domain.anki.mapping.DerivedNoteEntityMapper;
 import com.felixkroemer.smort.domain.chat.*;
 import com.felixkroemer.smort.domain.common.NoteSchema;
@@ -89,6 +90,32 @@ public class AnkiNoteService {
     log.info("Formatted note. analysisId={}, noteId={}", analysisId, noteId);
 
     return chatMessages;
+  }
+
+  public DerivedNoteEntity updateNote(UUID analysisId, Long noteId, String front, String back) {
+    if (!ankiNoteRepository.noteExists(analysisId, noteId)) {
+      throw new NotFoundException("Note not found. id={}", noteId);
+    }
+
+    var derivedNote =
+        getDerivedNote(analysisId, noteId)
+            .map(
+                d -> {
+                  d.setFront(front);
+                  d.setBack(back);
+                  return d;
+                })
+            .orElseGet(() -> new DerivedNoteEntity(analysisId, noteId, front, back));
+
+    Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+        Map.of(
+            StoreNoteToolChatMessage.class,
+            (tx, toolCall) -> derivedNoteRepository.saveInTx(tx, derivedNote));
+
+    chatOrchestrationService.storeNote(
+        AnalysisKeys.analysisPk(analysisId), noteId, front, back, toolHandlers);
+
+    return derivedNote;
   }
 
   public List<ChatMessageEntity> chat(UUID analysisId, Long noteId, String message) {
