@@ -11,6 +11,7 @@ import com.felixkroemer.smort.application.note.dto.UpdateNoteRequest;
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.AnalysisBulkFormatService;
+import com.felixkroemer.smort.domain.anki.AnalysisImportService;
 import com.felixkroemer.smort.domain.anki.AnalysisService;
 import com.felixkroemer.smort.domain.anki.AnkiNoteService;
 import com.felixkroemer.smort.domain.anki.AnkiNoteTypeService;
@@ -38,6 +39,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class AnalysisController {
 
   private final AnalysisService analysisService;
+  private final AnalysisImportService analysisImportService;
   private final AnkiNoteService ankiNoteService;
   private final ChatOrchestrationService chatOrchestrationService;
   private final AnkiNoteTypeService ankiNoteTypeService;
@@ -50,7 +52,7 @@ public class AnalysisController {
 
   @PostMapping()
   public StartAnalysisResponse startAnalysis() {
-    return new StartAnalysisResponse(analysisService.createAnalysis());
+    return new StartAnalysisResponse(analysisImportService.createAnalysis());
   }
 
   @PostMapping("/{analysisId}/uploadDb")
@@ -62,19 +64,19 @@ public class AnalysisController {
     } catch (IOException e) {
       throw new SmortException("Failed to get bytes of MultipartFile. analysisId={}", analysisId);
     }
-    analysisService.uploadDB(analysisId, bytes);
+    analysisImportService.uploadDB(analysisId, bytes);
   }
 
   @GetMapping("/{analysisId}/decks")
   public List<AnkiDeckResponse> getDecks(@PathVariable("analysisId") UUID analysisId) {
-    var decks = analysisService.getDecks(analysisId);
+    var decks = analysisImportService.getDecks(analysisId);
     return ankiNoteRestMapper.toAnkiDeckResponse(decks);
   }
 
   @PostMapping("/{analysisId}/setDeck")
   public void setDeck(
       @PathVariable("analysisId") UUID analysisId, @RequestParam("deckId") Long deckId) {
-    analysisService.setDeck(analysisId, deckId);
+    analysisImportService.setDeck(analysisId, deckId);
   }
 
   @GetMapping("/{analysisId}")
