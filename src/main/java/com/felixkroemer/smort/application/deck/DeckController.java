@@ -24,6 +24,7 @@ import com.felixkroemer.smort.application.note.dto.UpdateNoteRequest;
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.domain.deck.DeckBulkFormatService;
+import com.felixkroemer.smort.domain.deck.DeckImportService;
 import com.felixkroemer.smort.domain.deck.DeckService;
 import com.felixkroemer.smort.domain.deck.JottingService;
 import com.felixkroemer.smort.domain.deck.NoteService;
@@ -40,6 +41,7 @@ import org.springframework.web.bind.annotation.*;
 public class DeckController {
 
   private final DeckService deckService;
+  private final DeckImportService deckImportService;
   private final NoteService noteService;
   private final ChatOrchestrationService chatOrchestrationService;
   private final DeckBulkFormatService deckBulkFormatService;
@@ -55,7 +57,7 @@ public class DeckController {
   @PostMapping()
   public DeckResponse importAnalysis(@RequestBody ImportAnalysisRequest importAnalysisRequest) {
     return deckRestMapper.toDeckResponse(
-        deckService.importDeck(importAnalysisRequest.id(), importAnalysisRequest.templates()));
+        deckImportService.importDeck(importAnalysisRequest.id(), importAnalysisRequest.templates()));
   }
 
   @GetMapping
