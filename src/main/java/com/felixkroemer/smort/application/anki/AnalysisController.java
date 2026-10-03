@@ -7,6 +7,7 @@ import com.felixkroemer.smort.application.anki.mapping.BulkFormatRestMapper;
 import com.felixkroemer.smort.application.chat.dto.ChatMessageRequest;
 import com.felixkroemer.smort.application.chat.dto.ChatMessageResponse;
 import com.felixkroemer.smort.application.chat.mapping.ChatMessageRestMapper;
+import com.felixkroemer.smort.application.note.dto.UpdateNoteRequest;
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.AnalysisBulkFormatService;
@@ -187,6 +188,16 @@ public class AnalysisController {
       @PathVariable("analysisId") UUID analysisId, @PathVariable("noteId") Long noteId) {
     var chatMessages = ankiNoteService.formatNote(analysisId, noteId);
     return chatMessageRestMapper.toChatMessageResponse(chatMessages);
+  }
+
+  @PatchMapping("/{analysisId}/notes/{noteId}")
+  public DerivedNoteResponse updateNote(
+      @PathVariable("analysisId") UUID analysisId,
+      @PathVariable("noteId") Long noteId,
+      @RequestBody UpdateNoteRequest request) {
+    var derivedNote =
+        ankiNoteService.updateNote(analysisId, noteId, request.front(), request.back());
+    return ankiNoteRestMapper.toDerivedNoteResponse(derivedNote);
   }
 
   @PostMapping("/{analysisId}/notes/{noteId}/chat")
