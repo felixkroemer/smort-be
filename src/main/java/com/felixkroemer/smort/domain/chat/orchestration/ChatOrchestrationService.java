@@ -3,8 +3,6 @@ package com.felixkroemer.smort.domain.chat.orchestration;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.chat.ChatMessageMeta;
 import com.felixkroemer.smort.domain.chat.ChatResponse;
-import com.felixkroemer.smort.domain.chat.ChatMessageMeta;
-import com.felixkroemer.smort.domain.chat.ChatResponse;
 import com.felixkroemer.smort.domain.chat.DeckChatContext;
 import com.felixkroemer.smort.domain.chat.DraftNoteToolChatResponse;
 import com.felixkroemer.smort.domain.chat.NoteChatContext;
