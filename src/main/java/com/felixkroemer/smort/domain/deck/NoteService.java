@@ -1,6 +1,7 @@
 package com.felixkroemer.smort.domain.deck;
 
 import com.felixkroemer.smort.common.exception.NotFoundException;
+import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.chat.*;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.domain.deck.mapping.NoteEntityMapper;
@@ -66,6 +67,32 @@ public class NoteService {
     log.info("Formatted note. deckId={}, noteId={}", deckId, noteId);
 
     return chatMessages;
+  }
+
+  public NoteEntity updateNote(UUID deckId, UUID noteId, String front, String back) {
+    if (front == null || back == null) {
+      throw new SmortException("Note front and back must not be null. noteId={}", noteId);
+    }
+
+    var note =
+        deckRepository
+            .findNoteByDeckIdAndNoteId(deckId, noteId)
+            .orElseThrow(() -> new NotFoundException("Note not found. id={}", noteId));
+
+    Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+        Map.of(
+            StoreNoteToolChatMessage.class,
+            (tx, toolCall) -> {
+              var m = (StoreNoteToolChatMessage) toolCall;
+              note.setFront(m.front());
+              note.setBack(m.back());
+              deckRepository.saveNoteInTx(tx, note);
+            });
+
+    chatOrchestrationService.storeNote(
+        DeckKeys.deckPk(deckId), noteId, front, back, toolHandlers);
+
+    return note;
   }
 
   public List<ChatMessageEntity> chat(UUID deckId, UUID noteId, String message) {
