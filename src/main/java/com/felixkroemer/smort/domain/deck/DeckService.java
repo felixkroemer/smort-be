@@ -140,6 +140,7 @@ public class DeckService {
   }
 
   public List<ChatMessageEntity> storeDraftNote(UUID deckId) {
+    getMeta(deckId);
     var draft = getDraftNote(deckId);
 
     var note =
