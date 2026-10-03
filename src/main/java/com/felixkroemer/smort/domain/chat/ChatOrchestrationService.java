@@ -5,6 +5,7 @@ import com.felixkroemer.smort.infrastructure.dynamodb.chat.AbstractChatMessageEn
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatRepository;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -82,6 +83,10 @@ public class ChatOrchestrationService {
     var meta = new ChatMessageMeta(UUID.randomUUID().toString(), Optional.empty(), Instant.now());
     var storeNoteToolChatMessage = new StoreNoteToolChatMessage("", front, back, meta);
 
+    var arguments = new HashMap<String, String>();
+    arguments.put("front", front);
+    arguments.put("back", back);
+
     var storeNoteChatMessageEntity =
         ChatMessageEntity.toolCall(
             pk,
@@ -93,7 +98,7 @@ public class ChatOrchestrationService {
             NoteChatToolType.STORE_NOTE.name(),
             Optional.empty(),
             true,
-            Map.of("front", front, "back", back));
+            arguments);
 
     var txBuilder = TransactWriteItemsEnhancedRequest.builder();
     chatRepository.saveInTx(txBuilder, storeNoteChatMessageEntity);

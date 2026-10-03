@@ -1,8 +1,6 @@
 package com.felixkroemer.smort.domain.deck;
 
-import com.felixkroemer.smort.common.exception.LogSeverity;
 import com.felixkroemer.smort.common.exception.NotFoundException;
-import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.chat.*;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.domain.deck.mapping.NoteEntityMapper;
@@ -19,7 +17,6 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -72,14 +69,6 @@ public class NoteService {
   }
 
   public NoteEntity updateNote(UUID deckId, UUID noteId, String front, String back) {
-    if (front == null || back == null) {
-      throw new SmortException(
-          HttpStatus.BAD_REQUEST,
-          LogSeverity.INFO,
-          "Note front and back must not be null. noteId={}",
-          noteId);
-    }
-
     var note =
         deckRepository
             .findNoteByDeckIdAndNoteId(deckId, noteId)

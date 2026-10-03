@@ -1,8 +1,6 @@
 package com.felixkroemer.smort.domain.anki;
 
-import com.felixkroemer.smort.common.exception.LogSeverity;
 import com.felixkroemer.smort.common.exception.NotFoundException;
-import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.mapping.DerivedNoteEntityMapper;
 import com.felixkroemer.smort.domain.chat.*;
 import com.felixkroemer.smort.domain.common.NoteSchema;
@@ -20,7 +18,6 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -97,14 +94,6 @@ public class AnkiNoteService {
   }
 
   public DerivedNoteEntity updateNote(UUID analysisId, Long noteId, String front, String back) {
-    if (front == null || back == null) {
-      throw new SmortException(
-          HttpStatus.BAD_REQUEST,
-          LogSeverity.INFO,
-          "Note front and back must not be null. noteId={}",
-          noteId);
-    }
-
     try {
       ankiNoteRepository.findNoteByAnalysisIdAndNoteId(analysisId, noteId);
     } catch (NoResultException e) {
