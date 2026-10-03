@@ -1,5 +1,8 @@
 package com.felixkroemer.smort.domain.anki;
 
+import com.felixkroemer.smort.common.exception.LogSeverity;
+import com.felixkroemer.smort.common.exception.NotFoundException;
+import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.mapping.DerivedNoteEntityMapper;
 import com.felixkroemer.smort.domain.chat.*;
 import com.felixkroemer.smort.domain.common.NoteSchema;
@@ -9,6 +12,7 @@ import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
+import jakarta.persistence.NoResultException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +20,7 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -89,6 +94,42 @@ public class AnkiNoteService {
     log.info("Formatted note. analysisId={}, noteId={}", analysisId, noteId);
 
     return chatMessages;
+  }
+
+  public DerivedNoteEntity updateNote(UUID analysisId, Long noteId, String front, String back) {
+    if (front == null || back == null) {
+      throw new SmortException(
+          HttpStatus.BAD_REQUEST,
+          LogSeverity.INFO,
+          "Note front and back must not be null. noteId={}",
+          noteId);
+    }
+
+    try {
+      ankiNoteRepository.findNoteByAnalysisIdAndNoteId(analysisId, noteId);
+    } catch (NoResultException e) {
+      throw new NotFoundException("Note not found. id={}", noteId);
+    }
+
+    var derivedNote =
+        getDerivedNote(analysisId, noteId)
+            .map(
+                d -> {
+                  d.setFront(front);
+                  d.setBack(back);
+                  return d;
+                })
+            .orElseGet(() -> new DerivedNoteEntity(analysisId, noteId, front, back));
+
+    Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+        Map.of(
+            StoreNoteToolChatMessage.class,
+            (tx, toolCall) -> derivedNoteRepository.saveInTx(tx, derivedNote));
+
+    chatOrchestrationService.storeNote(
+        AnalysisKeys.analysisPk(analysisId), noteId, front, back, toolHandlers);
+
+    return derivedNote;
   }
 
   public List<ChatMessageEntity> chat(UUID analysisId, Long noteId, String message) {
