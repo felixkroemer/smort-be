@@ -1,6 +1,12 @@
-package com.felixkroemer.smort.domain.chat;
+package com.felixkroemer.smort.domain.chat.llm;
 
 import com.felixkroemer.smort.common.exception.SmortException;
+import com.felixkroemer.smort.domain.chat.ChatMessageMeta;
+import com.felixkroemer.smort.domain.chat.ChatResponse;
+import com.felixkroemer.smort.domain.chat.ChatUtil;
+import com.felixkroemer.smort.domain.chat.DeckChatContext;
+import com.felixkroemer.smort.domain.chat.DraftNoteToolChatResponse;
+import com.felixkroemer.smort.domain.chat.TextChatResponse;
 import com.openai.client.OpenAIClient;
 import com.openai.models.responses.*;
 import java.time.Instant;

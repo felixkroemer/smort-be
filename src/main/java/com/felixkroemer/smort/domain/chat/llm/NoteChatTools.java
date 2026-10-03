@@ -1,4 +1,4 @@
-package com.felixkroemer.smort.domain.chat;
+package com.felixkroemer.smort.domain.chat.llm;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 

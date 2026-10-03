@@ -1,4 +1,4 @@
-package com.felixkroemer.smort.domain.chat;
+package com.felixkroemer.smort.domain.chat.llm;
 
 import com.felixkroemer.smort.common.exception.SmortException;
 import lombok.RequiredArgsConstructor;
