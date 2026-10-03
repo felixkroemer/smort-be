@@ -77,14 +77,8 @@ public class NoteService {
     if (uniqueNoteIds.isEmpty()) {
       return;
     }
-    deckRepository
-        .findDeckMetaByDeckId(sourceDeckId)
-        .orElseThrow(
-            () -> new NotFoundException("Could not find deck by id. deckId={}", sourceDeckId));
-    deckRepository
-        .findDeckMetaByDeckId(targetDeckId)
-        .orElseThrow(
-            () -> new NotFoundException("Could not find deck by id. deckId={}", targetDeckId));
+    deckService.getMeta(sourceDeckId);
+    deckService.getMeta(targetDeckId);
     var notesByNoteId =
         deckRepository.findNotesByDeckId(sourceDeckId).stream()
             .collect(Collectors.toMap(NoteEntity::getId, Function.identity()));

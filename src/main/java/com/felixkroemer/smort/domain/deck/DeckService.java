@@ -168,7 +168,7 @@ public class DeckService {
     return List.of(addNoteMessageEntity);
   }
 
-  private DeckMetaEntity getMeta(UUID deckId) {
+  public DeckMetaEntity getMeta(UUID deckId) {
     return deckRepository
         .findDeckMetaByDeckId(deckId)
         .orElseThrow(() -> new NotFoundException("Could not find deck by id. deckId={}", deckId));
