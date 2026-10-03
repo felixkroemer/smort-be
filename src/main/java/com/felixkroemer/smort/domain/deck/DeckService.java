@@ -1,7 +1,6 @@
 package com.felixkroemer.smort.domain.deck;
 
 import com.felixkroemer.smort.common.exception.NotFoundException;
-import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.chat.ChatMessage;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.domain.chat.DeckChatContext;
@@ -29,8 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -53,17 +50,6 @@ public class DeckService {
   private final DraftNoteEntityMapper draftNoteEntityMapper;
   private final DynamoDbEnhancedClient enhancedClient;
   private final FormattingSettingsResolver formattingSettingsResolver;
-
-  public List<NoteEntity> getNotes(UUID deckId) {
-    return deckRepository.findNotesByDeckId(deckId);
-  }
-
-  public List<NoteEntity> getAllNotes() {
-    var deckIds = getDecks().stream().map(Deck::getDeckId).collect(Collectors.toSet());
-    return deckRepository.findNotesByUserId("default").stream()
-        .filter(note -> deckIds.contains(note.getDeckId()))
-        .toList();
-  }
 
   public List<Deck> getDecks() {
     return deckRepository.findDeckMetasByUserId("default").stream()
@@ -104,70 +90,6 @@ public class DeckService {
       deckRepository.saveDeckMeta(deck);
     }
     return new DeckSettings(deck.getFormattingMode(), deck.getTemplateId(), deck.getFormatInstructions());
-  }
-
-  public void deleteNotes(UUID deckId, List<UUID> noteIds) {
-    noteIds.forEach(noteId -> deleteNote(deckId, noteId));
-  }
-
-  public void deleteNote(UUID deckId, UUID noteId) {
-    deckRepository.deleteNoteByDeckIdAndNoteId(deckId, noteId);
-    chatRepository.deleteChat(DeckKeys.deckPk(deckId), noteId);
-  }
-
-  public void moveNotes(UUID sourceDeckId, List<UUID> noteIds, UUID targetDeckId) {
-    if (noteIds == null) {
-      throw new SmortException("noteIds must not be null");
-    }
-    if (sourceDeckId.equals(targetDeckId)) {
-      throw new SmortException(
-          "Cannot move notes within the same deck. deckId={}", sourceDeckId);
-    }
-    var uniqueNoteIds = noteIds.stream().distinct().toList();
-    if (uniqueNoteIds.size() > 50) {
-      throw new SmortException(
-          "Cannot move more than 50 notes in one request. count={}", uniqueNoteIds.size());
-    }
-    if (uniqueNoteIds.isEmpty()) {
-      return;
-    }
-    getMeta(sourceDeckId);
-    getMeta(targetDeckId);
-    var notesByNoteId =
-        deckRepository.findNotesByDeckId(sourceDeckId).stream()
-            .collect(Collectors.toMap(NoteEntity::getId, Function.identity()));
-
-    var notes =
-        uniqueNoteIds.stream()
-            .map(
-                noteId ->
-                    Optional.ofNullable(notesByNoteId.get(noteId))
-                        .orElseThrow(
-                            () ->
-                                new NotFoundException(
-                                    "Could not find note in deck. deckId={}, noteId={}",
-                                    sourceDeckId,
-                                    noteId)))
-            .toList();
-
-    var txBuilder = TransactWriteItemsEnhancedRequest.builder();
-    notes.forEach(
-        note -> {
-          deckRepository.deleteNoteInTx(txBuilder, sourceDeckId, note.getId());
-          note.setPk(DeckKeys.deckPk(targetDeckId));
-          note.setDeckId(targetDeckId);
-          deckRepository.saveNoteInTx(txBuilder, note);
-        });
-    enhancedClient.transactWriteItems(txBuilder.build());
-
-    notes.forEach(
-        note -> chatRepository.deleteChat(DeckKeys.deckPk(sourceDeckId), note.getId()));
-
-    log.info(
-        "Moved notes. sourceDeckId={}, targetDeckId={}, noteIds={}",
-        sourceDeckId,
-        targetDeckId,
-        uniqueNoteIds);
   }
 
   public List<ChatMessageEntity> chat(UUID deckId, String message) {

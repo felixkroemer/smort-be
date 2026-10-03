@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -44,6 +46,36 @@ public class AnkiNoteService {
 
   public Optional<DerivedNoteEntity> getDerivedNote(UUID analysisId, Long noteId) {
     return derivedNoteRepository.findDerivedNotedByAnalysisIdAndNoteId(analysisId, noteId);
+  }
+
+  public List<AnkiNote> getNotes(UUID analysisId) {
+    var analysis = analysisService.getAnalysis(analysisId);
+    var notes = ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, analysis.getDeckId());
+    return notes.stream()
+        .map(
+            n ->
+                new AnkiNote(
+                    n.getId(),
+                    noteTypeService.getContent(analysisId, n),
+                    n.getGuid(),
+                    n.getNoteTypeId()))
+        .toList();
+  }
+
+  public List<DerivedNoteEntity> getDerivedNotes(UUID analysisId) {
+    return derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId);
+  }
+
+  public Map<DerivedNoteEntity, String> getDerivedNoteToGuidMapping(
+      UUID analysisId, List<DerivedNoteEntity> derivedNotes) {
+    var derivedNoteIds =
+        derivedNotes.stream().map(DerivedNoteEntity::getNoteId).collect(Collectors.toSet());
+    var guidByNoteId =
+        ankiNoteRepository.findNotesByAnalysisIdAndNoteIdIn(analysisId, derivedNoteIds).stream()
+            .collect(Collectors.toMap(AnkiNoteEntity::getId, AnkiNoteEntity::getGuid));
+
+    return derivedNotes.stream()
+        .collect(Collectors.toMap(Function.identity(), d -> guidByNoteId.get(d.getNoteId())));
   }
 
   public Map<String, String> getContent(UUID analysisId, Long noteId) {

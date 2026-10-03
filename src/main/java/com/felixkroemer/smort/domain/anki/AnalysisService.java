@@ -6,14 +6,10 @@ import com.felixkroemer.smort.domain.common.FormattingMode;
 import com.felixkroemer.smort.domain.common.mapping.BulkFormatEntityMapper;
 import com.felixkroemer.smort.infrastructure.dynamodb.BulkFormatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
-import com.felixkroemer.smort.infrastructure.sqlite.anki.*;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,9 +21,6 @@ public class AnalysisService {
 
   private final AnalysisMetaRepository analysisMetaRepository;
   private final BulkFormatRepository bulkFormatRepository;
-  private final AnkiNoteRepository ankiNoteRepository;
-  private final AnkiNoteTypeService noteTypeService;
-  private final DerivedNoteRepository derivedNoteRepository;
 
   private final AnalysisEntityMapper analysisEntityMapper;
   private final BulkFormatEntityMapper bulkFormatEntityMapper;
@@ -66,45 +59,6 @@ public class AnalysisService {
       analysisMetaRepository.save(analysis);
     }
     return new AnalysisSettings(analysis.getFormattingMode(), analysis.getTemplateId(), analysis.getFormatInstructions());
-  }
-
-  public List<AnkiNote> getNotes(UUID analysisId) {
-    var analysis = getAnalysis(analysisId);
-    var notes = ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, analysis.getDeckId());
-    return notes.stream()
-        .map(
-            n ->
-                new AnkiNote(
-                    n.getId(),
-                    noteTypeService.getContent(analysisId, n),
-                    n.getGuid(),
-                    n.getNoteTypeId()))
-        .toList();
-  }
-
-  public List<DerivedNoteEntity> getDerivedNotes(UUID analysisId) {
-    return derivedNoteRepository.findDerivedNotesByAnalysisId(analysisId);
-  }
-
-  public List<AnkiNoteTypeEntity> getNoteTypes(UUID analysisId) {
-    var notes = getNotes(analysisId);
-    var deckNoteTypeIds = notes.stream().map(AnkiNote::getNoteTypeId).collect(Collectors.toSet());
-    var allNoteTypes = ankiNoteRepository.findNoteTypesByAnalysisId(analysisId);
-    return allNoteTypes.stream()
-        .filter(noteType -> deckNoteTypeIds.contains(noteType.getId()))
-        .toList();
-  }
-
-  public Map<DerivedNoteEntity, String> getDerivedNoteToGuidMapping(
-      UUID analysisId, List<DerivedNoteEntity> derivedNotes) {
-    var derivedNoteIds =
-        derivedNotes.stream().map(DerivedNoteEntity::getNoteId).collect(Collectors.toSet());
-    var guidByNoteId =
-        ankiNoteRepository.findNotesByAnalysisIdAndNoteIdIn(analysisId, derivedNoteIds).stream()
-            .collect(Collectors.toMap(AnkiNoteEntity::getId, AnkiNoteEntity::getGuid));
-
-    return derivedNotes.stream()
-        .collect(Collectors.toMap(Function.identity(), d -> guidByNoteId.get(d.getNoteId())));
   }
 
   public void deleteAnalysis(UUID analysisId) {

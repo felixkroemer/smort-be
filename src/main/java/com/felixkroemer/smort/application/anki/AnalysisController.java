@@ -121,7 +121,7 @@ public class AnalysisController {
 
   @GetMapping("/{analysisId}/notes")
   public List<AnkiNoteResponse> getNotes(@PathVariable("analysisId") UUID analysisId) {
-    var notes = analysisService.getNotes(analysisId);
+    var notes = ankiNoteService.getNotes(analysisId);
     return ankiNoteRestMapper.toAnkiNoteResponse(notes);
   }
 
@@ -137,14 +137,14 @@ public class AnalysisController {
 
   @GetMapping("/{analysisId}/derivedNotes")
   public List<DerivedNoteResponse> getDerivedNotes(@PathVariable("analysisId") UUID analysisId) {
-    return analysisService.getDerivedNotes(analysisId).stream()
+    return ankiNoteService.getDerivedNotes(analysisId).stream()
         .map(ankiNoteRestMapper::toDerivedNoteResponse)
         .toList();
   }
 
   @GetMapping("/{analysisId}/noteTypes")
   public Map<String, List<String>> getNoteTypes(@PathVariable("analysisId") UUID analysisId) {
-    var noteTypes = analysisService.getNoteTypes(analysisId);
+    var noteTypes = ankiNoteTypeService.getNoteTypes(analysisId);
     return noteTypes.stream()
         .collect(Collectors.toMap(AnkiNoteTypeEntity::getName, AnkiNoteTypeEntity::getFields));
   }
@@ -153,9 +153,9 @@ public class AnalysisController {
   public ResponseEntity<byte[]> createDerivedNotesExport(
       @PathVariable("analysisId") UUID analysisId) {
 
-    var derivedNotes = analysisService.getDerivedNotes(analysisId);
+    var derivedNotes = ankiNoteService.getDerivedNotes(analysisId);
     var derivedNotesGuidMapping =
-        analysisService.getDerivedNoteToGuidMapping(analysisId, derivedNotes);
+        ankiNoteService.getDerivedNoteToGuidMapping(analysisId, derivedNotes);
 
     StringBuilder sb = new StringBuilder();
     sb.append("#separator:tab\n");

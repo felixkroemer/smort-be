@@ -93,12 +93,12 @@ public class DeckController {
 
   @GetMapping("notes")
   public List<NoteResponse> getAllNotes() {
-    return noteRestMapper.toNoteResponse(deckService.getAllNotes());
+    return noteRestMapper.toNoteResponse(noteService.getAllNotes());
   }
 
   @GetMapping("/{deckId}/notes")
   public List<NoteResponse> getNotes(@PathVariable("deckId") UUID deckId) {
-    var notes = deckService.getNotes(deckId);
+    var notes = noteService.getNotes(deckId);
     return noteRestMapper.toNoteResponse(notes);
   }
 
@@ -242,18 +242,18 @@ public class DeckController {
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteNotes(
       @PathVariable("deckId") UUID deckId, @RequestBody DeleteNotesRequest request) {
-    deckService.deleteNotes(deckId, request.noteIds());
+    noteService.deleteNotes(deckId, request.noteIds());
   }
 
   @PostMapping("/{deckId}/notes/move")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void moveNotes(
       @PathVariable("deckId") UUID deckId, @RequestBody MoveNotesRequest request) {
-    deckService.moveNotes(deckId, request.noteIds(), request.targetDeckId());
+    noteService.moveNotes(deckId, request.noteIds(), request.targetDeckId());
   }
 
   @DeleteMapping("/{deckId}/notes/{noteId}")
   public void deleteDeck(@PathVariable("deckId") UUID deckId, @PathVariable("noteId") UUID noteId) {
-    deckService.deleteNote(deckId, noteId);
+    noteService.deleteNote(deckId, noteId);
   }
 }

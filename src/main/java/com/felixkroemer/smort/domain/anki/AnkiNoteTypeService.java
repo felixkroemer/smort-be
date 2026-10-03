@@ -5,6 +5,7 @@ import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteTypeEntity;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 public class AnkiNoteTypeService {
 
   private final AnkiNoteRepository ankiNoteRepository;
+  private final AnalysisService analysisService;
   private final Cache<UUID, Map<Long, AnkiNoteTypeEntity>> noteTypeCache =
       Caffeine.newBuilder().build();
 
@@ -29,6 +31,16 @@ public class AnkiNoteTypeService {
         id ->
             ankiNoteRepository.findNoteTypesByAnalysisId(id).stream()
                 .collect(Collectors.toMap(AnkiNoteTypeEntity::getId, Function.identity())));
+  }
+
+  public List<AnkiNoteTypeEntity> getNoteTypes(UUID analysisId) {
+    var analysis = analysisService.getAnalysis(analysisId);
+    var notes = ankiNoteRepository.findNotesByAnalysisIdAndDeckId(analysisId, analysis.getDeckId());
+    var deckNoteTypeIds = notes.stream().map(AnkiNoteEntity::getNoteTypeId).collect(Collectors.toSet());
+    var allNoteTypes = ankiNoteRepository.findNoteTypesByAnalysisId(analysisId);
+    return allNoteTypes.stream()
+        .filter(noteType -> deckNoteTypeIds.contains(noteType.getId()))
+        .toList();
   }
 
   public Map<String, String> getContent(UUID analysisId, AnkiNoteEntity note) {

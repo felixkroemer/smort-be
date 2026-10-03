@@ -4,6 +4,7 @@ import com.felixkroemer.smort.application.deck.dto.NoteTypeTemplate;
 import com.felixkroemer.smort.common.exception.SmortException;
 import com.felixkroemer.smort.domain.anki.AnalysisService;
 import com.felixkroemer.smort.domain.anki.AnkiNote;
+import com.felixkroemer.smort.domain.anki.AnkiNoteService;
 import com.felixkroemer.smort.domain.anki.AnkiNoteTypeService;
 import com.felixkroemer.smort.domain.common.NoteSchema;
 import com.felixkroemer.smort.domain.deck.mapping.DeckEntityMapper;
@@ -34,6 +35,7 @@ public class DeckImportService {
   private static final Pattern FIELD_PATTERN = Pattern.compile("\\$\\{([A-Za-z_]+)}");
 
   private final AnalysisService analysisService;
+  private final AnkiNoteService ankiNoteService;
   private final AnkiNoteTypeService ankiNoteTypeService;
   private final DeckRepository deckRepository;
   private final NoteEntityMapper noteEntityMapper;
@@ -52,8 +54,8 @@ public class DeckImportService {
     }
     var deck = createDeck(analysis.getDeckName());
 
-    var notes = analysisService.getNotes(analysisId);
-    var derivedNotes = analysisService.getDerivedNotes(analysisId);
+    var notes = ankiNoteService.getNotes(analysisId);
+    var derivedNotes = ankiNoteService.getDerivedNotes(analysisId);
     var derivedNoteKeys =
         derivedNotes.stream().map(DerivedNoteEntity::getNoteId).collect(Collectors.toSet());
     var unmappedNotes =

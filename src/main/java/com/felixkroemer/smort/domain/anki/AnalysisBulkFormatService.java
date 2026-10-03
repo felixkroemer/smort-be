@@ -37,6 +37,7 @@ public class AnalysisBulkFormatService {
   private final BulkFormatRepository bulkFormatRepository;
   private final DerivedNoteRepository derivedNoteRepository;
   private final AnalysisService analysisService;
+  private final AnkiNoteService ankiNoteService;
   private final ChatOrchestrationService chatOrchestrationService;
   private final BulkFormatEntityMapper bulkFormatEntityMapper;
   private final DerivedNoteEntityMapper derivedNoteEntityMapper;
@@ -136,9 +137,9 @@ public class AnalysisBulkFormatService {
   }
 
   private List<NoteToProcess> computeNotesToProcess(AnalysisBulkFormatEntity job) {
-    var notes = analysisService.getNotes(job.getAnalysisId());
+    var notes = ankiNoteService.getNotes(job.getAnalysisId());
     var existingDerivedNotes =
-        analysisService.getDerivedNotes(job.getAnalysisId()).stream()
+        ankiNoteService.getDerivedNotes(job.getAnalysisId()).stream()
             .collect(
                 Collectors.toMap(
                     DerivedNoteEntity::getNoteId, Function.identity(), (first, second) -> first));
