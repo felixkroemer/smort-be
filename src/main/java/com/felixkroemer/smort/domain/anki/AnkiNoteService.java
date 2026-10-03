@@ -9,6 +9,7 @@ import com.felixkroemer.smort.infrastructure.dynamodb.anki.*;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatMessageEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.chat.ChatRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.keys.partition.AnalysisKeys;
+import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteEntity;
 import com.felixkroemer.smort.infrastructure.sqlite.anki.AnkiNoteRepository;
 import java.time.Instant;
 import java.util.List;
