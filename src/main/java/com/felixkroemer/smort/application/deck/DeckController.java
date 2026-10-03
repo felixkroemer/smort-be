@@ -21,7 +21,7 @@ import com.felixkroemer.smort.application.deck.mapping.DraftNoteRestMapper;
 import com.felixkroemer.smort.application.deck.mapping.JottingRestMapper;
 import com.felixkroemer.smort.application.deck.mapping.NoteRestMapper;
 import com.felixkroemer.smort.application.note.dto.UpdateNoteRequest;
-import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
+import com.felixkroemer.smort.domain.chat.orchestration.ChatOrchestrationService;
 import com.felixkroemer.smort.domain.deck.DeckBulkFormatService;
 import com.felixkroemer.smort.domain.deck.DeckImportService;
 import com.felixkroemer.smort.domain.deck.DeckService;

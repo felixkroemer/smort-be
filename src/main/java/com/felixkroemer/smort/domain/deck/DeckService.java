@@ -2,7 +2,7 @@ package com.felixkroemer.smort.domain.deck;
 
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.domain.chat.ChatResponse;
-import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
+import com.felixkroemer.smort.domain.chat.orchestration.ChatOrchestrationService;
 import com.felixkroemer.smort.domain.chat.DeckChatContext;
 import com.felixkroemer.smort.domain.chat.DeckChatToolType;
 import com.felixkroemer.smort.domain.chat.DraftNoteToolChatResponse;
