@@ -1,7 +1,6 @@
 package com.felixkroemer.smort.domain.deck;
 
 import com.felixkroemer.smort.common.exception.NotFoundException;
-import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckRepository;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.JottingEntity;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.JottingRepository;
 import java.util.List;
@@ -14,13 +13,10 @@ import org.springframework.stereotype.Service;
 public class JottingService {
 
   private final JottingRepository jottingRepository;
-  private final DeckRepository deckRepository;
+  private final DeckService deckService;
 
   public JottingEntity create(UUID deckId, String title, String description) {
-    deckRepository
-        .findDeckMetaByDeckId(deckId)
-        .orElseThrow(
-            () -> new NotFoundException("Could not find deck by id. deckId={}", deckId));
+    deckService.getMeta(deckId);
     var jotting = new JottingEntity(deckId, UUID.randomUUID(), title, description);
     jottingRepository.save(jotting);
     return jotting;
