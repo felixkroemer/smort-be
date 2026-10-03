@@ -52,11 +52,6 @@ public class AnalysisService {
         .toList();
   }
 
-  public AnalysisSettings getAnalysisSettings(UUID analysisId) {
-    var meta = getMeta(analysisId);
-    return new AnalysisSettings(meta.getFormattingMode(), meta.getTemplateId(), meta.getFormatInstructions());
-  }
-
   public AnalysisSettings updateAnalysisSettings(
       UUID analysisId,
       FormattingMode formattingMode,

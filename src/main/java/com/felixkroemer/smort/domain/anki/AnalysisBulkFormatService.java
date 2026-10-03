@@ -89,7 +89,7 @@ public class AnalysisBulkFormatService {
     String formatInstructions;
     try {
       formatInstructions =
-          formattingSettingsResolver.resolve(analysisService.getAnalysisSettings(analysisId));
+          formattingSettingsResolver.resolve(analysisService.getAnalysis(analysisId).getAnalysisSettings());
     } catch (NotFoundException e) {
       throw e.withSeverity(LogSeverity.ERROR);
     }

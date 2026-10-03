@@ -1,17 +1,22 @@
 package com.felixkroemer.smort.domain.anki.mapping;
 
 import com.felixkroemer.smort.domain.anki.Analysis;
+import com.felixkroemer.smort.domain.anki.AnalysisSettings;
 import com.felixkroemer.smort.domain.common.BulkFormat;
 import com.felixkroemer.smort.infrastructure.dynamodb.anki.AnalysisMetaEntity;
 import java.nio.file.Path;
 import java.util.Optional;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface AnalysisEntityMapper {
 
+  @Mapping(target = "analysisSettings", source = "meta")
   Analysis toAnalysis(AnalysisMetaEntity meta, Optional<BulkFormat> bulkFormat);
+
+  AnalysisSettings toAnalysisSettings(AnalysisMetaEntity meta);
 
   default Path toPath(String value) {
     return value != null ? Path.of(value) : null;
