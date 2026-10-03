@@ -60,7 +60,7 @@ public class AnalysisService {
       analysis.setUpdatedAt(Instant.now());
       analysisMetaRepository.save(analysis);
     }
-    return new AnalysisSettings(analysis.getFormattingMode(), analysis.getTemplateId(), analysis.getFormatInstructions());
+    return analysisEntityMapper.toAnalysisSettings(analysis);
   }
 
   public void deleteAnalysis(UUID analysisId) {

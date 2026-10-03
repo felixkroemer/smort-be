@@ -76,8 +76,7 @@ public class DeckService {
   }
 
   public DeckSettings getDeckSettings(UUID deckId) {
-    var meta = getMeta(deckId);
-    return new DeckSettings(meta.getFormattingMode(), meta.getTemplateId(), meta.getFormatInstructions());
+    return deckEntityMapper.toDeckSettings(getMeta(deckId));
   }
 
   public DeckSettings updateDeckSettings(
@@ -92,7 +91,7 @@ public class DeckService {
     if (formattingMode != null || templateId != null || formatInstructions != null) {
       deckRepository.saveDeckMeta(deck);
     }
-    return new DeckSettings(deck.getFormattingMode(), deck.getTemplateId(), deck.getFormatInstructions());
+    return deckEntityMapper.toDeckSettings(deck);
   }
 
   public List<ChatMessageEntity> chat(UUID deckId, String message) {

@@ -86,8 +86,7 @@ public class UserSettingsService {
     var entity =
         new UserFormattingTemplateEntity(CURRENT_USER, UUID.randomUUID(), name, content);
     userFormattingTemplateRepository.save(entity);
-    return new FormattingTemplate(
-        entity.getTemplateId(), name, content, TemplateSource.USER);
+    return formattingTemplateEntityMapper.toFormattingTemplate(entity);
   }
 
   public FormattingTemplate updateTemplate(String id, String name, String content) {

@@ -2,6 +2,7 @@ package com.felixkroemer.smort.domain.deck.mapping;
 
 import com.felixkroemer.smort.domain.common.BulkFormat;
 import com.felixkroemer.smort.domain.deck.Deck;
+import com.felixkroemer.smort.domain.deck.DeckSettings;
 import com.felixkroemer.smort.domain.deck.DraftNote;
 import com.felixkroemer.smort.infrastructure.dynamodb.deck.DeckMetaEntity;
 import java.util.Optional;
@@ -12,4 +13,6 @@ import org.mapstruct.ReportingPolicy;
 public interface DeckEntityMapper {
 
   Deck toDeck(DeckMetaEntity meta, Optional<BulkFormat> bulkFormat, Optional<DraftNote> draftNote);
+
+  DeckSettings toDeckSettings(DeckMetaEntity meta);
 }
