@@ -59,7 +59,11 @@ public class ChatOrchestrationService {
             NoteChatToolType.STORE_NOTE.name(),
             Optional.empty(),
             true,
-            content);
+            Map.of(
+                "front",
+                storeNoteToolChatMessage.front(),
+                "back",
+                storeNoteToolChatMessage.back()));
 
     var txBuilder = TransactWriteItemsEnhancedRequest.builder();
     chatRepository.saveInTx(txBuilder, formatChatMessageEntity);
