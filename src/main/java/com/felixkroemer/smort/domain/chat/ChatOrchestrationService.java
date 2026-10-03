@@ -36,7 +36,7 @@ public class ChatOrchestrationService {
       String front,
       String back,
       String formatInstructions,
-      Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
+      Map<Class<? extends ChatResponse>, ToolCallHandler> toolHandlers) {
     return formatNote(
         pk, entityId, Map.of("front", front, "back", back), formatInstructions, toolHandlers);
   }
@@ -46,7 +46,7 @@ public class ChatOrchestrationService {
       T entityId,
       Map<String, String> content,
       String formatInstructions,
-      Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
+      Map<Class<? extends ChatResponse>, ToolCallHandler> toolHandlers) {
     var storeNoteToolChatMessage = noteChatService.formatNote(content, formatInstructions);
 
     var formatChatMessageEntity =
@@ -79,9 +79,9 @@ public class ChatOrchestrationService {
       T entityId,
       String front,
       String back,
-      Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
+      Map<Class<? extends ChatResponse>, ToolCallHandler> toolHandlers) {
     var meta = new ChatMessageMeta(UUID.randomUUID().toString(), Optional.empty(), Instant.now());
-    var storeNoteToolChatMessage = new StoreNoteToolChatMessage("", front, back, meta);
+    var storeNoteToolChatMessage = new StoreNoteToolChatResponse("", front, back, meta);
 
     var arguments = new HashMap<String, String>();
     arguments.put("front", front);
@@ -113,7 +113,7 @@ public class ChatOrchestrationService {
       NoteChatContext<?> ctx,
       String message,
       String formatInstructions,
-      Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
+      Map<Class<? extends ChatResponse>, ToolCallHandler> toolHandlers) {
     var latestChatMessageResponseId =
         chatRepository
             .findLatestChatMessage(pk, ctx.noteId())
@@ -125,9 +125,9 @@ public class ChatOrchestrationService {
             ctx, message, formatInstructions, latestChatMessageResponseId, userActionContext);
 
     return switch (chatMessage) {
-      case TextChatMessage r ->
+      case TextChatResponse r ->
           handleChatMessageTextResponse(pk, ctx.noteId(), message, r, latestChatMessageResponseId);
-      case StoreNoteToolChatMessage r ->
+      case StoreNoteToolChatResponse r ->
           handleStoreNoteToolResponse(
               pk, ctx.noteId(), message, r, latestChatMessageResponseId, toolHandlers);
       default -> throw new SmortException("Unexpected message type received");
@@ -139,7 +139,7 @@ public class ChatOrchestrationService {
       DeckChatContext ctx,
       String message,
       String formatInstructions,
-      Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
+      Map<Class<? extends ChatResponse>, ToolCallHandler> toolHandlers) {
     var latestChatMessageResponseId =
         chatRepository
             .findLatestChatMessage(pk, ctx.deckId())
@@ -151,9 +151,9 @@ public class ChatOrchestrationService {
             ctx, message, formatInstructions, latestChatMessageResponseId, userActionContext);
 
     return switch (chatMessage) {
-      case TextChatMessage r ->
+      case TextChatResponse r ->
           handleChatMessageTextResponse(pk, ctx.deckId(), message, r, latestChatMessageResponseId);
-      case DraftNoteToolChatMessage r ->
+      case DraftNoteToolChatResponse r ->
           handleDraftNoteToolResponse(
               pk, ctx.deckId(), r, latestChatMessageResponseId, toolHandlers);
       default -> throw new SmortException("Unexpected message type received");
@@ -164,14 +164,14 @@ public class ChatOrchestrationService {
       String pk,
       T entityId,
       String message,
-      StoreNoteToolChatMessage storeNoteToolChatMessageResponse,
+      StoreNoteToolChatResponse storeNoteToolChatMessageResponse,
       Optional<String> latestChatMessageResponseId,
-      Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
+      Map<Class<? extends ChatResponse>, ToolCallHandler> toolHandlers) {
     var ackResponse =
         noteChatService.acknowledgeStoreNoteToolCall(
             storeNoteToolChatMessageResponse.callId(),
             storeNoteToolChatMessageResponse.meta().responseId());
-    if (ackResponse instanceof TextChatMessage(String response, ChatMessageMeta meta)) {
+    if (ackResponse instanceof TextChatResponse(String response, ChatMessageMeta meta)) {
 
       // (message -> tool call response) -> (ackMessage -> ackMessage response)
 
@@ -216,14 +216,14 @@ public class ChatOrchestrationService {
   private @NonNull <T> List<ChatMessageEntity> handleDraftNoteToolResponse(
       String pk,
       T entityId,
-      DraftNoteToolChatMessage draftNoteToolChatMessageResponse,
+      DraftNoteToolChatResponse draftNoteToolChatMessageResponse,
       Optional<String> latestChatMessageResponseId,
-      Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
+      Map<Class<? extends ChatResponse>, ToolCallHandler> toolHandlers) {
     var ackResponse =
         deckChatService.acknowledgeDraftNoteToolCall(
             draftNoteToolChatMessageResponse.callId(),
             draftNoteToolChatMessageResponse.meta().responseId());
-    if (ackResponse instanceof TextChatMessage(String response, ChatMessageMeta meta)) {
+    if (ackResponse instanceof TextChatResponse(String response, ChatMessageMeta meta)) {
       var txBuilder = TransactWriteItemsEnhancedRequest.builder();
       var toolCallChatMessageEntity =
           ChatMessageEntity.toolCall(
@@ -264,8 +264,8 @@ public class ChatOrchestrationService {
 
   private void applyToolEffect(
       TransactWriteItemsEnhancedRequest.Builder tx,
-      ChatMessage toolCall,
-      Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers) {
+      ChatResponse toolCall,
+      Map<Class<? extends ChatResponse>, ToolCallHandler> toolHandlers) {
     var handler = toolHandlers.get(toolCall.getClass());
     if (handler == null) {
       throw new SmortException("No tool handler registered. toolCall={}", toolCall.getClass());
@@ -277,7 +277,7 @@ public class ChatOrchestrationService {
       String pk,
       T entityId,
       String message,
-      TextChatMessage r,
+      TextChatResponse r,
       Optional<String> latestChatMessageResponseId) {
     var chatMessageEntity =
         ChatMessageEntity.text(

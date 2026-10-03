@@ -121,11 +121,11 @@ public class NoteService {
   public List<ChatMessageEntity> formatNote(UUID deckId, UUID noteId) {
     var note = getNote(deckId, noteId);
 
-    Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+    Map<Class<? extends ChatResponse>, ToolCallHandler> toolHandlers =
         Map.of(
-            StoreNoteToolChatMessage.class,
+            StoreNoteToolChatResponse.class,
             (tx, toolCall) -> {
-              var m = (StoreNoteToolChatMessage) toolCall;
+              var m = (StoreNoteToolChatResponse) toolCall;
               note.setFront(m.front());
               note.setBack(m.back());
               note.setLastFormattedAt(Optional.of(Instant.now()));
@@ -151,11 +151,11 @@ public class NoteService {
   public NoteEntity updateNote(UUID deckId, UUID noteId, String front, String back) {
     var note = getNote(deckId, noteId);
 
-    Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+    Map<Class<? extends ChatResponse>, ToolCallHandler> toolHandlers =
         Map.of(
-            StoreNoteToolChatMessage.class,
+            StoreNoteToolChatResponse.class,
             (tx, toolCall) -> {
-              var m = (StoreNoteToolChatMessage) toolCall;
+              var m = (StoreNoteToolChatResponse) toolCall;
               note.setFront(m.front());
               note.setBack(m.back());
               deckRepository.saveNoteInTx(tx, note);
@@ -175,11 +175,11 @@ public class NoteService {
 
     var ctx = new NoteChatContext<>(noteId, note.getContent());
 
-    Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+    Map<Class<? extends ChatResponse>, ToolCallHandler> toolHandlers =
         Map.of(
-            StoreNoteToolChatMessage.class,
+            StoreNoteToolChatResponse.class,
             (tx, toolCall) -> {
-              var m = (StoreNoteToolChatMessage) toolCall;
+              var m = (StoreNoteToolChatResponse) toolCall;
               deckRepository.saveNoteInTx(
                   tx,
                   noteEntityMapper.toNoteEntity(

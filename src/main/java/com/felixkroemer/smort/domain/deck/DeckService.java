@@ -1,11 +1,11 @@
 package com.felixkroemer.smort.domain.deck;
 
 import com.felixkroemer.smort.common.exception.NotFoundException;
-import com.felixkroemer.smort.domain.chat.ChatMessage;
+import com.felixkroemer.smort.domain.chat.ChatResponse;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
 import com.felixkroemer.smort.domain.chat.DeckChatContext;
 import com.felixkroemer.smort.domain.chat.DeckChatToolType;
-import com.felixkroemer.smort.domain.chat.DraftNoteToolChatMessage;
+import com.felixkroemer.smort.domain.chat.DraftNoteToolChatResponse;
 import com.felixkroemer.smort.domain.chat.ToolCallHandler;
 import com.felixkroemer.smort.domain.common.FormattingMode;
 import com.felixkroemer.smort.domain.common.NoteSchema;
@@ -109,11 +109,11 @@ public class DeckService {
 
     var ctx = new DeckChatContext(deckId, deck.getName(), notes, draft);
 
-    Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+    Map<Class<? extends ChatResponse>, ToolCallHandler> toolHandlers =
         Map.of(
-            DraftNoteToolChatMessage.class,
+            DraftNoteToolChatResponse.class,
             (tx, toolCall) -> {
-              var m = (DraftNoteToolChatMessage) toolCall;
+              var m = (DraftNoteToolChatResponse) toolCall;
               draftNoteRepository.saveInTx(tx, new DraftNoteEntity(deckId, m.front(), m.back()));
             });
 

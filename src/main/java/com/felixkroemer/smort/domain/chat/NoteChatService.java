@@ -45,7 +45,7 @@ public class NoteChatService {
       Confirm to the user that the note was updated. Keep it to one short sentence.
       """;
 
-  public StoreNoteToolChatMessage formatNote(
+  public StoreNoteToolChatResponse formatNote(
       Map<String, String> fields, String formatInstructions) {
     try {
       StructuredResponseCreateParams<NoteSchema> params =
@@ -66,7 +66,7 @@ public class NoteChatService {
               .findFirst()
               .orElseThrow();
 
-      return new StoreNoteToolChatMessage(
+      return new StoreNoteToolChatResponse(
           "",
           content.front(),
           content.back(),
@@ -76,7 +76,7 @@ public class NoteChatService {
     }
   }
 
-  public ChatMessage acknowledgeStoreNoteToolCall(String callId, String previousResponseId) {
+  public ChatResponse acknowledgeStoreNoteToolCall(String callId, String previousResponseId) {
     ResponseCreateParams params =
         ResponseCreateParams.builder()
             .instructions(NOTE_ACK_INSTRUCTIONS)
@@ -105,10 +105,10 @@ public class NoteChatService {
 
     var meta = new ChatMessageMeta(response.id(), response.previousResponseId(), Instant.now());
     ResponseOutputText outputText = ChatUtil.getResponseOutputText(responseOutputItem.asMessage());
-    return new TextChatMessage(outputText.text(), meta);
+    return new TextChatResponse(outputText.text(), meta);
   }
 
-  public ChatMessage chat(
+  public ChatResponse chat(
       NoteChatContext<?> ctx,
       String message,
       String formatInstructions,
@@ -154,7 +154,7 @@ public class NoteChatService {
         case STORE_NOTE -> {
           var storeNoteToolCall =
               responseFunctionToolCall.arguments(NoteChatTools.StoreNoteTool.class);
-          return new StoreNoteToolChatMessage(
+          return new StoreNoteToolChatResponse(
               responseFunctionToolCall.callId(),
               storeNoteToolCall.front,
               storeNoteToolCall.back,
@@ -168,7 +168,7 @@ public class NoteChatService {
     } else if (responseOutputItem.isMessage()) {
       ResponseOutputText outputText =
           ChatUtil.getResponseOutputText(responseOutputItem.asMessage());
-      return new TextChatMessage(outputText.text(), meta);
+      return new TextChatResponse(outputText.text(), meta);
     } else {
       throw new SmortException("Unexpected response output item type");
     }

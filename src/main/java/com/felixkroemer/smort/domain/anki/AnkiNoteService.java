@@ -91,11 +91,11 @@ public class AnkiNoteService {
     var formatInstructions =
         formattingSettingsResolver.resolve(analysisService.getAnalysis(analysisId).getAnalysisSettings());
 
-    Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+    Map<Class<? extends ChatResponse>, ToolCallHandler> toolHandlers =
         Map.of(
-            StoreNoteToolChatMessage.class,
+            StoreNoteToolChatResponse.class,
             (tx, toolCall) -> {
-              var m = (StoreNoteToolChatMessage) toolCall;
+              var m = (StoreNoteToolChatResponse) toolCall;
               var derivedNote =
                   getDerivedNote(analysisId, noteId)
                       .map(
@@ -140,9 +140,9 @@ public class AnkiNoteService {
                 })
             .orElseGet(() -> new DerivedNoteEntity(analysisId, noteId, front, back));
 
-    Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+    Map<Class<? extends ChatResponse>, ToolCallHandler> toolHandlers =
         Map.of(
-            StoreNoteToolChatMessage.class,
+            StoreNoteToolChatResponse.class,
             (tx, toolCall) -> derivedNoteRepository.saveInTx(tx, derivedNote));
 
     chatOrchestrationService.storeNote(
@@ -159,11 +159,11 @@ public class AnkiNoteService {
 
     var ctx = new NoteChatContext<>(noteId, content);
 
-    Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+    Map<Class<? extends ChatResponse>, ToolCallHandler> toolHandlers =
         Map.of(
-            StoreNoteToolChatMessage.class,
+            StoreNoteToolChatResponse.class,
             (tx, toolCall) -> {
-              var m = (StoreNoteToolChatMessage) toolCall;
+              var m = (StoreNoteToolChatResponse) toolCall;
               derivedNoteRepository.saveInTx(
                   tx,
                   derivedNoteEntityMapper.toDerivedNoteEntity(

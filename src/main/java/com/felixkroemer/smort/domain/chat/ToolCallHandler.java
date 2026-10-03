@@ -5,5 +5,5 @@ import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhanced
 @FunctionalInterface
 public interface ToolCallHandler {
 
-  void execute(TransactWriteItemsEnhancedRequest.Builder tx, ChatMessage toolCall);
+  void execute(TransactWriteItemsEnhancedRequest.Builder tx, ChatResponse toolCall);
 }

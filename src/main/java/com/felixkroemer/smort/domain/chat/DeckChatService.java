@@ -51,7 +51,7 @@ public class DeckChatService {
       Do not repeat, quote, or restate the drafted note's front or back content.
       """;
 
-  public ChatMessage chat(
+  public ChatResponse chat(
       DeckChatContext ctx,
       String message,
       String formatInstructions,
@@ -97,7 +97,7 @@ public class DeckChatService {
         case DRAFT_NOTE -> {
           var draftNoteToolCall =
               responseFunctionToolCall.arguments(DeckChatTools.DraftNoteTool.class);
-          return new DraftNoteToolChatMessage(
+          return new DraftNoteToolChatResponse(
               responseFunctionToolCall.callId(),
               draftNoteToolCall.front,
               draftNoteToolCall.back,
@@ -110,13 +110,13 @@ public class DeckChatService {
     } else if (responseOutputItem.isMessage()) {
       ResponseOutputText outputText =
           ChatUtil.getResponseOutputText(responseOutputItem.asMessage());
-      return new TextChatMessage(outputText.text(), meta);
+      return new TextChatResponse(outputText.text(), meta);
     } else {
       throw new SmortException("Unexpected response output item type");
     }
   }
 
-  public ChatMessage acknowledgeDraftNoteToolCall(String callId, String previousResponseId) {
+  public ChatResponse acknowledgeDraftNoteToolCall(String callId, String previousResponseId) {
     ResponseCreateParams params =
         ResponseCreateParams.builder()
             .instructions(DRAFT_ACK_INSTRUCTIONS)
@@ -145,6 +145,6 @@ public class DeckChatService {
 
     var meta = new ChatMessageMeta(response.id(), response.previousResponseId(), Instant.now());
     ResponseOutputText outputText = ChatUtil.getResponseOutputText(responseOutputItem.asMessage());
-    return new TextChatMessage(outputText.text(), meta);
+    return new TextChatResponse(outputText.text(), meta);
   }
 }

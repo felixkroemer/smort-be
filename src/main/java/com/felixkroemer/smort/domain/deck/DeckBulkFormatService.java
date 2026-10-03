@@ -3,9 +3,9 @@ package com.felixkroemer.smort.domain.deck;
 import com.felixkroemer.smort.common.exception.LogSeverity;
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.common.exception.SmortException;
-import com.felixkroemer.smort.domain.chat.ChatMessage;
+import com.felixkroemer.smort.domain.chat.ChatResponse;
 import com.felixkroemer.smort.domain.chat.ChatOrchestrationService;
-import com.felixkroemer.smort.domain.chat.StoreNoteToolChatMessage;
+import com.felixkroemer.smort.domain.chat.StoreNoteToolChatResponse;
 import com.felixkroemer.smort.domain.chat.ToolCallHandler;
 import com.felixkroemer.smort.domain.common.BulkFormat;
 import com.felixkroemer.smort.domain.common.BulkFormatEngine;
@@ -93,11 +93,11 @@ public class DeckBulkFormatService {
         job,
         notesToProcess,
         note -> {
-          Map<Class<? extends ChatMessage>, ToolCallHandler> toolHandlers =
+          Map<Class<? extends ChatResponse>, ToolCallHandler> toolHandlers =
               Map.of(
-                  StoreNoteToolChatMessage.class,
+                  StoreNoteToolChatResponse.class,
                   (tx, toolCall) -> {
-                    var m = (StoreNoteToolChatMessage) toolCall;
+                    var m = (StoreNoteToolChatResponse) toolCall;
                     note.setFront(m.front());
                     note.setBack(m.back());
                     note.setLastFormattedAt(Optional.of(Instant.now()));
