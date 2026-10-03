@@ -1,5 +1,6 @@
 package com.felixkroemer.smort.domain.anki;
 
+import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.domain.anki.mapping.DerivedNoteEntityMapper;
 import com.felixkroemer.smort.domain.chat.*;
 import com.felixkroemer.smort.domain.common.NoteSchema;
@@ -92,6 +93,10 @@ public class AnkiNoteService {
   }
 
   public DerivedNoteEntity updateNote(UUID analysisId, Long noteId, String front, String back) {
+    if (!ankiNoteRepository.noteExists(analysisId, noteId)) {
+      throw new NotFoundException("Note not found. id={}", noteId);
+    }
+
     var derivedNote =
         getDerivedNote(analysisId, noteId)
             .map(
