@@ -131,10 +131,12 @@ git commit -m "feat: add manual store note orchestration"
   - `DeckKeys.deckPk(UUID)` (exists)
 - Produces: `public NoteEntity updateNote(UUID deckId, UUID noteId, String front, String back)` — consumed by `DeckController.updateNote` (Task 5).
 
-- [ ] **Step 1: Add the import**
+- [ ] **Step 1: Add the imports**
 
 ```java
+import com.felixkroemer.smort.common.exception.LogSeverity;
 import com.felixkroemer.smort.common.exception.SmortException;
+import org.springframework.http.HttpStatus;
 ```
 
 - [ ] **Step 2: Add the `updateNote` method**
@@ -144,7 +146,11 @@ Add after the `formatNote` method (ends at line 69):
 ```java
   public NoteEntity updateNote(UUID deckId, UUID noteId, String front, String back) {
     if (front == null || back == null) {
-      throw new SmortException("Note front and back must not be null. noteId={}", noteId);
+      throw new SmortException(
+          HttpStatus.BAD_REQUEST,
+          LogSeverity.INFO,
+          "Note front and back must not be null. noteId={}",
+          noteId);
     }
 
     var note =
@@ -199,9 +205,11 @@ git commit -m "feat: add manual note update service method"
 - [ ] **Step 1: Add the imports**
 
 ```java
+import com.felixkroemer.smort.common.exception.LogSeverity;
 import com.felixkroemer.smort.common.exception.NotFoundException;
 import com.felixkroemer.smort.common.exception.SmortException;
 import jakarta.persistence.NoResultException;
+import org.springframework.http.HttpStatus;
 ```
 
 - [ ] **Step 2: Add the `updateNote` method**
@@ -211,7 +219,11 @@ Add after the `formatNote` method (ends at line 92):
 ```java
   public DerivedNoteEntity updateNote(UUID analysisId, Long noteId, String front, String back) {
     if (front == null || back == null) {
-      throw new SmortException("Note front and back must not be null. noteId={}", noteId);
+      throw new SmortException(
+          HttpStatus.BAD_REQUEST,
+          LogSeverity.INFO,
+          "Note front and back must not be null. noteId={}",
+          noteId);
     }
 
     try {
