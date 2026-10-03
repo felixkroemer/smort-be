@@ -89,6 +89,11 @@ public class DeckController {
         note.orElseThrow(() -> new NotFoundException("Could not find note. id={}", noteId)));
   }
 
+  @GetMapping("notes")
+  public List<NoteResponse> getAllNotes() {
+    return noteRestMapper.toNoteResponse(deckService.getAllNotes());
+  }
+
   @GetMapping("/{deckId}/notes")
   public List<NoteResponse> getNotes(@PathVariable("deckId") UUID deckId) {
     var notes = deckService.getNotes(deckId);
