@@ -137,9 +137,8 @@ public class AnalysisController {
 
   @GetMapping("/{analysisId}/derivedNotes")
   public List<DerivedNoteResponse> getDerivedNotes(@PathVariable("analysisId") UUID analysisId) {
-    return ankiNoteService.getDerivedNotes(analysisId).stream()
-        .map(ankiNoteRestMapper::toDerivedNoteResponse)
-        .toList();
+    var derivedNotes = ankiNoteService.getDerivedNotes(analysisId);
+    return ankiNoteRestMapper.toDerivedNoteResponse(derivedNotes);
   }
 
   @GetMapping("/{analysisId}/noteTypes")

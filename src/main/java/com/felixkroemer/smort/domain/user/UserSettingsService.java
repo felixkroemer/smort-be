@@ -33,10 +33,7 @@ public class UserSettingsService {
         userSettingsRepository
             .findByUserId(CURRENT_USER)
             .orElseGet(() -> new UserSettingsEntity(CURRENT_USER));
-    var userTemplates =
-        getTemplates().stream()
-            .map(formattingTemplateEntityMapper::toFormattingTemplate)
-            .toList();
+    var userTemplates = formattingTemplateEntityMapper.toFormattingTemplate(getTemplates());
     var systemTemplates =
         Arrays.stream(SystemFormattingTemplate.values())
             .map(s -> new FormattingTemplate(s.getId(), s.getName(), s.getContent(), TemplateSource.SYSTEM))

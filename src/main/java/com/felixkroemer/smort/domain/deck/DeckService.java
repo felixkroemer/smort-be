@@ -52,17 +52,20 @@ public class DeckService {
   private final FormattingSettingsResolver formattingSettingsResolver;
 
   public List<Deck> getDecks() {
-    return deckRepository.findDeckMetasByUserId("default").stream()
+    var deckMetas = deckRepository.findDeckMetasByUserId("default");
+    return deckMetas.stream()
         .map(
-            entity ->
-                deckEntityMapper.toDeck(
-                    entity,
-                    bulkFormatRepository
-                        .findBulkFormatByDeckId(entity.getDeckId())
-                        .map(bulkFormatEntityMapper::toBulkFormat),
-                    draftNoteRepository
-                        .findDraftNote(entity.getDeckId())
-                        .map(draftNoteEntityMapper::toDraftNote)))
+            entity -> {
+              var bulkFormat =
+                  bulkFormatRepository
+                      .findBulkFormatByDeckId(entity.getDeckId())
+                      .map(bulkFormatEntityMapper::toBulkFormat);
+              var draftNote =
+                  draftNoteRepository
+                      .findDraftNote(entity.getDeckId())
+                      .map(draftNoteEntityMapper::toDraftNote);
+              return deckEntityMapper.toDeck(entity, bulkFormat, draftNote);
+            })
         .toList();
   }
 

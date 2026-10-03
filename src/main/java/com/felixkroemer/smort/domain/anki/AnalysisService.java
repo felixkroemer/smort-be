@@ -34,14 +34,16 @@ public class AnalysisService {
   }
 
   public List<Analysis> getAnalyses() {
-    return analysisMetaRepository.findAnalysisMetasByUserId("default").stream()
+    var analysisMetas = analysisMetaRepository.findAnalysisMetasByUserId("default");
+    return analysisMetas.stream()
         .map(
-            entity ->
-                analysisEntityMapper.toAnalysis(
-                    entity,
-                    bulkFormatRepository
-                        .findBulkFormatByAnalysisId(entity.getAnalysisId())
-                        .map(bulkFormatEntityMapper::toBulkFormat)))
+            entity -> {
+              var bulkFormat =
+                  bulkFormatRepository
+                      .findBulkFormatByAnalysisId(entity.getAnalysisId())
+                      .map(bulkFormatEntityMapper::toBulkFormat);
+              return analysisEntityMapper.toAnalysis(entity, bulkFormat);
+            })
         .toList();
   }
 
