@@ -1,4 +1,4 @@
-package com.felixkroemer.smort.domain.chat;
+package com.felixkroemer.smort.domain.chat.orchestration;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
